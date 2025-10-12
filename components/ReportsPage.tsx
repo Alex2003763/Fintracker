@@ -4,7 +4,6 @@ import { ReportsIcon, SparklesIcon, CheckCircleIcon, ExclamationTriangleIcon, Li
 import { formatCurrency } from '../utils/formatters';
 import { CATEGORY_ICON_MAP } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { GoogleGenAI, Type } from "@google/genai";
 
 interface MonthlyData {
   month: string;
@@ -87,36 +86,38 @@ Here are the transactions in JSON format:
 ${JSON.stringify(recentTransactions)}
 `;
 
-        const responseSchema = {
-            type: Type.OBJECT,
-            properties: {
-                summary: { type: Type.STRING },
-                positivePoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-                areasForImprovement: { type: Type.ARRAY, items: { type: Type.STRING } },
-                actionableTip: { type: Type.STRING }
-            },
-            required: ['summary', 'positivePoints', 'areasForImprovement', 'actionableTip']
-        };
-
         try {
-            const ai = new GoogleGenAI({ apiKey: user.aiSettings.apiKey });
             const model = user.aiSettings?.model || 'gemini-2.5-flash';
+            const apiKey = user.aiSettings.apiKey;
 
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: prompt,
-                config: {
-                    responseMimeType: 'application/json',
-                    responseSchema,
-                }
+            const proxyUrl = `https://rainbow-gumption-2fc85c.netlify.app/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: prompt
+                        }]
+                    }]
+                })
             });
 
-            const text = response.text;
-            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error.message || 'An unknown error occurred');
+            }
+
+            const data = await response.json();
+            const text = data.candidates.content.parts.text;
+
             if (!text) {
                 throw new Error("The AI model returned an empty response. This might be due to a content safety filter.");
             }
-            
+
             const parsedInsights = JSON.parse(text);
             setInsights(parsedInsights);
 
