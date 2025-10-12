@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Finance Flow</title>
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#f3f4f6">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root.theme-light {
+        --color-bg-rgb: 243 244 246; /* gray-100 */
+        --color-card-rgb: 255 255 255; /* white */
+        --color-card-muted-rgb: 249 250 251; /* gray-50 */
+        --color-text-rgb: 31 41 55; /* gray-800 */
+        --color-text-muted-rgb: 107 114 128; /* gray-500 */
+        --color-border-rgb: 229 231 235; /* gray-200 */
+        --color-primary-rgb: 37 99 235; /* blue-600 */
+        --color-primary-hover-rgb: 29 78 216; /* blue-700 */
+        --color-primary-text-rgb: 255 255 255; /* white */
+        --color-primary-subtle-text-rgb: 59 130 246; /* blue-500 */
+        --gradient-from-rgb: 59 130 246; /* blue-500 */
+        --gradient-to-rgb: 29 78 216; /* blue-700 */
+      }
+      :root.theme-dark-slate {
+        --color-bg-rgb: 15 23 42; /* slate-900 */
+        --color-card-rgb: 30 41 59; /* slate-800 */
+        --color-card-muted-rgb: 51 65 85; /* slate-700 */
+        --color-text-rgb: 241 245 249; /* slate-100 */
+        --color-text-muted-rgb: 148 163 184; /* slate-400 */
+        --color-border-rgb: 51 65 85; /* slate-700 */
+        --color-primary-rgb: 59 130 246; /* blue-500 */
+        --color-primary-hover-rgb: 37 99 235; /* blue-600 */
+        --color-primary-text-rgb: 255 255 255; /* white */
+        --color-primary-subtle-text-rgb: 96 165 250; /* blue-400 */
+        --gradient-from-rgb: 51 65 85; /* slate-700 */
+        --gradient-to-rgb: 30 41 59; /* slate-800 */
+      }
+      :root.theme-dark-blue {
+        --color-bg-rgb: 17 25 41;
+        --color-card-rgb: 28 41 64;
+        --color-card-muted-rgb: 41 57 88;
+        --color-text-rgb: 224 234 255;
+        --color-text-muted-rgb: 161 178 211;
+        --color-border-rgb: 59 80 130;
+        --color-primary-rgb: 96 165 250; /* blue-400 */
+        --color-primary-hover-rgb: 59 130 246; /* blue-500 */
+        --color-primary-text-rgb: 15 23 42;
+        --color-primary-subtle-text-rgb: 147 197 253; /* blue-300 */
+        --gradient-from-rgb: 41 57 88;
+        --gradient-to-rgb: 28 41 64;
+      }
+      :root.theme-dark-crimson {
+        --color-bg-rgb: 28 21 24;
+        --color-card-rgb: 49 33 38;
+        --color-card-muted-rgb: 68 46 54;
+        --color-text-rgb: 255 229 237;
+        --color-text-muted-rgb: 209 174 183;
+        --color-border-rgb: 92 63 71;
+        --color-primary-rgb: 244 63 94; /* rose-500 */
+        --color-primary-hover-rgb: 225 29 72; /* rose-600 */
+        --color-primary-text-rgb: 255 255 255;
+        --color-primary-subtle-text-rgb: 251 113 133; /* rose-400 */
+        --gradient-from-rgb: 68 46 54;
+        --gradient-to-rgb: 49 33 38;
+      }
+      body {
+        background-color: rgb(var(--color-bg-rgb));
+        background-image: radial-gradient(rgb(var(--color-border-rgb)) 0.5px, transparent 0.5px);
+        background-size: 20px 20px;
+      }
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgb(var(--color-bg-rgb));
+        transition: opacity 0.5s;
+        z-index: 9999;
+      }
+      .pulsating-icon {
+        animation: pulsate 2s ease-in-out infinite;
+      }
+      @keyframes pulsate {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+      }
+      /* General Animation */
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out forwards;
+      }
+      /* Modal Animation */
+      .modal-fade-in {
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+      .modal-content-slide-up {
+        animation: fadeInUp 0.3s ease-out forwards;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+       /* Balance Card Flip Animation */
+      .card-flip-container {
+        perspective: 1000px;
+      }
+      .card-flipper {
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.6s;
+      }
+      .card-flipper.flipped {
+        transform: rotateY(180deg);
+      }
+      .card-front, .card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        border-radius: 1rem; /* 16px */
+      }
+      .card-back {
+        transform: rotateY(180deg);
+      }
+      /* Sticky Header for Transaction List */
+      .sticky-header {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+      }
+    </style>
+    <script>
+      // This script prevents FOUC (Flash of Unstyled Content) by applying the theme before React loads.
+      const theme = localStorage.getItem('financeFlowTheme');
+      if (theme) {
+        document.documentElement.className = theme;
+      } else {
+        const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.className = isDarkMode ? 'theme-dark-slate' : 'theme-light';
+      }
+    </script>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+    "recharts": "https://aistudiocdn.com/recharts@^2.12.7",
+    "@google/genai": "https://aistudiocdn.com/@google/genai-sdk@^0.20.0"
+  }
+}
+</script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root">
+      <div id="initial-loader">
+        <div class="relative flex items-center justify-center">
+          <div class="absolute h-24 w-24 rounded-full bg-green-500/20 animate-ping"></div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-500 pulsating-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
