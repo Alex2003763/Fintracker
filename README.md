@@ -31,12 +31,7 @@ Fintracker is a personal finance tracker web application designed to help users 
    npm install
    ```
 
-3. Set your Gemini API key in `.env.local`:
-   ```
-   GEMINI_API_KEY=your-gemini-api-key
-   ```
-
-4. Start the development server:
+3. Start the development server:
    ```bash
    npm run dev
    ```
@@ -44,7 +39,7 @@ Fintracker is a personal finance tracker web application designed to help users 
 ### View Online
 
 You can also view your app in AI Studio:
-- [AI Studio App](https://ai.studio/apps/drive/1BrGsFhEkfbW_YiysXyCgWs_R3LM_9wXn)
+- [Fintrack](https://fintrack.usefultools.qzz.io/)
 
 ## Project Structure
 
