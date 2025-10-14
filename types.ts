@@ -73,4 +73,7 @@ export interface User {
         apiKey: string;
         model: string;
     };
+    smartFeatures?: {
+        categorySuggestions: boolean;
+    };
 }

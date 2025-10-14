@@ -48,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
             <h1 className="hidden md:block text-2xl font-bold text-[rgb(var(--color-text-rgb))]">{pageTitle}</h1>
             
             <div className="flex items-center space-x-4">
-                 <div className="relative quick-add-wrapper">
+                 <div className="relative quick-add-wrapper hidden md:block">
                     <button 
                         onClick={() => setIsQuickAddOpen(!isQuickAddOpen)} 
                         className="h-12 w-12 rounded-full flex items-center justify-center bg-[rgb(var(--color-card-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors"

@@ -490,6 +490,7 @@ const App: React.FC = () => {
           onSaveTransaction={handleSaveTransaction}
           transactionToEdit={transactionToEdit}
           initialType={addTransactionModalType}
+          smartSuggestionsEnabled={user?.smartFeatures?.categorySuggestions ?? true}
         />
       )}
       

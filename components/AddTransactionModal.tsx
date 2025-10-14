@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Transaction } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
+import { suggestCategory, getBestCategorySuggestion, testAI } from '../utils/categoryAI';
 
 interface AddTransactionModalProps {
   onClose: () => void;
@@ -9,9 +10,10 @@ interface AddTransactionModalProps {
   transactionToEdit: Transaction | null;
   initialType?: 'income' | 'expense';
   initialData?: Partial<Omit<Transaction, 'id' | 'date'>>;
+  smartSuggestionsEnabled?: boolean;
 }
 
-const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClose, onSaveTransaction, transactionToEdit, initialType = 'expense', initialData }) => {
+const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClose, onSaveTransaction, transactionToEdit, initialType = 'expense', initialData, smartSuggestionsEnabled = true }) => {
   const isEditing = transactionToEdit !== null;
   const [type, setType] = useState<'income' | 'expense'>(() => transactionToEdit?.type || initialData?.type || initialType);
   const [description, setDescription] = useState(() => transactionToEdit?.description || initialData?.description || '');
@@ -22,6 +24,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClose, onSa
     const typeToUse = initialData?.type || initialType;
     return Object.values(TRANSACTION_CATEGORIES[typeToUse])[0][0];
   });
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     if (transactionToEdit) {
@@ -37,6 +40,25 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClose, onSa
       setCategory(initialData?.category || Object.values(TRANSACTION_CATEGORIES[typeToUse])[0][0]);
     }
   }, [transactionToEdit, initialType, initialData]);
+
+  // Test AI on component mount
+  useEffect(() => {
+    console.log('🚀 Testing AI suggestions...');
+    testAI();
+  }, []);
+
+  // Generate AI category suggestions when description changes
+  useEffect(() => {
+    if (smartSuggestionsEnabled && description.length > 2) {
+      const availableCategories = Object.values(TRANSACTION_CATEGORIES[type]).flat() as string[];
+      const suggestions = suggestCategory(description, availableCategories)
+        .map(suggestion => suggestion.category);
+      setAiSuggestions(suggestions);
+      console.log('🤖 AI Suggestions for "' + description + '":', suggestions);
+    } else {
+      setAiSuggestions([]);
+    }
+  }, [description, type, smartSuggestionsEnabled]);
 
 
   const handleTypeChange = (newType: 'income' | 'expense') => {
@@ -114,6 +136,30 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClose, onSa
               placeholder="e.g. Coffee"
               required
             />
+            {aiSuggestions.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mb-2">Smart suggestions:</p>
+                <div className="flex flex-wrap gap-2">
+                  {aiSuggestions.map((suggestion, index) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => {
+                        console.log('🎯 Clicking suggestion:', suggestion);
+                        setCategory(suggestion);
+                      }}
+                      className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                        category === suggestion
+                          ? 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))]'
+                          : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))]'
+                      }`}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mb-4">

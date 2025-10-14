@@ -171,6 +171,45 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
       <AISettings user={user} onUpdateUser={onUpdateUser} />
 
       <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Smart Features</h2>
+        <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-[rgb(var(--color-text-rgb))]">Smart Category Suggestions</p>
+              <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                Automatically suggest categories based on transaction descriptions
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const currentSetting = user.smartFeatures?.categorySuggestions ?? true;
+                onUpdateUser({
+                  ...user,
+                  smartFeatures: {
+                    ...user.smartFeatures,
+                    categorySuggestions: !currentSetting
+                  }
+                });
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 ${
+                user.smartFeatures?.categorySuggestions ?? true
+                  ? 'bg-[rgb(var(--color-primary-rgb))]'
+                  : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  user.smartFeatures?.categorySuggestions ?? true
+                    ? 'translate-x-6'
+                    : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
         <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Appearance</h2>
         <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg">
             <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mb-4">Choose a theme to personalize your experience.</p>

@@ -112,13 +112,22 @@ ${JSON.stringify(recentTransactions)}
             }
 
             const data = await response.json();
-            const text = data.candidates.content.parts.text;
+            const text = data.candidates[0].content.parts[0].text;
 
             if (!text) {
                 throw new Error("The AI model returned an empty response. This might be due to a content safety filter.");
             }
 
-            const parsedInsights = JSON.parse(text);
+            // Handle markdown-wrapped JSON responses
+            let jsonText = text.trim();
+
+            // Check if response is wrapped in markdown code blocks
+            const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (jsonMatch) {
+                jsonText = jsonMatch[1].trim();
+            }
+
+            const parsedInsights = JSON.parse(jsonText);
             setInsights(parsedInsights);
 
         } catch (e: any) {
