@@ -17,7 +17,7 @@ export default defineConfig({
         'icon.png'
       ],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}', '!offline.html'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2,woff2?*}', '!offline.html'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/, /\/offline\.html$/],
         globIgnores: ['offline.html'],
@@ -45,6 +45,17 @@ export default defineConfig({
             }
           },
           {
+            urlPattern: /^https:\/\/cdn\.tailwindcss\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'tailwind-css-cache',
+              expiration: {
+                maxEntries: 5,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // <== 30 days
+              }
+            }
+          },
+          {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
             handler: 'CacheFirst',
             options: {
@@ -56,12 +67,23 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: /\.(?:js|css)$/i,
+            urlPattern: /\.(?:css)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'css-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // <== 30 days
+              }
+            }
+          },
+          {
+            urlPattern: /\.(?:js)$/i,
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'static-resources-cache',
+              cacheName: 'js-cache',
               expiration: {
-                maxEntries: 50,
+                maxEntries: 30,
                 maxAgeSeconds: 60 * 60 * 24 * 7 // <== 7 days
               }
             }
