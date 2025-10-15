@@ -178,15 +178,25 @@
       }
     </style>
     <script>
-      // This script prevents FOUC (Flash of Unstyled Content) by applying the theme before React loads.
-      const theme = localStorage.getItem('financeFlowTheme');
-      if (theme) {
-        document.documentElement.className = theme;
-      } else {
-        const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.className = isDarkMode ? 'theme-dark-slate' : 'theme-light';
-      }
-    </script>
+       // This script prevents FOUC (Flash of Unstyled Content) by applying the theme before React loads.
+       const theme = localStorage.getItem('financeFlowTheme');
+       if (theme) {
+         document.documentElement.className = theme;
+       } else {
+         const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+         document.documentElement.className = isDarkMode ? 'theme-dark-slate' : 'theme-light';
+       }
+
+       // iOS Safari offline detection and fallback
+       if (!navigator.onLine && 'serviceWorker' in navigator) {
+         // Check if we can load the main app, if not, redirect to offline page
+         setTimeout(() => {
+           if (document.querySelector('#root').innerHTML === '') {
+             window.location.href = '/offline.html';
+           }
+         }, 3000);
+       }
+     </script>
     <script type="importmap">
 {
   "imports": {

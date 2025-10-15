@@ -39,11 +39,18 @@ const App: React.FC = () => {
     },
   });
 
-  // Network status detection
+  // Network status detection with iOS Safari compatibility
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showOfflineWarning, setShowOfflineWarning] = useState(false);
+  const [swSupport, setSwSupport] = useState(true);
 
   useEffect(() => {
+    // Check if service workers are supported (iOS Safari might have issues)
+    if (!('serviceWorker' in navigator)) {
+      setSwSupport(false);
+      console.log('Service Workers not supported');
+    }
+
     const handleOnline = () => {
       setIsOnline(true);
       setShowOfflineWarning(false);
@@ -56,14 +63,30 @@ const App: React.FC = () => {
       console.log('App is offline');
     };
 
+    // More frequent checks for iOS Safari
+    const checkConnection = () => {
+      const online = navigator.onLine;
+      if (online !== isOnline) {
+        if (online) {
+          handleOnline();
+        } else {
+          handleOffline();
+        }
+      }
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
+    // Check connection every 30 seconds for better iOS Safari support
+    const interval = setInterval(checkConnection, 30000);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
     };
-  }, []);
+  }, [isOnline]);
 
   const closePrompt = () => {
     setOfflineReady(false);
@@ -507,6 +530,31 @@ const App: React.FC = () => {
         return <PlaceholderPage title={activeItem} />;
     }
   };
+
+  // iOS Safari fallback - if service worker fails completely, show offline message
+  if (!swSupport && !isOnline && !user) {
+    return (
+      <div className="min-h-screen bg-[rgb(var(--color-bg-rgb))] text-[rgb(var(--color-text-rgb))] flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="mb-6">
+            <svg className="mx-auto h-16 w-16 text-[rgb(var(--color-text-muted-rgb))]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold mb-4">You're Offline</h1>
+          <p className="text-[rgb(var(--color-text-muted-rgb))] mb-6">
+            Finance Flow requires an internet connection to work properly. Please check your connection and try again.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-[rgb(var(--color-primary-rgb))] text-white px-6 py-3 rounded-lg font-medium hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors"
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!user || !sessionKey) {
     return <AuthPage onAuth={handleAuth} />;
