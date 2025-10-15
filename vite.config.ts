@@ -14,16 +14,13 @@ export default defineConfig({
         'mask-icon.svg',
         'icon-192x192.png',
         'icon-512x512.png',
-        'icon.png',
-        'offline.html'
+        'icon.png'
       ],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}', '!offline.html'],
         navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
-        additionalManifestEntries: [
-          { url: '/offline.html', revision: null }
-        ],
+        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/, /\/offline\.html$/],
+        globIgnores: ['offline.html'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

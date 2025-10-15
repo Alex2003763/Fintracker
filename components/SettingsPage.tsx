@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User } from '../types';
 import { useTheme, THEMES } from './ThemeContext';
 import { SparklesIcon } from './icons';
+import ServiceWorkerDebugPanel from './ServiceWorkerDebugPanel';
 
 interface SettingsPageProps {
   user: User;
@@ -276,7 +277,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
           </div>
         </div>
       </div>
-      
+
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">
+          Developer Tools
+        </h2>
+        <ServiceWorkerDebugPanel />
+      </div>
+
       <div className="text-center text-[rgb(var(--color-text-muted-rgb))] text-sm pt-4">
         <p>Finance Flow App v1.3.0</p>
       </div>

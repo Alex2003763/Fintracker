@@ -2,24 +2,20 @@
 const CACHE_NAME = 'finance-flow-v1';
 const OFFLINE_URL = '/offline.html';
 
-// Install event - cache essential resources
+// Install event - cache essential resources (avoiding conflicts with main SW)
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installing');
+  console.log('Custom Service Worker installing');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
-        '/',
-        '/index.html',
-        '/offline.html',
-        '/manifest.json',
-        '/icon.png'
+        '/offline.html'
       ]).catch((error) => {
-        console.log('Cache failed for some resources:', error);
+        console.log('Custom SW cache failed for some resources:', error);
         // Continue even if some resources fail to cache
         return Promise.resolve();
       });
     }).then(() => {
-      console.log('Service Worker installation completed');
+      console.log('Custom Service Worker installation completed');
       self.skipWaiting();
     })
   );
@@ -43,7 +39,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - serve cached content when offline
+// Fetch event - only handle offline scenarios to avoid conflicts
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
@@ -55,60 +51,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle navigation requests specially for iOS Safari
-  if (event.request.mode === 'navigate') {
+  // Only handle offline scenarios and specific requests to avoid conflicts
+  if (event.request.mode === 'navigate' && !navigator.onLine) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        // Network failed, return cached index.html or offline page
-        return caches.match('/index.html').then((response) => {
-          if (response) {
-            return response;
-          }
-          return caches.match(OFFLINE_URL);
-        });
+      caches.match(OFFLINE_URL).then((response) => {
+        if (response) {
+          return response;
+        }
+        // Fallback to main cache if our custom cache fails
+        return caches.match('/index.html');
       })
     );
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Return cached version if available
-      if (response) {
-        return response;
-      }
-
-      // Clone the request because it's a one-time use stream
-      const fetchRequest = event.request.clone();
-
-      return fetch(fetchRequest)
-        .then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // Clone the response because it's a one-time use stream
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-
+  // Only handle requests for our specific offline resources
+  if (event.request.url.includes('/offline.html')) {
+    event.respondWith(
+      caches.match(OFFLINE_URL).then((response) => {
+        if (response) {
           return response;
-        })
-        .catch(() => {
-          // For non-navigation requests, return a simple offline response
-          return new Response('Offline', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({
-              'Content-Type': 'text/plain'
-            })
-          });
-        });
-    })
-  );
+        }
+        return fetch(event.request);
+      })
+    );
+  }
 });
 
 // Background sync for offline actions

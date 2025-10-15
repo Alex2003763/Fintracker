@@ -12,9 +12,10 @@ interface HeaderProps {
     onClearAllNotifications: () => void;
     pageTitle: string;
     onSaveTransaction: (transaction: Omit<Transaction, 'id' | 'date' | 'icon'> & { id?: string }) => void;
+    isOnline?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onClearAllNotifications, pageTitle, onSaveTransaction }) => {
+const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onClearAllNotifications, pageTitle, onSaveTransaction, isOnline = true }) => {
     const [showNotifications, setShowNotifications] = useState(false);
     const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
     const unreadCount = notifications.filter(n => !n.read).length;
@@ -48,6 +49,14 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
             <h1 className="hidden md:block text-2xl font-bold text-[rgb(var(--color-text-rgb))]">{pageTitle}</h1>
             
             <div className="flex items-center space-x-4">
+                 {/* Network Status Indicator */}
+                 <div className="hidden md:flex items-center space-x-2">
+                   <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                   <span className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
+                     {isOnline ? 'Online' : 'Offline'}
+                   </span>
+                 </div>
+
                  <div className="relative quick-add-wrapper hidden md:block">
                     <button 
                         onClick={() => setIsQuickAddOpen(!isQuickAddOpen)} 
