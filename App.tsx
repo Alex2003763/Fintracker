@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
+import UpdatePrompt from './components/UpdatePrompt';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
@@ -24,6 +26,24 @@ import PlaceholderPage from './components/PlaceholderPage';
 import { encryptData, decryptData, deriveKey, generateSalt, formatCurrency } from './utils/formatters';
 
 const App: React.FC = () => {
+  const {
+    offlineReady: [offlineReady, setOfflineReady],
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log('SW Registered:', r);
+    },
+    onRegisterError(error) {
+      console.log('SW registration error:', error);
+    },
+  });
+
+  const closePrompt = () => {
+    setOfflineReady(false);
+    setNeedRefresh(false);
+  };
+
   // Authentication State
   const [user, setUser] = useState<User | null>(null);
   const [sessionKey, setSessionKey] = useState<CryptoKey | null>(null);
@@ -536,6 +556,7 @@ const App: React.FC = () => {
           confirmButtonText={confirmationModalState.confirmText}
           confirmButtonVariant={confirmationModalState.variant}
       />
+     {needRefresh && <UpdatePrompt onUpdate={() => updateServiceWorker(true)} />}
     </div>
   );
 };
