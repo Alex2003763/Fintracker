@@ -259,3 +259,71 @@ export const SuccessState: React.FC<SuccessStateProps> = ({
     </div>
   );
 };
+
+interface Tab {
+  id: string;
+  label: string;
+  icon?: React.ReactNode;
+  badge?: number;
+}
+
+interface TabsProps {
+  tabs: Tab[];
+  activeTab: string;
+  onTabChange: (tabId: string) => void;
+  className?: string;
+}
+
+export const Tabs: React.FC<TabsProps> = ({
+  tabs,
+  activeTab,
+  onTabChange,
+  className = '',
+}) => {
+  return (
+    <div className={`border-b border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))] ${className}`}>
+      <div className="flex space-x-0">
+        {tabs.map((tab, index) => (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`group relative flex items-center px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-out ${
+              activeTab === tab.id
+                ? 'border-b-2 border-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-rgb))] bg-gradient-to-b from-[rgb(var(--color-primary-rgb))]/5 to-transparent'
+                : 'border-b-2 border-transparent text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))]'
+            }`}
+          >
+            {/* Icon with refined styling */}
+            {tab.icon && (
+              <span className={`mr-1.5 transition-all duration-200 ${
+                activeTab === tab.id
+                  ? 'text-[rgb(var(--color-primary-rgb))]'
+                  : 'text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-text-rgb))]'
+              }`}>
+                {React.cloneElement(tab.icon, {
+                  className: `h-3.5 w-3.5 ${activeTab === tab.id ? 'text-[rgb(var(--color-primary-rgb))]' : 'text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-text-rgb))]'}`,
+                })}
+              </span>
+            )}
+
+            {/* Label with refined typography */}
+            <span className={`relative ${activeTab === tab.id ? 'font-semibold' : 'font-medium'}`}>
+              {tab.label}
+            </span>
+
+            {/* Enhanced badge styling with better contrast */}
+            {tab.badge !== undefined && tab.badge > 0 && (
+              <span className={`ml-1.5 px-2 py-0.5 text-xs font-bold rounded-full transition-all duration-200 shadow-sm ${
+                activeTab === tab.id
+                  ? 'bg-white text-[rgb(var(--color-primary-rgb))] border border-[rgb(var(--color-primary-rgb))]'
+                  : 'bg-[rgb(var(--color-primary-rgb))] text-white'
+              }`}>
+                {tab.badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};

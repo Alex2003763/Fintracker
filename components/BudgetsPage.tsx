@@ -22,25 +22,25 @@ const BudgetItem: React.FC<BudgetItemProps> = ({ budget, spent }) => {
   const Icon = CATEGORY_ICON_MAP[budget.category] || CATEGORY_ICON_MAP['Other'];
 
   return (
-    <div className="bg-[rgb(var(--color-card-rgb))] p-4 rounded-lg shadow-sm space-y-3 flex flex-col transition-colors">
+    <div className="bg-[rgb(var(--color-card-rgb))] p-3 rounded-lg shadow-sm space-y-2 flex flex-col transition-colors">
       <div className="flex justify-between items-center">
         <div className="flex items-center">
-            <div className="bg-[rgb(var(--color-card-muted-rgb))] rounded-full p-2 mr-3">
-                <Icon className="h-5 w-5 text-[rgb(var(--color-text-muted-rgb))]" />
+            <div className="bg-[rgb(var(--color-card-muted-rgb))] rounded-full p-1.5 mr-2">
+                <Icon className="h-4 w-4 text-[rgb(var(--color-text-muted-rgb))]" />
             </div>
-            <h3 className="font-bold text-lg text-[rgb(var(--color-text-rgb))]">{budget.category}</h3>
+            <h3 className="font-semibold text-base text-[rgb(var(--color-text-rgb))]">{budget.category}</h3>
         </div>
       </div>
       <div>
-        <div className="flex justify-between text-sm font-medium text-[rgb(var(--color-text-muted-rgb))] mb-1">
+        <div className="flex justify-between text-xs font-medium text-[rgb(var(--color-text-muted-rgb))] mb-1">
           <span>{formatCurrency(spent)}</span>
           <span className="text-[rgb(var(--color-text-rgb))] font-semibold">{formatCurrency(budget.amount)}</span>
         </div>
-        <div className="w-full bg-[rgb(var(--color-border-rgb))] rounded-full h-2.5">
-          <div className={`${getProgressBarColor()} h-2.5 rounded-full transition-all duration-500`} style={{ width: `${progressClamped}%` }}></div>
+        <div className="w-full bg-[rgb(var(--color-border-rgb))] rounded-full h-2">
+          <div className={`${getProgressBarColor()} h-2 rounded-full transition-all duration-500`} style={{ width: `${progressClamped}%` }}></div>
         </div>
-        <div className="text-right text-sm text-[rgb(var(--color-text-muted-rgb))] mt-1">
-          {formatCurrency(Math.max(0, budget.amount - spent))} remaining
+        <div className="text-right text-xs text-[rgb(var(--color-text-muted-rgb))] mt-0.5">
+          {formatCurrency(Math.max(0, budget.amount - spent))} left
         </div>
       </div>
     </div>
@@ -111,7 +111,7 @@ const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onMana
       </div>
 
       {currentMonthBudgets.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {currentMonthBudgets.map(({ budget, spent }) => (
             <BudgetItem 
               key={budget.id} 
@@ -131,3 +131,4 @@ const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onMana
 };
 
 export default BudgetsPage;
+
