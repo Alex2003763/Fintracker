@@ -1,5 +1,5 @@
 import React from 'react';
-import { HomeIcon, TransactionsIcon, ReportsIcon, GoalsIcon, SettingsIcon, SalaryIcon, CoffeeIcon, GroceriesIcon, BillIcon, CartIcon, PiggyBankIcon, TransferIcon, UserIcon, PlusIcon, BudgetIcon } from './components/icons';
+import { HomeIcon, TransactionsIcon, ReportsIcon, GoalsIcon, SettingsIcon, SalaryIcon, CoffeeIcon, GroceriesIcon, BillIcon, CartIcon, PiggyBankIcon, TransferIcon, UserIcon, PlusIcon, BudgetIcon, HomeGoodsIcon, HobbiesIcon, PharmacyIcon, DoctorIcon, GymIcon, MoviesIcon, SubscriptionsIcon, MaintenanceIcon, GasIcon, BusIcon, CarIcon } from './components/icons';
 
 export const NAV_ITEMS = [
   { name: 'Home', icon: HomeIcon },
@@ -49,23 +49,23 @@ export const CATEGORY_ICON_MAP: { [key: string]: React.FC<{ className?: string }
     'Takeout': CoffeeIcon,
     'Clothing': CartIcon,
     'Electronics': CartIcon,
-    'Home Goods': CartIcon,
-    'Hobbies': CartIcon,
+    'Home Goods': HomeGoodsIcon,
+    'Hobbies': HobbiesIcon,
     'General Shopping': CartIcon,
     'Rent/Mortgage': BillIcon,
     'Utilities': BillIcon,
     'Phone': BillIcon,
     'Internet': BillIcon,
     'Insurance': BillIcon,
-    'Gas/Fuel': TransferIcon,
-    'Public Transit': TransferIcon,
-    'Ride Sharing': TransferIcon,
-    'Maintenance': SettingsIcon,
-    'Pharmacy': PlusIcon,
-    'Doctor': PlusIcon,
-    'Gym': PlusIcon,
-    'Movies': BillIcon,
-    'Subscriptions': BillIcon,
+    'Gas/Fuel': GasIcon,
+    'Public Transit': BusIcon,
+    'Ride Sharing': CarIcon,
+    'Maintenance': MaintenanceIcon,
+    'Pharmacy': PharmacyIcon,
+    'Doctor': DoctorIcon,
+    'Gym': GymIcon,
+    'Movies': MoviesIcon,
+    'Subscriptions': SubscriptionsIcon,
     'Games': CartIcon,
     'Transfers': TransferIcon,
     'Other': GroceriesIcon, // A default icon

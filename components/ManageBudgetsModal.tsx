@@ -3,6 +3,8 @@ import { Budget, Transaction } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
 import { BudgetIcon } from './icons';
 import { formatCurrency } from '../utils/formatters';
+import BaseModal from './BaseModal';
+import { FormField, Input, Select, Button } from './ModalForm';
 
 interface ManageBudgetsModalProps {
   isOpen: boolean;
@@ -17,6 +19,8 @@ const ManageBudgetsModal: React.FC<ManageBudgetsModalProps> = ({ isOpen, onClose
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [budgetToEditId, setBudgetToEditId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   const { currentMonthBudgets, availableCategories } = useMemo(() => {
     const today = new Date();
@@ -48,23 +52,52 @@ const ManageBudgetsModal: React.FC<ManageBudgetsModalProps> = ({ isOpen, onClose
     setCategory(budget.category);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!category) {
+      newErrors.category = 'Please select a category';
+    }
+
+    if (!amount.trim()) {
+      newErrors.amount = 'Budget amount is required';
+    } else {
+      const parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        newErrors.amount = 'Please enter a valid amount greater than 0';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsedAmount = parseFloat(amount);
-    if (!category || isNaN(parsedAmount) || parsedAmount <= 0) {
-      alert('Please fill all fields with valid values.');
+
+    if (!validateForm()) {
       return;
     }
-    const today = new Date();
-    const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-    onSaveBudget({ 
-      id: budgetToEditId || undefined, 
-      category, 
-      amount: parsedAmount, 
-      month: currentMonthStr 
-    });
-    resetForm();
+    setIsSubmitting(true);
+
+    try {
+      const parsedAmount = parseFloat(amount);
+      const today = new Date();
+      const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+      await onSaveBudget({
+        id: budgetToEditId || undefined,
+        category,
+        amount: parsedAmount,
+        month: currentMonthStr
+      });
+      resetForm();
+    } catch (error) {
+      console.error('Error saving budget:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   const currentBudgetCategory = useMemo(() => {
@@ -77,58 +110,142 @@ const ManageBudgetsModal: React.FC<ManageBudgetsModalProps> = ({ isOpen, onClose
   const inputStyle = "block w-full px-3 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-md text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] sm:text-sm placeholder:text-[rgb(var(--color-text-muted-rgb))] transition-colors";
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-lg p-6 md:p-8 w-full max-w-lg transition-colors max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-[rgb(var(--color-text-rgb))]">Manage Budgets</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Manage Budgets"
+      size="lg"
+      aria-label="Manage budgets modal"
+    >
+      <div className="p-6 space-y-6">
+        {/* Add/Edit Form */}
+        <div className="bg-[rgb(var(--color-card-muted-rgb))] rounded-lg p-4">
+          <h3 className="font-semibold text-lg text-[rgb(var(--color-text-rgb))] mb-4">
+            {budgetToEditId ? 'Edit Budget' : 'Add New Budget'}
+          </h3>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                label="Category"
+                htmlFor="budget-category"
+                required
+                error={errors.category}
+              >
+                <Select
+                  id="budget-category"
+                  value={category}
+                  onChange={(e) => {
+                    setCategory(e.target.value);
+                    if (errors.category) setErrors({ ...errors, category: '' });
+                  }}
+                  error={errors.category}
+                >
+                  <option value="" disabled>Select a category</option>
+                  {budgetToEditId && !availableCategories.includes(currentBudgetCategory) && (
+                    <option value={currentBudgetCategory}>{currentBudgetCategory}</option>
+                  )}
+                  {availableCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </Select>
+              </FormField>
+
+              <FormField
+                label="Budget Amount"
+                htmlFor="budget-amount"
+                required
+                error={errors.amount}
+                hint="How much do you want to budget for this category?"
+              >
+                <Input
+                  id="budget-amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    if (errors.amount) setErrors({ ...errors, amount: '' });
+                  }}
+                  placeholder="500.00"
+                  error={errors.amount}
+                  leftIcon={
+                    <span className="text-[rgb(var(--color-text-muted-rgb))] text-sm">$</span>
+                  }
+                />
+              </FormField>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-2">
+              {budgetToEditId && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={resetForm}
+                  disabled={isSubmitting}
+                >
+                  Cancel Edit
+                </Button>
+              )}
+              <Button
+                type="submit"
+                variant="primary"
+                loading={isSubmitting}
+              >
+                {budgetToEditId ? 'Save Changes' : 'Add Budget'}
+              </Button>
+            </div>
+          </form>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 mb-6 bg-[rgb(var(--color-card-muted-rgb))] rounded-lg space-y-4">
-          <h3 className="font-semibold text-lg text-[rgb(var(--color-text-rgb))]">{budgetToEditId ? 'Edit Budget' : 'Add New Budget'}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <select value={category} onChange={e => setCategory(e.target.value)} required className={inputStyle}>
-                <option value="" disabled>Select a category</option>
-                {budgetToEditId && !availableCategories.includes(currentBudgetCategory) && (
-                    <option value={currentBudgetCategory}>{currentBudgetCategory}</option>
-                )}
-                {availableCategories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                ))}
-            </select>
-            <input type="number" placeholder="Amount ($)" value={amount} onChange={e => setAmount(e.target.value)} required className={inputStyle} min="0.01" step="0.01"/>
-          </div>
-          <div className="flex justify-end space-x-2 pt-2">
-            {budgetToEditId && <button type="button" onClick={resetForm} className="px-4 py-2 text-sm font-medium text-[rgb(var(--color-text-rgb))] bg-[rgb(var(--color-border-rgb))] rounded-lg hover:bg-[rgba(var(--color-border-rgb),0.8)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Cancel Edit</button>}
-            <button type="submit" className="px-4 py-2 text-sm font-medium text-[rgb(var(--color-primary-text-rgb))] bg-[rgb(var(--color-primary-rgb))] rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--color-primary-rgb))]">{budgetToEditId ? 'Save Changes' : 'Add Budget'}</button>
-          </div>
-        </form>
-
-        <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-          {currentMonthBudgets.length > 0 ? currentMonthBudgets.map(budget => (
-            <div key={budget.id} className="flex items-center justify-between p-3 bg-[rgb(var(--color-card-muted-rgb))] rounded-lg">
+        {/* Budgets List */}
+        <div className="space-y-3">
+          <h3 className="font-semibold text-lg text-[rgb(var(--color-text-rgb))]">
+            Current Month Budgets
+          </h3>
+          <div className="max-h-60 overflow-y-auto space-y-2">
+            {currentMonthBudgets.length > 0 ? currentMonthBudgets.map(budget => (
+              <div key={budget.id} className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))] transition-colors">
                 <div className="flex items-center">
-                    <BudgetIcon className="h-5 w-5 mr-3 text-[rgb(var(--color-text-muted-rgb))]" />
-                    <div>
-                        <p className="font-semibold text-[rgb(var(--color-text-rgb))]">{budget.category}</p>
-                        <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
-                            Budget: {formatCurrency(budget.amount)}
-                        </p>
-                    </div>
+                  <BudgetIcon className="h-5 w-5 mr-3 text-[rgb(var(--color-text-muted-rgb))]" />
+                  <div>
+                    <p className="font-semibold text-[rgb(var(--color-text-rgb))]">{budget.category}</p>
+                    <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                      Budget: {formatCurrency(budget.amount)}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex space-x-2">
-                    <button onClick={() => handleEditClick(budget)} className="text-xs font-semibold text-[rgb(var(--color-primary-subtle-text-rgb))] hover:underline">EDIT</button>
-                    <button onClick={() => onDeleteBudget(budget.id)} className="text-xs font-semibold text-red-500 hover:underline">DELETE</button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditClick(budget)}
+                    className="text-xs"
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => onDeleteBudget(budget.id)}
+                    className="text-xs"
+                  >
+                    Delete
+                  </Button>
                 </div>
-            </div>
-          )) : <p className="text-center text-[rgb(var(--color-text-muted-rgb))] py-4">No budgets configured for this month yet.</p>}
+              </div>
+            )) : (
+              <div className="text-center py-8 text-[rgb(var(--color-text-muted-rgb))]">
+                <BudgetIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No budgets configured for this month yet.</p>
+                <p className="text-sm mt-1">Add your first budget to start tracking your spending.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </BaseModal>
   );
 };
 

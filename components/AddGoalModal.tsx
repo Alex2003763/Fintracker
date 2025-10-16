@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Goal } from '../types';
+import BaseModal from './BaseModal';
+import { FormField, Input, Button } from './ModalForm';
 
 interface AddGoalModalProps {
+  isOpen: boolean;
   onClose: () => void;
   onSaveGoal: (goal: Omit<Goal, 'id'> & { id?: string }) => void;
   goalToEdit: Goal | null;
 }
 
-const AddGoalModal: React.FC<AddGoalModalProps> = ({ onClose, onSaveGoal, goalToEdit }) => {
+const AddGoalModal: React.FC<AddGoalModalProps> = ({ isOpen, onClose, onSaveGoal, goalToEdit }) => {
   const [name, setName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [currentAmount, setCurrentAmount] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   const isEditing = goalToEdit !== null;
 
@@ -26,114 +31,158 @@ const AddGoalModal: React.FC<AddGoalModalProps> = ({ onClose, onSaveGoal, goalTo
     }
   }, [goalToEdit, isEditing]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !targetAmount) {
-      alert('Please fill out Name and Target Amount.');
-      return;
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!name.trim()) {
+      newErrors.name = 'Goal name is required';
     }
-    const target = parseFloat(targetAmount);
+
+    if (!targetAmount.trim()) {
+      newErrors.targetAmount = 'Target amount is required';
+    } else {
+      const target = parseFloat(targetAmount);
+      if (isNaN(target) || target <= 0) {
+        newErrors.targetAmount = 'Please enter a valid target amount greater than 0';
+      }
+    }
+
     const current = parseFloat(currentAmount || '0');
-
-    if (isNaN(target) || isNaN(current) || target <= 0) {
-      alert('Please enter valid numbers for amounts. Target amount must be greater than 0.');
-      return;
+    if (!currentAmount.trim()) {
+      // Allow empty current amount (defaults to 0)
+    } else if (isNaN(current) || current < 0) {
+      newErrors.currentAmount = 'Please enter a valid non-negative amount';
     }
 
-    if (current < 0) {
-        alert('Current amount cannot be negative.');
-        return;
-    }
-
-    onSaveGoal({
-      id: goalToEdit?.id,
-      name,
-      targetAmount: target,
-      currentAmount: current,
-    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const inputClasses = "mt-1 block w-full px-3 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-md text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] sm:text-sm";
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const target = parseFloat(targetAmount);
+      const current = parseFloat(currentAmount || '0');
+
+      await onSaveGoal({
+        id: goalToEdit?.id,
+        name: name.trim(),
+        targetAmount: target,
+        currentAmount: current,
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error saving goal:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? 'Edit Goal' : 'Add New Goal'}
+      size="md"
+      aria-label={`${isEditing ? 'Edit' : 'Add'} goal form`}
     >
-      <div 
-        className="bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-lg p-6 md:p-8 w-full max-w-md transition-colors max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-[rgb(var(--color-text-rgb))]">{isEditing ? 'Edit Goal' : 'Add New Goal'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+      <form onSubmit={handleSubmit} className="space-y-6 p-6">
+        <FormField
+          label="Goal Name"
+          htmlFor="name"
+          required
+          error={errors.name}
+          hint="Choose a descriptive name for your savings goal"
+        >
+          <Input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (errors.name) setErrors({ ...errors, name: '' });
+            }}
+            placeholder="e.g. Vacation Fund, Emergency Fund"
+            error={errors.name}
+            autoFocus
+          />
+        </FormField>
+
+        <FormField
+          label="Target Amount"
+          htmlFor="targetAmount"
+          required
+          error={errors.targetAmount}
+          hint="The total amount you want to save"
+        >
+          <Input
+            id="targetAmount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            value={targetAmount}
+            onChange={(e) => {
+              setTargetAmount(e.target.value);
+              if (errors.targetAmount) setErrors({ ...errors, targetAmount: '' });
+            }}
+            placeholder="5000.00"
+            error={errors.targetAmount}
+            leftIcon={
+              <span className="text-[rgb(var(--color-text-muted-rgb))] text-sm">$</span>
+            }
+          />
+        </FormField>
+
+        <FormField
+          label="Current Amount Saved"
+          htmlFor="currentAmount"
+          error={errors.currentAmount}
+          hint="How much you've already saved (optional)"
+        >
+          <Input
+            id="currentAmount"
+            type="number"
+            step="0.01"
+            min="0"
+            value={currentAmount}
+            onChange={(e) => {
+              setCurrentAmount(e.target.value);
+              if (errors.currentAmount) setErrors({ ...errors, currentAmount: '' });
+            }}
+            placeholder="0.00"
+            error={errors.currentAmount}
+            leftIcon={
+              <span className="text-[rgb(var(--color-text-muted-rgb))] text-sm">$</span>
+            }
+          />
+        </FormField>
+
+        <div className="flex justify-end space-x-3 pt-4 border-t border-[rgb(var(--color-border-rgb))]">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={isSubmitting}
+          >
+            {isEditing ? 'Save Changes' : 'Add Goal'}
+          </Button>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">Goal Name</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={inputClasses}
-              placeholder="e.g. Vacation Fund"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="targetAmount" className="block text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">Target Amount</label>
-            <input
-              type="number"
-              id="targetAmount"
-              step="0.01"
-              min="0.01"
-              value={targetAmount}
-              onChange={(e) => setTargetAmount(e.target.value)}
-              className={inputClasses}
-              placeholder="5000"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="currentAmount" className="block text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">Current Amount Saved</label>
-            <input
-              type="number"
-              id="currentAmount"
-              step="0.01"
-              min="0"
-              value={currentAmount}
-              onChange={(e) => setCurrentAmount(e.target.value)}
-              className={inputClasses}
-              placeholder="0"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-4 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-[rgb(var(--color-text-rgb))] bg-[rgb(var(--color-card-muted-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium text-[rgb(var(--color-primary-text-rgb))] bg-[rgb(var(--color-primary-rgb))] rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--color-primary-rgb))]"
-            >
-              {isEditing ? 'Save Changes' : 'Add Goal'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </BaseModal>
   );
 };
 

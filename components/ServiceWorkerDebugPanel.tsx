@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ChevronDownIcon, ChevronUpIcon } from './icons';
 
 interface CacheInfo {
   name: string;
@@ -24,6 +25,10 @@ const ServiceWorkerDebugPanel: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('swDebugPanelCollapsed');
+    return saved ? JSON.parse(saved) : true;
+  });
 
   useEffect(() => {
     checkServiceWorkerStatus();
@@ -39,6 +44,14 @@ const ServiceWorkerDebugPanel: React.FC = () => {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('swDebugPanelCollapsed', JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
+
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   const checkServiceWorkerStatus = async () => {
     setIsLoading(true);
@@ -171,21 +184,48 @@ const ServiceWorkerDebugPanel: React.FC = () => {
   if (isLoading) {
     return (
       <div className="bg-[rgb(var(--color-card-rgb))] rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4 text-[rgb(var(--color-text-rgb))]">
-          Service Worker Debug Panel
-        </h3>
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--color-primary-rgb))]"></div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-[rgb(var(--color-text-rgb))]">
+            Service Worker Debug Panel
+          </h3>
+          <button
+            onClick={toggleCollapse}
+            className="p-1 rounded-md hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors"
+            aria-label={isCollapsed ? "Expand panel" : "Collapse panel"}
+          >
+            <ChevronDownIcon className="h-5 w-5 text-[rgb(var(--color-text-muted-rgb))]" />
+          </button>
         </div>
+        {!isCollapsed && (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--color-primary-rgb))]"></div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="bg-[rgb(var(--color-card-rgb))] rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4 text-[rgb(var(--color-text-rgb))]">
-        Service Worker Debug Panel
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-[rgb(var(--color-text-rgb))]">
+          Service Worker Debug Panel
+        </h3>
+        <button
+          onClick={toggleCollapse}
+          className="p-1 rounded-md hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors"
+          aria-label={isCollapsed ? "Expand panel" : "Collapse panel"}
+        >
+          {isCollapsed ? (
+            <ChevronUpIcon className="h-5 w-5 text-[rgb(var(--color-text-muted-rgb))]" />
+          ) : (
+            <ChevronDownIcon className="h-5 w-5 text-[rgb(var(--color-text-muted-rgb))]" />
+          )}
+        </button>
+      </div>
+
+      {!isCollapsed && (
+        <>
 
       {/* Status Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -335,9 +375,14 @@ const ServiceWorkerDebugPanel: React.FC = () => {
           <div>Platform: {navigator.platform}</div>
           <div>Cookie Enabled: {navigator.cookieEnabled ? 'Yes' : 'No'}</div>
           <div>Local Storage: {typeof Storage !== 'undefined' ? 'Supported' : 'Not Supported'}</div>
+          <div>Service Worker: {typeof ServiceWorker !== 'undefined' ? 'Supported' : 'Not Supported'}</div>
+          <div>CSS Caching: CacheFirst (30 days)</div>
+          <div>JS Caching: StaleWhileRevalidate (7 days)</div>
         </div>
-      </div>
     </div>
+    </>
+  )}
+  </div>
   );
 };
 

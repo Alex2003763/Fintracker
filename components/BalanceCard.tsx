@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Transaction } from '../types';
-import { SalaryIcon, ReportsIcon } from './icons';
+import { SalaryIcon, ReportsIcon, CartIcon } from './icons';
 import { formatCurrency } from '../utils/formatters';
 
 interface BalanceCardProps {
@@ -53,6 +53,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransactio
 
   const actionButtons = [
     { name: 'Add Income', icon: SalaryIcon, action: () => onAddTransaction('income') },
+    { name: 'Add Expense', icon: CartIcon, action: () => onAddTransaction('expense') },
     { name: 'Reports', icon: ReportsIcon, action: () => setActiveItem('Reports') },
   ];
 

@@ -3,8 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { Transaction } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
 import { suggestCategory, getBestCategorySuggestion, testAI } from '../utils/categoryAI';
+import BaseModal from './BaseModal';
+import { FormField, Input, Select, Button, ToggleButton } from './ModalForm';
 
 interface AddTransactionModalProps {
+  isOpen: boolean;
   onClose: () => void;
   onSaveTransaction: (transaction: Omit<Transaction, 'id' | 'date'> & { id?: string }) => void;
   transactionToEdit: Transaction | null;
@@ -13,7 +16,15 @@ interface AddTransactionModalProps {
   smartSuggestionsEnabled?: boolean;
 }
 
-const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClose, onSaveTransaction, transactionToEdit, initialType = 'expense', initialData, smartSuggestionsEnabled = true }) => {
+const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
+  isOpen,
+  onClose,
+  onSaveTransaction,
+  transactionToEdit,
+  initialType = 'expense',
+  initialData,
+  smartSuggestionsEnabled = true
+}) => {
   const isEditing = transactionToEdit !== null;
   const [type, setType] = useState<'income' | 'expense'>(() => transactionToEdit?.type || initialData?.type || initialType);
   const [description, setDescription] = useState(() => transactionToEdit?.description || initialData?.description || '');
@@ -25,6 +36,8 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClose, onSa
     return Object.values(TRANSACTION_CATEGORIES[typeToUse])[0][0];
   });
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     if (transactionToEdit) {
@@ -67,155 +80,203 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClose, onSa
     if (!newTypeCategories.includes(category)) {
       setCategory(Object.values(TRANSACTION_CATEGORIES[newType])[0][0]);
     }
+    setErrors({});
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!description.trim()) {
+      newErrors.description = 'Description is required';
+    }
+
+    if (!amount.trim()) {
+      newErrors.amount = 'Amount is required';
+    } else {
+      const numAmount = parseFloat(amount);
+      if (isNaN(numAmount) || numAmount <= 0) {
+        newErrors.amount = 'Please enter a valid positive amount';
+      }
+    }
+
+    if (!category) {
+      newErrors.category = 'Category is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description || !amount || !category) {
-      alert('Please fill all fields');
+
+    if (!validateForm()) {
       return;
     }
-    onSaveTransaction({
-      id: transactionToEdit?.id,
-      description,
-      amount: parseFloat(amount),
-      type,
-      category,
-    });
+
+    setIsSubmitting(true);
+
+    try {
+      await onSaveTransaction({
+        id: transactionToEdit?.id,
+        description: description.trim(),
+        amount: parseFloat(amount),
+        type,
+        category,
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const categories = TRANSACTION_CATEGORIES[type];
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-fade-in"
-      onClick={onClose}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? 'Edit Transaction' : 'Add Transaction'}
+      size="md"
+      aria-label={`${isEditing ? 'Edit' : 'Add'} transaction form`}
     >
-      <div 
-        className="bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-lg p-6 md:p-8 w-full max-w-md transition-colors max-h-[90vh] overflow-y-auto modal-content-slide-up relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-[rgb(var(--color-text-rgb))]">{isEditing ? 'Edit Transaction' : 'Add Transaction'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-[rgb(var(--color-text-muted-rgb))] mb-2">Type</label>
-            <div className="flex rounded-lg border p-1 bg-[rgb(var(--color-bg-rgb))] border-[rgb(var(--color-border-rgb))]">
-              <button
-                type="button"
-                onClick={() => handleTypeChange('expense')}
-                className={`w-1/2 py-2 rounded-md text-sm font-semibold transition-colors ${type === 'expense' ? 'bg-[rgb(var(--color-card-rgb))] shadow text-[rgb(var(--color-text-rgb))]' : 'text-[rgb(var(--color-text-muted-rgb))]'}`}
-              >
-                Expense
-              </button>
-              <button
-                type="button"
-                onClick={() => handleTypeChange('income')}
-                className={`w-1/2 py-2 rounded-md text-sm font-semibold transition-colors ${type === 'income' ? 'bg-[rgb(var(--color-card-rgb))] shadow text-[rgb(var(--color-text-rgb))]' : 'text-[rgb(var(--color-text-muted-rgb))]'}`}
-              >
-                Income
-              </button>
-            </div>
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-6 p-6">
+        <FormField
+          label="Type"
+          htmlFor="transaction-type"
+          required
+        >
+          <ToggleButton
+            options={[
+              { value: 'expense', label: 'Expense' },
+              { value: 'income', label: 'Income' }
+            ]}
+            value={type}
+            onChange={handleTypeChange}
+          />
+        </FormField>
 
-          <div className="mb-4">
-            <label htmlFor="description" className="block text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">Description</label>
-            <input
-              type="text"
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-md text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] sm:text-sm placeholder:text-gray-400"
-              placeholder="e.g. Coffee"
-              required
-            />
-            {aiSuggestions.length > 0 && (
-              <div className="mt-2">
-                <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mb-2">Smart suggestions:</p>
-                <div className="flex flex-wrap gap-2">
-                  {aiSuggestions.map((suggestion, index) => (
-                    <button
-                      key={suggestion}
-                      type="button"
-                      onClick={() => {
-                        console.log('🎯 Clicking suggestion:', suggestion);
-                        setCategory(suggestion);
-                      }}
-                      className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                        category === suggestion
-                          ? 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))]'
-                          : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))]'
-                      }`}
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
+        <FormField
+          label="Description"
+          htmlFor="description"
+          required
+          error={errors.description}
+          hint="Enter a brief description of the transaction"
+        >
+          <Input
+            id="description"
+            type="text"
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              if (errors.description) setErrors({ ...errors, description: '' });
+            }}
+            placeholder="e.g. Coffee at Starbucks"
+            error={errors.description}
+            autoFocus
+          />
+          {aiSuggestions.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mb-2 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Smart suggestions:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {aiSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => {
+                      setCategory(suggestion);
+                      setErrors({ ...errors, category: '' });
+                    }}
+                    className={`px-3 py-1.5 text-xs rounded-full transition-all duration-200 ${
+                      category === suggestion
+                        ? 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] shadow-sm'
+                        : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))] hover:scale-105'
+                    }`}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="amount" className="block text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">Amount</label>
-            <div className="mt-1 relative rounded-md">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-[rgb(var(--color-text-muted-rgb))] sm:text-sm">$</span>
-                </div>
-                <input
-                    type="number"
-                    id="amount"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="block w-full pl-7 pr-12 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-md text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] sm:text-sm placeholder:text-gray-400"
-                    placeholder="0.00"
-                    required
-                />
             </div>
-          </div>
+          )}
+        </FormField>
 
-          <div className="mb-6">
-            <label htmlFor="category" className="block text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">Category</label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="mt-1 block w-full pl-3 pr-10 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-md text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] sm:text-sm"
-            >
-              {Object.entries(categories).map(([group, subcategories]) => (
-                <optgroup label={group} key={group}>
-                  {(subcategories as string[]).map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
+        <FormField
+          label="Amount"
+          htmlFor="amount"
+          required
+          error={errors.amount}
+          hint="Enter the transaction amount"
+        >
+          <Input
+            id="amount"
+            type="number"
+            step="0.01"
+            min="0"
+            value={amount}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              if (errors.amount) setErrors({ ...errors, amount: '' });
+            }}
+            placeholder="0.00"
+            error={errors.amount}
+            leftIcon={
+              <span className="text-[rgb(var(--color-text-muted-rgb))] text-sm">$</span>
+            }
+          />
+        </FormField>
 
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-[rgb(var(--color-text-rgb))] bg-[rgb(var(--color-card-muted-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium text-[rgb(var(--color-primary-text-rgb))] bg-[rgb(var(--color-primary-rgb))] rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--color-primary-rgb))]"
-            >
-              {isEditing ? 'Save Changes' : 'Add Transaction'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <FormField
+          label="Category"
+          htmlFor="category"
+          required
+          error={errors.category}
+        >
+          <Select
+            id="category"
+            value={category}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              if (errors.category) setErrors({ ...errors, category: '' });
+            }}
+            error={errors.category}
+          >
+            {Object.entries(categories).map(([group, subcategories]) => (
+              <optgroup label={group} key={group}>
+                {(subcategories as string[]).map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </optgroup>
+            ))}
+          </Select>
+        </FormField>
+
+        <div className="flex justify-end space-x-3 pt-4 border-t border-[rgb(var(--color-border-rgb))]">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={isSubmitting}
+          >
+            {isEditing ? 'Save Changes' : 'Add Transaction'}
+          </Button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 

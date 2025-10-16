@@ -597,23 +597,21 @@ const App: React.FC = () => {
       </main>
       <BottomNav activeItem={activeItem} setActiveItem={setActiveItem} onAddTransaction={handleOpenAddTransactionModal} />
 
-      {isAddTransactionModalOpen && (
-        <AddTransactionModal
-          onClose={() => setIsAddTransactionModalOpen(false)}
-          onSaveTransaction={handleSaveTransaction}
-          transactionToEdit={transactionToEdit}
-          initialType={addTransactionModalType}
-          smartSuggestionsEnabled={user?.smartFeatures?.categorySuggestions ?? true}
-        />
-      )}
+      <AddTransactionModal
+        isOpen={isAddTransactionModalOpen}
+        onClose={() => setIsAddTransactionModalOpen(false)}
+        onSaveTransaction={handleSaveTransaction}
+        transactionToEdit={transactionToEdit}
+        initialType={addTransactionModalType}
+        smartSuggestionsEnabled={user?.smartFeatures?.categorySuggestions ?? true}
+      />
       
-      {isAddGoalModalOpen && (
-        <AddGoalModal 
-            onClose={() => setIsAddGoalModalOpen(false)}
-            onSaveGoal={handleSaveGoal}
-            goalToEdit={goalToEdit}
-        />
-      )}
+      <AddGoalModal
+        isOpen={isAddGoalModalOpen}
+        onClose={() => setIsAddGoalModalOpen(false)}
+        onSaveGoal={handleSaveGoal}
+        goalToEdit={goalToEdit}
+      />
       
       <ManageBillsModal
         isOpen={isManageBillsModalOpen}

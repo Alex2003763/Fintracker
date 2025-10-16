@@ -25,28 +25,80 @@ const InsightItem: React.FC<{ icon: React.FC<any>, title: string, colorClass: st
 
 const FormattedAIInsights: React.FC<{ insights: AIInsight }> = ({ insights }) => {
     return (
-        <div className="text-[rgb(var(--color-text-rgb))] text-sm leading-relaxed w-full space-y-6">
-            <p className="italic text-[rgb(var(--color-text-muted-rgb))] text-center px-4 animate-fade-in-up">{insights.summary}</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InsightItem icon={CheckCircleIcon} title="What's Going Well" colorClass="text-green-500">
-                    <ul className="list-disc list-inside space-y-1">
-                        {insights.positivePoints.map((point, i) => <li key={i}>{point}</li>)}
-                    </ul>
-                </InsightItem>
-                 <InsightItem icon={ExclamationTriangleIcon} title="Areas to Watch" colorClass="text-yellow-500">
-                    <ul className="list-disc list-inside space-y-1">
-                        {insights.areasForImprovement.map((point, i) => <li key={i}>{point}</li>)}
-                    </ul>
-                </InsightItem>
+        <div className="text-[rgb(var(--color-text-rgb))] text-sm leading-relaxed w-full space-y-4">
+            {/* Summary Card */}
+            <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 animate-fade-in-up shadow-sm hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors">
+                <div className="flex items-start">
+                    <div className="bg-[rgba(var(--color-primary-rgb),0.1)] rounded-full p-2 mr-3 flex-shrink-0">
+                        <SparklesIcon className="h-5 w-5 text-[rgb(var(--color-primary-rgb))]" />
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-1">Financial Summary</h3>
+                        <p className="text-[rgb(var(--color-text-muted-rgb))] text-sm leading-relaxed">{insights.summary}</p>
+                    </div>
+                </div>
             </div>
-            
-            <div className="p-4 bg-[rgba(var(--color-primary-rgb),0.1)] rounded-lg animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-                 <h4 className="font-semibold flex items-center mb-2 text-[rgb(var(--color-primary-subtle-text-rgb))]">
-                    <LightBulbIcon className="h-5 w-5 mr-2" />
-                    Actionable Pro-Tip
-                </h4>
-                <p className="text-[rgb(var(--color-text-muted-rgb))] pl-7">{insights.actionableTip}</p>
+
+            {/* Positive Points and Areas for Improvement Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* What's Going Well Card */}
+                <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 animate-fade-in-up shadow-sm hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors" style={{ animationDelay: '50ms' }}>
+                    <div className="flex items-start">
+                        <div className="bg-green-100 rounded-full p-2 mr-3 flex-shrink-0">
+                            <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-2">What's Going Well</h3>
+                            <ul className="space-y-1.5">
+                                {insights.positivePoints.map((point, i) => (
+                                    <li key={i} className="flex items-start text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                                        <div className="bg-green-200 rounded-full p-1 mr-2 mt-0.5 flex-shrink-0">
+                                            <CheckCircleIcon className="h-3 w-3 text-green-600" />
+                                        </div>
+                                        <span className="leading-relaxed">{point}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Areas to Watch Card */}
+                <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 animate-fade-in-up shadow-sm hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors" style={{ animationDelay: '100ms' }}>
+                    <div className="flex items-start">
+                        <div className="bg-amber-100 rounded-full p-2 mr-3 flex-shrink-0">
+                            <ExclamationTriangleIcon className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-2">Areas to Watch</h3>
+                            <ul className="space-y-1.5">
+                                {insights.areasForImprovement.map((point, i) => (
+                                    <li key={i} className="flex items-start text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                                        <div className="bg-amber-200 rounded-full p-1 mr-2 mt-0.5 flex-shrink-0">
+                                            <ExclamationTriangleIcon className="h-3 w-3 text-amber-600" />
+                                        </div>
+                                        <span className="leading-relaxed">{point}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Actionable Tip Card */}
+            <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 animate-fade-in-up shadow-sm hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors" style={{ animationDelay: '150ms' }}>
+                <div className="flex items-start">
+                    <div className="bg-[rgba(var(--color-primary-rgb),0.1)] rounded-full p-2 mr-3 flex-shrink-0">
+                        <LightBulbIcon className="h-5 w-5 text-[rgb(var(--color-primary-rgb))]" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-2">💡 Actionable Pro-Tip</h3>
+                        <div className="bg-[rgba(var(--color-primary-rgb),0.1)] p-3 rounded-r-lg" style={{ borderLeftColor: 'rgb(var(--color-primary-rgb))', borderLeftWidth: '4px' }}>
+                            <p className="text-[rgb(var(--color-text-muted-rgb))] text-sm leading-relaxed font-medium">{insights.actionableTip}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
