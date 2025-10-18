@@ -38,7 +38,7 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
             {/* Mobile Title */}
             <div className="flex items-center space-x-3 md:hidden">
               <FinanceFlowIcon className="h-7 w-7 text-green-500" />
-              <h1 className="text-xl font-bold text-[rgb(var(--color-text-rgb))]">Finance Flow</h1>
+              <h1 className="text-xl font-bold text-[rgb(var(--color-text-rgb))]">FinTrack</h1>
             </div>
             {/* Desktop Title */}
             <h1 className="hidden md:block text-2xl font-bold text-[rgb(var(--color-text-rgb))]">{pageTitle}</h1>
