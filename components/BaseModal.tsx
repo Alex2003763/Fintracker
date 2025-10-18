@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, memo } from 'react';
 
 interface BaseModalProps {
   isOpen: boolean;
@@ -15,7 +15,7 @@ interface BaseModalProps {
   'aria-describedby'?: string;
 }
 
-const BaseModal: React.FC<BaseModalProps> = ({
+export const BaseModal: React.FC<BaseModalProps> = memo(({
   isOpen,
   onClose,
   title,
@@ -187,6 +187,6 @@ const BaseModal: React.FC<BaseModalProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default BaseModal;

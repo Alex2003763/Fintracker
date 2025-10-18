@@ -205,6 +205,8 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
                         }}
                         placeholder="0.00"
                         error={errors.amount}
+                        inputMode="decimal"
+                        pattern="[0-9]*"
                         leftIcon={
                           <span className="text-[rgb(var(--color-text-muted-rgb))] font-medium">$</span>
                         }

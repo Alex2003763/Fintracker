@@ -1,34 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { User, Notification, Transaction } from '../types';
-import { BellIcon, UserIcon, PlusIcon, FinanceFlowIcon } from './icons';
+import { BellIcon, UserIcon, FinanceFlowIcon } from './icons';
 import NotificationPanel from './NotificationPanel';
-import QuickAddPopover from './QuickAddPopover';
 
 
 interface HeaderProps {
-    user: User;
-    notifications: Notification[];
-    onMarkAsRead: (id: string) => void;
-    onClearAllNotifications: () => void;
-    pageTitle: string;
-    onSaveTransaction: (transaction: Omit<Transaction, 'id' | 'date' | 'icon'> & { id?: string }) => void;
-    isOnline?: boolean;
-}
+     user: User;
+     notifications: Notification[];
+     onMarkAsRead: (id: string) => void;
+     onClearAllNotifications: () => void;
+     pageTitle: string;
+     isOnline?: boolean;
+     setActiveItem?: (item: string) => void;
+ }
 
-const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onClearAllNotifications, pageTitle, onSaveTransaction, isOnline = true }) => {
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onClearAllNotifications, pageTitle, isOnline = true, setActiveItem }) => {
+     const [showNotifications, setShowNotifications] = useState(false);
     const unreadCount = notifications.filter(n => !n.read).length;
     
-    // Close popovers if clicking outside
+    // Close notifications if clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
             if (showNotifications && !target.closest('.notification-panel-wrapper')) {
                 setShowNotifications(false);
-            }
-            if (isQuickAddOpen && !target.closest('.quick-add-wrapper')) {
-                setIsQuickAddOpen(false);
             }
         };
 
@@ -36,10 +31,10 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showNotifications, isQuickAddOpen]);
+    }, [showNotifications]);
 
     return (
-        <header className="flex items-center justify-between h-20 px-4 md:px-6 transition-colors flex-shrink-0">
+        <header className="sticky top-0 z-50 flex items-center justify-between h-20 px-4 md:px-6 transition-colors flex-shrink-0 bg-[rgb(var(--color-bg-rgb))]">
             {/* Mobile Title */}
             <div className="flex items-center space-x-3 md:hidden">
               <FinanceFlowIcon className="h-7 w-7 text-green-500" />
@@ -57,24 +52,6 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
                    </span>
                  </div>
 
-                 <div className="relative quick-add-wrapper hidden md:block">
-                    <button 
-                        onClick={() => setIsQuickAddOpen(!isQuickAddOpen)} 
-                        className="h-12 w-12 rounded-full flex items-center justify-center bg-[rgb(var(--color-card-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors"
-                        aria-label="Quick Add Transaction"
-                    >
-                        <PlusIcon className="h-6 w-6 text-[rgb(var(--color-text-muted-rgb))]" />
-                    </button>
-                    {isQuickAddOpen && (
-                        <QuickAddPopover
-                            onClose={() => setIsQuickAddOpen(false)}
-                            onSaveTransaction={(data) => {
-                                onSaveTransaction(data);
-                                setIsQuickAddOpen(false);
-                            }}
-                        />
-                    )}
-                </div>
                 <div className="relative notification-panel-wrapper">
                     <button onClick={() => setShowNotifications(!showNotifications)} className="h-12 w-12 rounded-full flex items-center justify-center bg-[rgb(var(--color-card-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors">
                         <BellIcon className="h-6 w-6 text-[rgb(var(--color-text-muted-rgb))]" />
@@ -91,7 +68,19 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
                         />
                     )}
                 </div>
-                <div className="h-12 w-12 rounded-full bg-[rgb(var(--color-card-muted-rgb))] flex items-center justify-center overflow-hidden">
+                <div
+                    className="h-12 w-12 rounded-full bg-[rgb(var(--color-card-muted-rgb))] flex items-center justify-center overflow-hidden cursor-pointer hover:bg-[rgb(var(--color-card-hover-rgb))] transition-colors"
+                    onClick={() => setActiveItem?.('Account')}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setActiveItem?.('Account');
+                        }
+                    }}
+                    aria-label="Open Account"
+                >
                     {user.avatar ? (
                         <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />
                     ) : (

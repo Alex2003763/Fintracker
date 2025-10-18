@@ -9,8 +9,8 @@ interface BottomNavProps {
 }
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem, onAddTransaction }) => {
-  const navItemsLeft = [NAV_ITEMS[0], NAV_ITEMS[1]]; // Home, Transactions
-  const navItemsRight = [NAV_ITEMS[3], NAV_ITEMS[5]]; // Budgets, Account
+   const navItemsLeft = [NAV_ITEMS[0], NAV_ITEMS[1]]; // Home, Transactions
+   const navItemsRight = [NAV_ITEMS[3], NAV_ITEMS[4]]; // Budgets, Goals
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] h-16 flex items-center justify-around z-10 transition-colors">

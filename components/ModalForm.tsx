@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useMemo, useCallback } from 'react';
 
 interface FormFieldProps {
   label: string;
@@ -10,7 +10,7 @@ interface FormFieldProps {
   className?: string;
 }
 
-export const FormField: React.FC<FormFieldProps> = ({
+export const FormField: React.FC<FormFieldProps> = memo(({
   label,
   htmlFor,
   children,
@@ -44,15 +44,17 @@ export const FormField: React.FC<FormFieldProps> = ({
       )}
     </div>
   );
-};
+});
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+FormField.displayName = 'FormField';
+
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input: React.FC<InputProps> = memo(({
   error,
   leftIcon,
   rightIcon,
@@ -92,13 +94,13 @@ export const Input: React.FC<InputProps> = ({
       )}
     </div>
   );
-};
+});
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
 }
 
-export const Select: React.FC<SelectProps> = ({
+export const Select: React.FC<SelectProps> = memo(({
   error,
   className = '',
   children,
@@ -126,9 +128,11 @@ export const Select: React.FC<SelectProps> = ({
       {children}
     </select>
   );
-};
+});
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+Select.displayName = 'Select';
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
@@ -136,7 +140,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   rightIcon?: React.ReactNode;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+export const Button: React.FC<ButtonProps> = memo(({
   variant = 'primary',
   size = 'md',
   loading = false,
@@ -147,25 +151,35 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseClasses = useMemo(() =>
+    'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed',
+    []
+  );
 
-  const variantClasses = {
+  const variantClasses = useMemo(() => ({
     primary: 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:ring-[rgb(var(--color-primary-rgb))]',
     secondary: 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-border-rgb))] focus:ring-gray-500',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
     ghost: 'text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] focus:ring-gray-500',
-  };
+  }), []);
 
-  const sizeClasses = {
+  const sizeClasses = useMemo(() => ({
     sm: 'px-3 py-1.5 text-sm',
     md: 'px-4 py-2.5 text-sm',
     lg: 'px-6 py-3 text-base',
-  };
+  }), []);
+
+  const buttonClasses = useMemo(() =>
+    `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`,
+    [baseClasses, variantClasses, variant, sizeClasses, size, className]
+  );
+
+  const isDisabled = useMemo(() => disabled || loading, [disabled, loading]);
 
   return (
     <button
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
-      disabled={disabled || loading}
+      className={buttonClasses}
+      disabled={isDisabled}
       {...props}
     >
       {loading && (
@@ -179,28 +193,34 @@ export const Button: React.FC<ButtonProps> = ({
       {!loading && rightIcon && <span className="ml-2">{rightIcon}</span>}
     </button>
   );
-};
+});
 
-interface ToggleButtonProps {
+Button.displayName = 'Button';
+
+export interface ToggleButtonProps {
   options: { value: string; label: string }[];
   value: string;
   onChange: (value: string) => void;
   className?: string;
 }
 
-export const ToggleButton: React.FC<ToggleButtonProps> = ({
+export const ToggleButton: React.FC<ToggleButtonProps> = memo(({
   options,
   value,
   onChange,
   className = '',
 }) => {
+  const handleOptionClick = useCallback((optionValue: string) => {
+    onChange(optionValue);
+  }, [onChange]);
+
   return (
     <div className={`flex rounded-lg border p-1 bg-[rgb(var(--color-bg-rgb))] border-[rgb(var(--color-border-rgb))] ${className}`}>
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
-          onClick={() => onChange(option.value)}
+          onClick={() => handleOptionClick(option.value)}
           className={`flex-1 py-2 px-3 rounded-md text-sm font-semibold transition-all duration-200 ${
             value === option.value
               ? 'bg-[rgb(var(--color-card-rgb))] shadow-sm text-[rgb(var(--color-text-rgb))]'
@@ -212,9 +232,11 @@ export const ToggleButton: React.FC<ToggleButtonProps> = ({
       ))}
     </div>
   );
-};
+});
 
-interface LoadingStateProps {
+ToggleButton.displayName = 'ToggleButton';
+
+export interface LoadingStateProps {
   message?: string;
 }
 
@@ -232,7 +254,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({ message = 'Loading..
   );
 };
 
-interface SuccessStateProps {
+export interface SuccessStateProps {
   message?: string;
   onContinue?: () => void;
 }
@@ -260,7 +282,7 @@ export const SuccessState: React.FC<SuccessStateProps> = ({
   );
 };
 
-interface Tab {
+export interface Tab {
   id: string;
   label: string;
   icon?: React.ReactNode;

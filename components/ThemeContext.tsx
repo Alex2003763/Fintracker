@@ -3,7 +3,7 @@ import React, { createContext, useState, useEffect, useContext, useMemo } from '
 export const THEMES = [
   { id: 'theme-light', name: 'Light' },
   { id: 'theme-dark-slate', name: 'Dark Slate' },
-  { id: 'theme-dark-blue', name: 'Dark Blue' },
+  { id: 'theme-dark-green', name: 'Dark Green' },
   { id: 'theme-dark-crimson', name: 'Dark Crimson' },
 ];
 

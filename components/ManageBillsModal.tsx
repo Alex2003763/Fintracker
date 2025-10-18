@@ -160,6 +160,8 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({ isOpen, onClose, bi
                   }}
                   placeholder="0.00"
                   error={errors.amount}
+                  inputMode="decimal"
+                  pattern="[0-9]*"
                   leftIcon={
                     <span className="text-[rgb(var(--color-text-muted-rgb))] text-sm">$</span>
                   }

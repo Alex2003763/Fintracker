@@ -209,6 +209,8 @@ const ManageBudgetsModal: React.FC<ManageBudgetsModalProps> = ({ isOpen, onClose
                         }}
                         placeholder="500.00"
                         error={errors.amount}
+                        inputMode="decimal"
+                        pattern="[0-9]*"
                         leftIcon={
                           <span className="text-[rgb(var(--color-text-muted-rgb))] font-medium">$</span>
                         }

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { useTheme, THEMES } from './ThemeContext';
-import { SparklesIcon } from './icons';
+import { SparklesIcon, BellIcon } from './icons';
 import ServiceWorkerDebugPanel from './ServiceWorkerDebugPanel';
+import NotificationSettingsPage from './NotificationSettingsPage';
 
 interface SettingsPageProps {
   user: User;
@@ -27,7 +28,12 @@ const ThemeOption: React.FC<{ id: string, name: string, active: boolean, onClick
             <div className={`p-4 rounded-md ${isLight ? 'bg-gray-100' : 'bg-slate-900'}`}>
                 <div className="flex items-center justify-between">
                     <div className={`w-1/2 h-8 rounded-md ${isLight ? 'bg-white' : 'bg-slate-800'}`}></div>
-                    <div className={`w-8 h-8 rounded-full ${id.includes('crimson') ? 'bg-rose-500' : 'bg-blue-500'}`}></div>
+                    <div className={`w-8 h-8 rounded-full ${
+                      id.includes('crimson') ? 'bg-rose-500' :
+                      id.includes('green') ? 'bg-emerald-500' :
+                      id.includes('slate') ? 'bg-blue-500' :
+                      'bg-blue-500'
+                    }`}></div>
                 </div>
             </div>
             <p className="font-semibold mt-2 text-sm text-[rgb(var(--color-text-rgb))]">{name}</p>
@@ -88,6 +94,7 @@ const AISettings: React.FC<{ user: User; onUpdateUser: (user: User) => void }> =
 const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignOut, onOpenConfirmModal, onImportData }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { theme, setTheme } = useTheme();
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
   const handleSignOut = () => {
     onOpenConfirmModal(
@@ -165,11 +172,42 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
   };
 
 
+  if (showNotificationSettings) {
+    return (
+      <NotificationSettingsPage
+        user={user}
+        onUpdateUser={onUpdateUser}
+        onBack={() => setShowNotificationSettings(false)}
+      />
+    );
+  }
+
   return (
     <div className="bg-[rgb(var(--color-card-rgb))] p-6 rounded-lg shadow space-y-8 max-w-2xl mx-auto transition-colors">
       <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Settings</h1>
       
       <AISettings user={user} onUpdateUser={onUpdateUser} />
+
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Notifications</h2>
+        <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-[rgb(var(--color-text-rgb))]">Notification Preferences</p>
+              <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                Customize when and how you receive notifications
+              </p>
+            </div>
+            <button
+              onClick={() => setShowNotificationSettings(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[rgb(var(--color-primary-text-rgb))] bg-[rgb(var(--color-primary-rgb))] rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors"
+            >
+              <BellIcon className="h-4 w-4" />
+              Configure
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Smart Features</h2>

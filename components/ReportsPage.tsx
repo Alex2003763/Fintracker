@@ -4,6 +4,7 @@ import { ReportsIcon, SparklesIcon, CheckCircleIcon, ExclamationTriangleIcon, Li
 import { formatCurrency } from '../utils/formatters';
 import { CATEGORY_ICON_MAP } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import AISwiperCard from './AISwiperCard';
 
 interface MonthlyData {
   month: string;
@@ -25,81 +26,8 @@ const InsightItem: React.FC<{ icon: React.FC<any>, title: string, colorClass: st
 
 const FormattedAIInsights: React.FC<{ insights: AIInsight }> = ({ insights }) => {
     return (
-        <div className="text-[rgb(var(--color-text-rgb))] text-sm leading-relaxed w-full space-y-4">
-            {/* Summary Card */}
-            <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 animate-fade-in-up shadow-sm hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors">
-                <div className="flex items-start">
-                    <div className="bg-[rgba(var(--color-primary-rgb),0.1)] rounded-full p-2 mr-3 flex-shrink-0">
-                        <SparklesIcon className="h-5 w-5 text-[rgb(var(--color-primary-rgb))]" />
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-1">Financial Summary</h3>
-                        <p className="text-[rgb(var(--color-text-muted-rgb))] text-sm leading-relaxed">{insights.summary}</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Positive Points and Areas for Improvement Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* What's Going Well Card */}
-                <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 animate-fade-in-up shadow-sm hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors" style={{ animationDelay: '50ms' }}>
-                    <div className="flex items-start">
-                        <div className="bg-green-100 rounded-full p-2 mr-3 flex-shrink-0">
-                            <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-2">What's Going Well</h3>
-                            <ul className="space-y-1.5">
-                                {insights.positivePoints.map((point, i) => (
-                                    <li key={i} className="flex items-start text-sm text-[rgb(var(--color-text-muted-rgb))]">
-                                        <div className="bg-green-200 rounded-full p-1 mr-2 mt-0.5 flex-shrink-0">
-                                            <CheckCircleIcon className="h-3 w-3 text-green-600" />
-                                        </div>
-                                        <span className="leading-relaxed">{point}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Areas to Watch Card */}
-                <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 animate-fade-in-up shadow-sm hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors" style={{ animationDelay: '100ms' }}>
-                    <div className="flex items-start">
-                        <div className="bg-amber-100 rounded-full p-2 mr-3 flex-shrink-0">
-                            <ExclamationTriangleIcon className="h-5 w-5 text-amber-600" />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-2">Areas to Watch</h3>
-                            <ul className="space-y-1.5">
-                                {insights.areasForImprovement.map((point, i) => (
-                                    <li key={i} className="flex items-start text-sm text-[rgb(var(--color-text-muted-rgb))]">
-                                        <div className="bg-amber-200 rounded-full p-1 mr-2 mt-0.5 flex-shrink-0">
-                                            <ExclamationTriangleIcon className="h-3 w-3 text-amber-600" />
-                                        </div>
-                                        <span className="leading-relaxed">{point}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Actionable Tip Card */}
-            <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 animate-fade-in-up shadow-sm hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors" style={{ animationDelay: '150ms' }}>
-                <div className="flex items-start">
-                    <div className="bg-[rgba(var(--color-primary-rgb),0.1)] rounded-full p-2 mr-3 flex-shrink-0">
-                        <LightBulbIcon className="h-5 w-5 text-[rgb(var(--color-primary-rgb))]" />
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-2">💡 Actionable Pro-Tip</h3>
-                        <div className="bg-[rgba(var(--color-primary-rgb),0.1)] p-3 rounded-r-lg" style={{ borderLeftColor: 'rgb(var(--color-primary-rgb))', borderLeftWidth: '4px' }}>
-                            <p className="text-[rgb(var(--color-text-muted-rgb))] text-sm leading-relaxed font-medium">{insights.actionableTip}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div className="w-full">
+            <AISwiperCard insights={insights} />
         </div>
     );
 };
@@ -132,9 +60,15 @@ const AIInsightsCard: React.FC<{
             return;
         }
 
-        const prompt = `You are Finance Flow, an expert financial assistant. Analyze the following transactions from the last 30 days and provide a structured JSON response. The JSON object should contain: a brief 'summary' of spending habits (1-2 sentences), an array of 'positivePoints' (2-3 items), an array of 'areasForImprovement' (2-3 items), and a single 'actionableTip'. Keep the text friendly and concise.
+        const prompt = `You are Finance Flow, an expert financial assistant. Analyze the following transactions from the last 30 days and provide a structured JSON response. Requirements:
+- 'summary': 1 sentence only, maximum 15 words
+- 'positivePoints': exactly 2 items, each under 10 words
+- 'areasForImprovement': exactly 2 items, each under 10 words
+- 'actionableTip': 1 specific, actionable recommendation under 15 words
 
-Here are the transactions in JSON format:
+Keep text friendly and concise. Focus on actionable insights.
+
+Transactions:
 ${JSON.stringify(recentTransactions)}
 `;
 
@@ -206,7 +140,7 @@ ${JSON.stringify(recentTransactions)}
                     {isLoading ? 'Analyzing...' : buttonContent}
                 </button>
             </div>
-             <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg min-h-[16rem] flex items-center justify-center">
+             <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg min-h-[14rem] flex items-center justify-center">
                 {isLoading && (
                     <div className="flex flex-col items-center text-[rgb(var(--color-text-muted-rgb))]">
                         <svg className="animate-spin h-8 w-8 text-[rgb(var(--color-primary-rgb))]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

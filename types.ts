@@ -28,11 +28,46 @@ export interface Budget {
   month: string; // "YYYY-MM" format
 }
 
+export interface GoalContribution {
+  id: string;
+  transactionId: string;
+  goalId: string;
+  amount: number;
+  date: string;
+  type: 'auto' | 'manual';
+}
+
+export interface GoalAllocationRule {
+  id: string;
+  goalId: string;
+  type: 'percentage' | 'category' | 'amount';
+  value: number | string; // percentage (0-100) or category name or fixed amount
+  applyToIncome?: boolean;
+  applyToExpense?: boolean;
+  categories?: string[]; // for category-based rules
+}
+
+export interface GoalProgressEntry {
+  date: string;
+  amount: number;
+  source: 'transaction' | 'manual' | 'adjustment';
+  transactionId?: string;
+}
+
 export interface Goal {
   id: string;
   name: string;
+  description?: string;
   targetAmount: number;
   currentAmount: number;
+  priority: 'low' | 'medium' | 'high';
+  category: 'emergency' | 'savings' | 'investment' | 'debt' | 'purchase' | 'custom';
+  targetDate?: string; // ISO date string
+  isActive: boolean;
+  allocationRules: GoalAllocationRule[];
+  progressHistory: GoalProgressEntry[];
+  autoAllocate: boolean;
+  monthlyTarget?: number; // calculated based on target date
 }
 
 export interface Bill {
@@ -60,8 +95,41 @@ export interface Notification {
   message: string;
   date: string;
   read: boolean;
-  type?: 'standard' | 'budget';
-  relatedId?: string; // e.g., budget ID
+  type?: 'standard' | 'budget' | 'goal_progress' | 'bill_reminder';
+  relatedId?: string; // e.g., budget ID, goal ID, or bill ID
+  progress?: {
+    currentAmount: number;
+    targetAmount: number;
+    percentage: number;
+    milestone: number; // 25, 50, 75, 100
+  };
+  urgent?: boolean; // For push notifications
+}
+
+export interface NotificationSettings {
+    goalProgress: {
+        enabled: boolean;
+        milestones: number[]; // [25, 50, 75, 100]
+    };
+    billReminders: {
+        enabled: boolean;
+        advanceDays: number; // 1, 3, 7
+    };
+    budgetAlerts: {
+        enabled: boolean;
+        thresholds: number[]; // [80, 90, 100]
+    };
+    monthlyReports: {
+        enabled: boolean;
+        frequency: 'weekly' | 'monthly';
+    };
+    pushNotifications: {
+        enabled: boolean;
+        quietHours: {
+            start: string; // "22:00"
+            end: string;   // "08:00"
+        };
+    };
 }
 
 export interface User {
@@ -76,4 +144,5 @@ export interface User {
     smartFeatures?: {
         categorySuggestions: boolean;
     };
+    notificationSettings?: NotificationSettings;
 }
