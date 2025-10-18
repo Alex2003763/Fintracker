@@ -590,6 +590,7 @@ const App: React.FC = () => {
           pageTitle={activeItem}
           onSaveTransaction={handleSaveTransaction}
           isOnline={isOnline}
+          setActiveItem={setActiveItem}
         />
         <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6 animate-fade-in-up">
             {renderContent()}
@@ -653,3 +654,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
