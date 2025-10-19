@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { RecurringIcon, SearchIcon } from './icons';
@@ -21,7 +21,7 @@ const TransactionItem: React.FC<{
 
   return (
     <li
-      className="group flex items-center gap-3 p-3 hover:bg-[rgb(var(--color-card-muted-rgb))] rounded-lg cursor-pointer transition-all duration-200 hover:shadow-sm border border-transparent hover:border-[rgb(var(--color-border-rgb))]"
+      className="group flex items-center gap-3 p-3 sm:p-4 hover:bg-[rgb(var(--color-card-muted-rgb))] rounded-lg cursor-pointer transition-all duration-200 hover:shadow-sm border border-transparent hover:border-[rgb(var(--color-border-rgb))] w-full"
       onClick={() => onEdit(transaction)}
     >
       <div className={`${iconBgColor} rounded-full p-2 transition-all duration-200 group-hover:scale-105`}>
@@ -86,6 +86,7 @@ const TransactionsPage: React.FC<{
 }> = ({ transactions, onEditTransaction, onOpenManageRecurring }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const filteredTransactions = useMemo(() => {
     let filtered = transactions;
@@ -108,11 +109,25 @@ const TransactionsPage: React.FC<{
 
   const groupedTransactions = useMemo(() => groupTransactionsByDate(filteredTransactions), [filteredTransactions]);
 
+  // Handle scroll to show/hide scroll-to-top button
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      setShowScrollTop(scrollTop > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="relative space-y-4">
       {/* Main Content Card */}
-      <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-lg p-4 sm:p-6 transition-all duration-300 border border-[rgb(var(--color-border-rgb))] h-[600px] overflow-y-auto">
+      <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-lg p-4 sm:p-6 transition-all duration-300 border border-[rgb(var(--color-border-rgb))] min-h-[600px]">
         {/* Header */}
         <div className="relative mb-4">
           <div>
@@ -193,19 +208,17 @@ const TransactionsPage: React.FC<{
        </div>
 
        {/* Transactions List */}
-       <div className="relative min-h-screen">
+       <div className="relative">
          {Object.keys(groupedTransactions).length > 0 ? (
            Object.entries(groupedTransactions).map(([date, transactionsInGroup]) => (
              <div key={date} className="space-y-2">
-               <div className="sticky top-0 bg-[rgb(var(--color-card-rgb))] z-50 py-4 border-b border-[rgb(var(--color-border-rgb))] backdrop-blur-md shadow-sm" style={{ top: '-5%' }}>
-                 <div className="bg-[rgb(var(--color-card-rgb))] -mx-4 px-4 py-3 rounded-lg shadow-sm border border-[rgb(var(--color-border-rgb))]">
-                   <div className="flex items-center justify-between">
-                     <h2 className="text-base font-bold text-[rgb(var(--color-text-rgb))] bg-gradient-to-r from-[rgb(var(--color-primary-rgb))]/15 to-[rgb(var(--color-primary-rgb))]/8 py-2 px-4 rounded-lg border border-[rgb(var(--color-primary-rgb))]/25">
-                       📅 {date}
-                     </h2>
-                     <div className="text-sm text-[rgb(var(--color-text-muted-rgb))] bg-[rgb(var(--color-card-muted-rgb))] px-3 py-1.5 rounded-full font-medium">
-                       {(transactionsInGroup as Transaction[]).length} transaction{(transactionsInGroup as Transaction[]).length !== 1 ? 's' : ''}
-                     </div>
+               <div className="bg-[rgb(var(--color-card-rgb))] py-3 px-4 mx-4 rounded-lg shadow-sm border border-[rgb(var(--color-border-rgb))]">
+                 <div className="flex items-center justify-between">
+                   <h2 className="text-base font-bold text-[rgb(var(--color-text-rgb))] bg-gradient-to-r from-[rgb(var(--color-primary-rgb))]/15 to-[rgb(var(--color-primary-rgb))]/8 py-2 px-3 rounded-lg border border-[rgb(var(--color-primary-rgb))]/25">
+                     📅 {date}
+                   </h2>
+                   <div className="text-sm text-[rgb(var(--color-text-muted-rgb))] bg-[rgb(var(--color-card-muted-rgb))] px-3 py-1.5 rounded-full font-medium">
+                     {(transactionsInGroup as Transaction[]).length} transaction{(transactionsInGroup as Transaction[]).length !== 1 ? 's' : ''}
                    </div>
                  </div>
                </div>
@@ -239,6 +252,19 @@ const TransactionsPage: React.FC<{
          )}
        </div>
      </div>
+
+     {/* Scroll to Top Button */}
+     {showScrollTop && (
+       <button
+         onClick={scrollToTop}
+         className="fixed bottom-24 right-6 h-12 w-12 bg-[rgb(var(--color-primary-rgb))] hover:bg-[rgb(var(--color-primary-hover-rgb))] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-20 hover:scale-110"
+         aria-label="Scroll to top"
+       >
+         <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+         </svg>
+       </button>
+     )}
    </div>
  );
 };

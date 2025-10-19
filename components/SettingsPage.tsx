@@ -4,6 +4,8 @@ import { useTheme, THEMES } from './ThemeContext';
 import { SparklesIcon, BellIcon } from './icons';
 import ServiceWorkerDebugPanel from './ServiceWorkerDebugPanel';
 import NotificationSettingsPage from './NotificationSettingsPage';
+import ManageCategoriesModal from './ManageCategoriesModal';
+import { TRANSACTION_CATEGORIES } from '../constants';
 
 interface SettingsPageProps {
   user: User;
@@ -95,6 +97,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { theme, setTheme } = useTheme();
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showManageCategories, setShowManageCategories] = useState(false);
   
   const handleSignOut = () => {
     onOpenConfirmModal(
@@ -182,6 +185,20 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
     );
   }
 
+  if (showManageCategories) {
+    return (
+      <ManageCategoriesModal
+        isOpen={showManageCategories}
+        onClose={() => setShowManageCategories(false)}
+        categories={TRANSACTION_CATEGORIES.expense}
+        onUpdateCategories={(categories) => {
+          // TODO: Update the categories in constants or user data
+          console.log('Updated categories:', categories);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="bg-[rgb(var(--color-card-rgb))] p-6 rounded-lg shadow space-y-8 max-w-2xl mx-auto transition-colors">
       <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Settings</h1>
@@ -206,44 +223,86 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
               Configure
             </button>
           </div>
+
         </div>
       </div>
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Smart Features</h2>
-        <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-[rgb(var(--color-text-rgb))]">Smart Category Suggestions</p>
-              <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
-                Automatically suggest categories based on transaction descriptions
-              </p>
+        <div className="space-y-4">
+          <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex items-center justify-center w-10 h-10 bg-[rgb(var(--color-primary-rgb))] rounded-full flex-shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-[rgb(var(--color-text-rgb))]">Smart Category Suggestions</p>
+                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mt-0.5">
+                    AI suggests categories based on transaction descriptions
+                  </p>
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <button
+                  onClick={() => {
+                    const currentSetting = user.smartFeatures?.categorySuggestions ?? true;
+                    onUpdateUser({
+                      ...user,
+                      smartFeatures: {
+                        ...user.smartFeatures,
+                        categorySuggestions: !currentSetting
+                      }
+                    });
+                  }}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 ${
+                    user.smartFeatures?.categorySuggestions ?? true
+                      ? 'bg-[rgb(var(--color-primary-rgb))]'
+                      : 'bg-gray-200'
+                  }`}
+                  aria-label={`Smart category suggestions are ${user.smartFeatures?.categorySuggestions ?? true ? 'enabled' : 'disabled'}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                      user.smartFeatures?.categorySuggestions ?? true
+                        ? 'translate-x-6'
+                        : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => {
-                const currentSetting = user.smartFeatures?.categorySuggestions ?? true;
-                onUpdateUser({
-                  ...user,
-                  smartFeatures: {
-                    ...user.smartFeatures,
-                    categorySuggestions: !currentSetting
-                  }
-                });
-              }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 ${
-                user.smartFeatures?.categorySuggestions ?? true
-                  ? 'bg-[rgb(var(--color-primary-rgb))]'
-                  : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  user.smartFeatures?.categorySuggestions ?? true
-                    ? 'translate-x-6'
-                    : 'translate-x-1'
-                }`}
-              />
-            </button>
+          </div>
+          
+          <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex items-center justify-center w-10 h-10 bg-purple-500 rounded-full flex-shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-[rgb(var(--color-text-rgb))]">Manage Categories</p>
+                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mt-0.5">
+                    Create and organize your custom transaction categories
+                  </p>
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <button
+                  onClick={() => setShowManageCategories(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Manage
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

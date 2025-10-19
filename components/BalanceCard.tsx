@@ -37,12 +37,12 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransactio
 
     const changeLastMonth = income - expense;
     const previousBalance = currentBalance - changeLastMonth;
-    
+
     let percentageChange = 0;
-    if (previousBalance !== 0) {
+    if (previousBalance !== 0 && Math.abs(previousBalance) > 0.01) {
       percentageChange = (changeLastMonth / Math.abs(previousBalance)) * 100;
-    } else if (changeLastMonth !== 0) {
-      percentageChange = changeLastMonth > 0 ? 100 : -100;
+      // Cap percentage at reasonable bounds to prevent extreme values
+      percentageChange = Math.max(-999, Math.min(999, percentageChange));
     }
     
     return { balance: currentBalance, monthlyChange: percentageChange, monthlyIncome: income, monthlyExpense: expense };
@@ -58,33 +58,49 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransactio
   ];
 
   return (
-    <div className="card-flip-container h-64 md:h-56">
+    <div className="card-flip-container h-72 md:h-64">
       <div className={`card-flipper ${isFlipped ? 'flipped' : ''} h-full`}>
         {/* Card Front */}
-        <div className="card-front text-white p-6 md:p-8 shadow-lg bg-gradient-to-br from-[rgb(var(--gradient-from-rgb))] to-[rgb(var(--gradient-to-rgb))] transition-colors">
-          <div className="flex justify-between items-start mb-8 md:mb-4">
-            <div>
-              <h2 className="text-blue-200 text-base font-medium">Current Balance</h2>
-              <p className="text-4xl font-bold mt-1">{formatCurrency(balance)}</p>
-            </div>
-            <div className="flex flex-col items-end">
-                <p className={`text-sm font-semibold ${changeColor} px-3 py-1 rounded-full`}>
-                    {sign}{monthlyChange.toFixed(1)}%
+        <div className="card-front text-white p-6 md:p-8 pb-8 md:pb-10 shadow-lg bg-gradient-to-br from-[rgb(var(--gradient-from-rgb))] to-[rgb(var(--gradient-to-rgb))] transition-colors">
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex-1">
+              <h2 className="text-blue-200 text-base font-medium mb-3">Current Balance</h2>
+              <p className="text-4xl md:text-5xl font-bold leading-tight">{formatCurrency(balance)}</p>
+              {Math.abs(monthlyChange) > 0 && (
+                <p className={`text-sm font-medium ${changeColor} mt-2 inline-block px-3 py-1 rounded-full`}>
+                  {sign}{Math.abs(monthlyChange).toFixed(1)}% from last month
                 </p>
-                <button onClick={() => setIsFlipped(!isFlipped)} className="mt-2 text-blue-200 hover:text-white transition-colors" aria-label="Flip card">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.012 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg>
-                </button>
+              )}
+            </div>
+            <div className="flex flex-col items-end ml-4">
+              <div className={`text-sm font-semibold ${changeColor} px-3 py-1.5 rounded-full mb-3`}>
+                {sign}{monthlyChange.toFixed(1)}%
+              </div>
+              <button
+                onClick={() => setIsFlipped(!isFlipped)}
+                className="p-2 text-blue-200 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                aria-label="Flip card"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.012 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                </svg>
+              </button>
             </div>
           </div>
-          <div className="flex justify-around md:justify-start md:space-x-8">
+          <div className="grid grid-cols-3 gap-4 md:gap-6 max-w-sm ml-0 md:ml-6 mt-6 md:mt-8">
             {actionButtons.map(button => (
-                <div key={button.name} className="flex flex-col items-center">
-                    <button onClick={button.action} className="h-16 w-16 bg-[rgb(var(--color-card-rgb))] rounded-full flex items-center justify-center shadow-lg hover:bg-[rgba(var(--color-card-rgb),0.8)] transition-colors" aria-label={button.name}>
-                        <div className="h-12 w-12 rounded-full border-2 border-[rgb(var(--color-border-rgb))] flex items-center justify-center">
-                            <button.icon className="h-6 w-6 text-[rgb(var(--color-text-muted-rgb))]"/>
+                <div key={button.name} className="flex flex-col items-center space-y-2">
+                    <button
+                        onClick={button.action}
+                        className="h-14 w-14 md:h-16 md:w-16 bg-[rgb(var(--color-card-rgb))] rounded-full flex items-center justify-center shadow-lg hover:bg-[rgba(var(--color-card-rgb),0.8)] hover:scale-105 active:scale-95 transition-all duration-200 group"
+                        aria-label={button.name}
+                    >
+                        <div className="h-10 w-10 md:h-12 md:w-12 rounded-full border-2 border-[rgb(var(--color-border-rgb))] flex items-center justify-center group-hover:border-[rgba(var(--color-border-rgb),0.7)] transition-colors">
+                            <button.icon className="h-5 w-5 md:h-6 md:w-6 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-text-rgb))]" />
                         </div>
                     </button>
-                    <span className="text-sm font-medium text-blue-100 mt-3">{button.name}</span>
+                    <span className="text-xs md:text-sm font-medium text-blue-100 text-center leading-tight">{button.name}</span>
                 </div>
             ))}
           </div>

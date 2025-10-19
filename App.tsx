@@ -19,11 +19,13 @@ import ConfirmationModal from './components/ConfirmationModal';
 import ReportsPage from './components/ReportsPage';
 import BudgetsPage from './components/BudgetsPage';
 import ManageBudgetsModal from './components/ManageBudgetsModal';
-import { Transaction, User, Goal, Bill, Notification, RecurringTransaction, Budget } from './types';
+import { Transaction, User, Goal, Bill, RecurringTransaction, Budget, NotificationSettings, GoalContribution } from './types';
+import type { Notification } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import PlaceholderPage from './components/PlaceholderPage';
 // FIX: Import `formatCurrency` to resolve `Cannot find name` errors.
 import { encryptData, decryptData, deriveKey, generateSalt, formatCurrency } from './utils/formatters';
+import { processTransactionForGoals, getGoalProgressStats } from './utils/goalUtils';
 
 const App: React.FC = () => {
   const {
@@ -103,6 +105,7 @@ const App: React.FC = () => {
   // Data states
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalContributions, setGoalContributions] = useState<GoalContribution[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
@@ -138,6 +141,7 @@ const App: React.FC = () => {
             const dataToLoad = [
                 { key: 'financeFlowTransactions', setter: setTransactions },
                 { key: 'financeFlowGoals', setter: setGoals },
+                { key: 'financeFlowGoalContributions', setter: setGoalContributions },
                 { key: 'financeFlowBills', setter: setBills },
                 { key: 'financeFlowBudgets', setter: setBudgets },
                 { key: 'financeFlowNotifications', setter: setNotifications },
@@ -157,6 +161,187 @@ const App: React.FC = () => {
     };
     loadData();
   }, [sessionKey]);
+
+  // Schedule bill reminders when bills or user settings change
+  useEffect(() => {
+    if (bills.length === 0 || !user) return;
+
+    const scheduleBillReminders = () => {
+      const defaultSettings: NotificationSettings = {
+        goalProgress: { enabled: true, milestones: [25, 50, 75, 100] },
+        billReminders: { enabled: true, advanceDays: 1 },
+        budgetAlerts: { enabled: true, thresholds: [80, 90, 100] },
+        monthlyReports: { enabled: false, frequency: 'monthly' },
+        pushNotifications: { enabled: false, quietHours: { start: "22:00", end: "08:00" } }
+      };
+
+      const settings = user.notificationSettings || defaultSettings;
+      if (!settings.billReminders.enabled) return;
+
+      bills.forEach(bill => {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+
+        // Calculate next bill due date
+        let dueDate = new Date(currentYear, currentMonth, bill.dayOfMonth);
+
+        // If the due date has passed this month, schedule for next month
+        if (dueDate <= today) {
+          dueDate = new Date(currentYear, currentMonth + 1, bill.dayOfMonth);
+        }
+
+        // Calculate reminder date (1 day before due date)
+        const reminderDate = new Date(dueDate.getTime() - (settings.billReminders.advanceDays * 24 * 60 * 60 * 1000));
+
+        // Only schedule if reminder is in the future but not too far (within 60 days)
+        const daysUntilReminder = Math.ceil((reminderDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+        if (daysUntilReminder > 0 && daysUntilReminder <= 60) {
+          const timeoutId = setTimeout(() => {
+            createBillReminderNotification(bill);
+          }, reminderDate.getTime() - today.getTime());
+
+          // Store timeout ID for cleanup if needed
+          return () => clearTimeout(timeoutId);
+        }
+      });
+    };
+
+    // Schedule reminders
+    const cleanup = scheduleBillReminders();
+
+    // Cleanup function
+    return cleanup;
+  }, [bills, user]);
+
+  const createBillReminderNotification = (bill: Bill) => {
+    const hasExistingReminder = notifications.some(
+      n => n.relatedId === bill.id && n.type === 'bill_reminder'
+    );
+
+    if (!hasExistingReminder) {
+      const notification: Notification = {
+        id: uuidv4(),
+        title: `💡 Bill Due Tomorrow: ${bill.name}`,
+        message: `Your ${bill.name} bill of ${formatCurrency(bill.amount)} is due tomorrow (${new Date().getDate() + 1}).`,
+        date: new Date().toISOString(),
+        read: false,
+        type: 'bill_reminder',
+        relatedId: bill.id,
+        urgent: true
+      };
+      setNotifications(prev => [notification, ...prev]);
+
+      // Send push notification if enabled
+      sendPushNotification(notification);
+    }
+  };
+
+  // Helper functions for time calculations
+  const timeStringToMinutes = (timeString: string): number => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const isInQuietHours = (currentTime: number, startTime: number, endTime: number): boolean => {
+    if (startTime > endTime) {
+      // Quiet hours span midnight (e.g., 22:00 to 08:00)
+      return currentTime >= startTime || currentTime <= endTime;
+    } else {
+      // Quiet hours within same day
+      return currentTime >= startTime && currentTime <= endTime;
+    }
+  };
+
+  // Push notification utility functions
+  const requestNotificationPermission = async (): Promise<boolean> => {
+    if (!('Notification' in window)) {
+      console.log('This browser does not support notifications');
+      return false;
+    }
+
+    if (Notification.permission === 'granted') {
+      return true;
+    }
+
+    if (Notification.permission === 'denied') {
+      console.log('Notifications are denied');
+      return false;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        console.log('Notification permission granted');
+        return true;
+      } else {
+        console.log('Notification permission denied');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+      return false;
+    }
+  };
+
+  const sendPushNotification = async (notification: Notification) => {
+    const defaultSettings: NotificationSettings = {
+      goalProgress: { enabled: true, milestones: [25, 50, 75, 100] },
+      billReminders: { enabled: true, advanceDays: 1 },
+      budgetAlerts: { enabled: true, thresholds: [80, 90, 100] },
+      monthlyReports: { enabled: false, frequency: 'monthly' },
+      pushNotifications: { enabled: false, quietHours: { start: "22:00", end: "08:00" } }
+    };
+
+    const settings = user?.notificationSettings || defaultSettings;
+
+    if (!settings.pushNotifications.enabled) return;
+
+    // Check if push notifications are supported and permitted
+    if (!('Notification' in window) || Notification.permission !== 'granted') {
+      console.log('Push notifications not supported or not permitted');
+      return;
+    }
+
+    // Check quiet hours using improved logic
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // Convert to minutes
+    const startTime = timeStringToMinutes(settings.pushNotifications.quietHours.start);
+    const endTime = timeStringToMinutes(settings.pushNotifications.quietHours.end);
+
+    if (isInQuietHours(currentTime, startTime, endTime)) {
+      console.log('Push notification skipped due to quiet hours');
+      return;
+    }
+
+    // Send push notification via service worker
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      try {
+        const notificationData = {
+          title: notification.title,
+          body: notification.message,
+          tag: `${notification.type}-${notification.relatedId || notification.id}`,
+          urgent: notification.urgent || false,
+          data: {
+            type: notification.type,
+            relatedId: notification.relatedId,
+            url: '/',
+            action: 'default'
+          }
+        };
+
+        // Send message to service worker to show notification
+        navigator.serviceWorker.controller.postMessage({
+          type: 'SHOW_NOTIFICATION',
+          payload: notificationData
+        });
+      } catch (error) {
+        console.error('Error sending push notification:', error);
+      }
+    } else {
+      console.log('Service worker not available for push notifications');
+    }
+  };
   
     // Process recurring transactions on initial load
     useEffect(() => {
@@ -230,6 +415,7 @@ const App: React.FC = () => {
                 const dataToSave = [
                     { key: 'financeFlowTransactions', data: transactions },
                     { key: 'financeFlowGoals', data: goals },
+                    { key: 'financeFlowGoalContributions', data: goalContributions },
                     { key: 'financeFlowBills', data: bills },
                     { key: 'financeFlowBudgets', data: budgets },
                     { key: 'financeFlowNotifications', data: notifications },
@@ -246,7 +432,7 @@ const App: React.FC = () => {
         }
     };
     saveData();
-  }, [user, sessionKey, transactions, goals, bills, budgets, notifications, recurringTransactions]);
+  }, [user, sessionKey, transactions, goals, goalContributions, bills, budgets, notifications, recurringTransactions]);
 
   const handleAuth = (authedUser: User, key: CryptoKey) => {
     setUser(authedUser);
@@ -266,6 +452,7 @@ const App: React.FC = () => {
     setSessionKey(null);
     setTransactions([]);
     setGoals([]);
+    setGoalContributions([]);
     setBills([]);
     setBudgets([]);
     setRecurringTransactions([]);
@@ -278,6 +465,7 @@ const App: React.FC = () => {
       setUser(data.user); // Note: This bypasses encryption. Import is an advanced feature.
       setTransactions(data.transactions);
       setGoals(data.goals);
+      setGoalContributions(data.goalContributions || []);
       setBills(data.bills);
       setRecurringTransactions(data.recurringTransactions || []);
       setBudgets(data.budgets || []);
@@ -299,14 +487,33 @@ const App: React.FC = () => {
   
   const handleSaveTransaction = (transactionData: Omit<Transaction, 'id' | 'date'> & { id?: string }) => {
     let updatedTransactions;
+    let updatedGoals = [...goals];
+    let newContributions: GoalContribution[] = [];
+
     if (transactionData.id) {
       // Editing existing transaction: merge new data but preserve date
-      updatedTransactions = transactions.map(t => 
-        t.id === transactionData.id 
-          ? { ...t, ...transactionData } 
+      updatedTransactions = transactions.map(t =>
+        t.id === transactionData.id
+          ? { ...t, ...transactionData }
           : t
       );
       setTransactions(updatedTransactions);
+
+      // If editing a transaction, we need to recalculate goal contributions
+      // For simplicity, we'll remove old contributions and recalculate
+      const editedTransaction = updatedTransactions.find(t => t.id === transactionData.id);
+      if (editedTransaction) {
+        // Remove old contributions for this transaction
+        const filteredContributions = goalContributions.filter(gc => gc.transactionId !== transactionData.id);
+        setGoalContributions(filteredContributions);
+
+        // Recalculate contributions for the edited transaction
+        const { contributions, updatedGoals: recalculatedGoals } = processTransactionForGoals(editedTransaction, goals);
+        newContributions = contributions;
+        updatedGoals = recalculatedGoals;
+        setGoalContributions([...filteredContributions, ...contributions]);
+        setGoals(updatedGoals);
+      }
     } else {
       // Adding new transaction
       const newTransaction: Transaction = {
@@ -316,8 +523,33 @@ const App: React.FC = () => {
       };
       updatedTransactions = [newTransaction, ...transactions];
       setTransactions(updatedTransactions);
+
+      // Process transaction for goal contributions
+      const { contributions, updatedGoals: processedGoals } = processTransactionForGoals(newTransaction, goals);
+      newContributions = contributions;
+      updatedGoals = processedGoals;
+      setGoalContributions([...contributions, ...goalContributions]);
+      setGoals(updatedGoals);
+
+      // Check budget and goal notifications
       checkBudgetNotifications(newTransaction, updatedTransactions);
+      checkGoalProgressNotifications(newTransaction, updatedTransactions);
     }
+
+    // Create notifications for goal contributions
+    if (newContributions.length > 0) {
+      const totalContribution = newContributions.reduce((sum, contrib) => sum + contrib.amount, 0);
+      const contributionNotification: Notification = {
+        id: uuidv4(),
+        title: '💰 Goal Contributions Added',
+        message: `$${totalContribution.toFixed(2)} automatically contributed to your goals from this transaction.`,
+        date: new Date().toISOString(),
+        read: false,
+        type: 'goal_progress',
+      };
+      setNotifications(prev => [contributionNotification, ...prev]);
+    }
+
     setIsAddTransactionModalOpen(false);
     setTransactionToEdit(null);
   };
@@ -341,14 +573,19 @@ const App: React.FC = () => {
     if (spendingRatio >= 1 && !hasExceededNotification) {
         const notification: Notification = {
             id: uuidv4(),
-            title: `Budget Exceeded: ${relevantBudget.category}`,
+            title: `🚨 Budget Exceeded: ${relevantBudget.category}`,
             message: `You've spent ${formatCurrency(spentInMonth)} of your ${formatCurrency(relevantBudget.amount)} budget.`,
             date: new Date().toISOString(),
             read: false,
             type: 'budget',
             relatedId: relevantBudget.id,
+            urgent: true
         };
         setNotifications(prev => [notification, ...prev]);
+        console.log('Budget exceeded notification created:', notification.title);
+
+        // Send push notification if enabled
+        sendPushNotification(notification);
         return; // Don't send 'approaching' if 'exceeded' is sent
     }
 
@@ -367,12 +604,77 @@ const App: React.FC = () => {
     }
   };
 
+  const checkGoalProgressNotifications = (newTransaction: Transaction, allTransactions: Transaction[]) => {
+    if (newTransaction.type !== 'income') return;
+
+    // Get default notification settings if user doesn't have custom settings
+    const defaultSettings: NotificationSettings = {
+      goalProgress: { enabled: true, milestones: [25, 50, 75, 100] },
+      billReminders: { enabled: true, advanceDays: 1 },
+      budgetAlerts: { enabled: true, thresholds: [80, 90, 100] },
+      monthlyReports: { enabled: false, frequency: 'monthly' },
+      pushNotifications: { enabled: false, quietHours: { start: "22:00", end: "08:00" } }
+    };
+
+    const settings = user?.notificationSettings || defaultSettings;
+    if (!settings.goalProgress.enabled) return;
+
+    // Check each goal for milestone progress using updated goals state
+    goals.forEach(goal => {
+      const progressPercentage = (goal.currentAmount / goal.targetAmount) * 100;
+
+      settings.goalProgress.milestones.forEach(milestone => {
+        if (progressPercentage >= milestone) {
+          const hasMilestoneNotification = notifications.some(
+            n => n.relatedId === goal.id &&
+                 n.type === 'goal_progress' &&
+                 n.progress?.milestone === milestone
+          );
+
+          if (!hasMilestoneNotification) {
+            const notification: Notification = {
+              id: uuidv4(),
+              title: `🎉 Goal Milestone: ${milestone}%`,
+              message: `Congratulations! You've reached ${milestone}% of your "${goal.name}" goal (${formatCurrency(goal.currentAmount)} of ${formatCurrency(goal.targetAmount)}).`,
+              date: new Date().toISOString(),
+              read: false,
+              type: 'goal_progress',
+              relatedId: goal.id,
+              progress: {
+                currentAmount: goal.currentAmount,
+                targetAmount: goal.targetAmount,
+                percentage: progressPercentage,
+                milestone: milestone
+              }
+            };
+            setNotifications(prev => [notification, ...prev]);
+            console.log('Goal milestone notification created:', notification.title);
+
+            // Send push notification if enabled
+            sendPushNotification(notification);
+          }
+        }
+      });
+    });
+  };
+
   // Goal Handlers
   const handleSaveGoal = (goalData: Omit<Goal, 'id'> & { id?: string }) => {
+    // Ensure all required properties exist with defaults
+    const completeGoalData = {
+      category: 'savings' as const,
+      priority: 'medium' as const,
+      isActive: true,
+      allocationRules: [],
+      progressHistory: [],
+      autoAllocate: false,
+      ...goalData
+    };
+
     if (goalData.id) {
-      setGoals(goals.map(g => g.id === goalData.id ? { ...g, ...goalData } : g));
+      setGoals(goals.map(g => g.id === goalData.id ? { ...g, ...completeGoalData } : g));
     } else {
-      setGoals([...goals, { ...goalData, id: uuidv4() }]);
+      setGoals([...goals, { ...completeGoalData, id: uuidv4() } as Goal]);
     }
     setIsAddGoalModalOpen(false);
     setGoalToEdit(null);
@@ -462,14 +764,21 @@ const App: React.FC = () => {
   };
 
   const handleOpenConfirmModal = useCallback((title: string, message: string, onConfirm: () => void, options: { confirmText?: string; variant?: 'primary' | 'danger' } = {}) => {
+    const closeModal = () => setConfirmationModalState(prev => ({ ...prev, isOpen: false }));
+
     setConfirmationModalState({
         isOpen: true,
         title,
         message,
-        onConfirm,
+        onConfirm: () => {
+          onConfirm();
+          closeModal();
+        },
         confirmText: options.confirmText || 'Confirm',
         variant: options.variant || 'primary'
     });
+
+    return closeModal;
   }, []);
 
   const sortedTransactions = useMemo(() => 
@@ -504,8 +813,9 @@ const App: React.FC = () => {
             onManageBudgets={() => setIsManageBudgetsModalOpen(true)}
            />;
       case 'Goals':
-        return <GoalsPage 
-          goals={goals} 
+        return <GoalsPage
+          goals={goals}
+          goalContributions={goalContributions}
           onAddNewGoal={() => { setGoalToEdit(null); setIsAddGoalModalOpen(true); }}
           onEditGoal={(goal) => { setGoalToEdit(goal); setIsAddGoalModalOpen(true); }}
           onDeleteGoal={handleDeleteGoal}
@@ -654,4 +964,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

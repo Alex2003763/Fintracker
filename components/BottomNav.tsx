@@ -13,7 +13,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem, onAddT
    const navItemsRight = [NAV_ITEMS[3], NAV_ITEMS[4]]; // Budgets, Goals
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] h-16 flex items-center justify-around z-10 transition-colors">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] h-20 flex items-center justify-around z-10 transition-colors">
       {navItemsLeft.map((item) => (
         <a
           key={item.name}
@@ -29,12 +29,14 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem, onAddT
         </a>
       ))}
       
-      <button 
+      <button
         onClick={() => onAddTransaction()}
-        className="h-16 w-16 bg-[rgb(var(--color-primary-rgb))] rounded-full flex items-center justify-center -mt-10 shadow-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all transform hover:scale-105 border-4 border-[rgb(var(--color-card-rgb))]"
+        className="h-14 w-14 min-h-[56px] min-w-[56px] bg-gradient-to-br from-[rgb(var(--color-primary-rgb))] to-[rgb(var(--color-primary-hover-rgb))] rounded-full flex items-center justify-center -mt-9 shadow-lg hover:shadow-xl border-2 border-[rgb(var(--color-card-rgb))] hover:border-[rgba(var(--color-primary-rgb),0.3)] transition-all duration-300 ease-out transform hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-[rgba(var(--color-primary-rgb),0.3)] group relative overflow-hidden aspect-square"
         aria-label="Add Transaction"
       >
-        <PlusIcon className="h-8 w-8 text-white" />
+        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 group-active:opacity-20 transition-opacity duration-200 rounded-full"></div>
+        <PlusIcon className="h-5 w-5 text-white drop-shadow-sm group-hover:text-white group-active:scale-90 transition-all duration-200 relative z-10" />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       </button>
 
       {navItemsRight.map((item) => (
