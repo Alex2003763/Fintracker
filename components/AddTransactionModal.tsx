@@ -5,26 +5,29 @@ import { TRANSACTION_CATEGORIES } from '../constants';
 import { suggestCategory, getBestCategorySuggestion, testAI } from '../utils/categoryAI';
 import BaseModal from './BaseModal';
 import { FormField, Input, Select, Button, ToggleButton } from './ModalForm';
+import ConfirmationModal from './ConfirmationModal';
 
 interface AddTransactionModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSaveTransaction: (transaction: Omit<Transaction, 'id' | 'date'> & { id?: string }) => void;
-  transactionToEdit: Transaction | null;
-  initialType?: 'income' | 'expense';
-  initialData?: Partial<Omit<Transaction, 'id' | 'date'>>;
-  smartSuggestionsEnabled?: boolean;
-}
+   isOpen: boolean;
+   onClose: () => void;
+   onSaveTransaction: (transaction: Omit<Transaction, 'id' | 'date'> & { id?: string }) => void;
+   onDeleteTransaction?: (transactionId: string) => void;
+   transactionToEdit: Transaction | null;
+   initialType?: 'income' | 'expense';
+   initialData?: Partial<Omit<Transaction, 'id' | 'date'>>;
+   smartSuggestionsEnabled?: boolean;
+ }
 
 const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
-  isOpen,
-  onClose,
-  onSaveTransaction,
-  transactionToEdit,
-  initialType = 'expense',
-  initialData,
-  smartSuggestionsEnabled = true
-}) => {
+   isOpen,
+   onClose,
+   onSaveTransaction,
+   onDeleteTransaction,
+   transactionToEdit,
+   initialType = 'expense',
+   initialData,
+   smartSuggestionsEnabled = true
+ }) => {
   const isEditing = transactionToEdit !== null;
   const [type, setType] = useState<'income' | 'expense'>(() => transactionToEdit?.type || initialData?.type || initialType);
   const [description, setDescription] = useState(() => transactionToEdit?.description || initialData?.description || '');
@@ -38,6 +41,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   useEffect(() => {
     if (transactionToEdit) {
@@ -139,10 +143,10 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? 'Edit Transaction' : 'Add Transaction'}
-      size="md"
+      size="lg"
       aria-label={`${isEditing ? 'Edit' : 'Add'} transaction form`}
     >
-      <form onSubmit={handleSubmit} className="space-y-6 p-6">
+      <form onSubmit={handleSubmit} className="space-y-4 p-3 sm:p-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
         <FormField
           label="Type"
           htmlFor="transaction-type"
@@ -180,12 +184,12 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           {aiSuggestions.length > 0 && (
             <div className="mt-3">
               <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mb-2 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
-                Smart suggestions:
+                <span className="truncate">Smart suggestions:</span>
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 max-h-20 overflow-y-auto">
                 {aiSuggestions.map((suggestion) => (
                   <button
                     key={suggestion}
@@ -194,13 +198,14 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       setCategory(suggestion);
                       setErrors({ ...errors, category: '' });
                     }}
-                    className={`px-3 py-1.5 text-xs rounded-full transition-all duration-200 ${
+                    className={`px-2 py-1 text-xs rounded-full transition-all duration-200 flex-shrink-0 ${
                       category === suggestion
                         ? 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] shadow-sm'
                         : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))] hover:scale-105'
                     }`}
+                    title={suggestion}
                   >
-                    {suggestion}
+                    <span className="truncate max-w-24">{suggestion}</span>
                   </button>
                 ))}
               </div>
@@ -258,24 +263,54 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </Select>
         </FormField>
 
-        <div className="flex justify-end space-x-3 pt-4 border-t border-[rgb(var(--color-border-rgb))]">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            loading={isSubmitting}
-          >
-            {isEditing ? 'Save Changes' : 'Add Transaction'}
-          </Button>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-4 border-t border-[rgb(var(--color-border-rgb))]">
+          {isEditing && (
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => setShowDeleteConfirmation(true)}
+              disabled={isSubmitting}
+              className="w-full sm:w-auto"
+            >
+              🗑️ Delete
+            </Button>
+          )}
+          <div className={`flex space-x-3 ${isEditing ? 'sm:ml-auto' : 'w-full sm:w-auto sm:ml-auto'}`}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1 sm:flex-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={isSubmitting}
+              className="flex-1 sm:flex-none"
+            >
+              {isEditing ? 'Save Changes' : 'Add Transaction'}
+            </Button>
+          </div>
         </div>
       </form>
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirmation}
+        onClose={() => setShowDeleteConfirmation(false)}
+        onConfirm={() => {
+          if (transactionToEdit && onDeleteTransaction) {
+            onDeleteTransaction(transactionToEdit.id);
+          }
+          setShowDeleteConfirmation(false);
+        }}
+        title="Delete Transaction"
+        message={`Are you sure you want to delete "${transactionToEdit?.description}"? This action cannot be undone.`}
+        confirmButtonText="Delete"
+        confirmButtonVariant="danger"
+      />
     </BaseModal>
   );
 };

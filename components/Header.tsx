@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
     }, [showNotifications]);
 
     return (
-        <header className="sticky top-0 z-50 flex items-center justify-between h-20 px-4 md:px-6 transition-colors flex-shrink-0 bg-[rgb(var(--color-bg-rgb))]">
+        <header className="sticky top-0 z-50 flex items-center justify-between h-20 px-4 md:px-6 transition-colors flex-shrink-0 bg-[rgb(var(--color-bg-rgb))] border-b border-[rgb(var(--color-border-rgb))]">
             {/* Mobile Title */}
             <div className="flex items-center space-x-3 md:hidden">
               <FinanceFlowIcon className="h-7 w-7 text-green-500" />

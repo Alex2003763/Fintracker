@@ -19,7 +19,7 @@ import ConfirmationModal from './components/ConfirmationModal';
 import ReportsPage from './components/ReportsPage';
 import BudgetsPage from './components/BudgetsPage';
 import ManageBudgetsModal from './components/ManageBudgetsModal';
-import { Transaction, User, Goal, Bill, RecurringTransaction, Budget, NotificationSettings, GoalContribution } from './types';
+import { Transaction, User, Goal, Bill, RecurringTransaction, Budget, NotificationSettings, GoalContribution, BillPayment } from './types';
 import type { Notification } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import PlaceholderPage from './components/PlaceholderPage';
@@ -107,10 +107,12 @@ const App: React.FC = () => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [goalContributions, setGoalContributions] = useState<GoalContribution[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
+  const [billPayments, setBillPayments] = useState<BillPayment[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const initialProcessingDone = useRef(false);
+  const budgetNotificationCheckInProgress = useRef(false);
 
   // Modal states
   const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
@@ -143,6 +145,7 @@ const App: React.FC = () => {
                 { key: 'financeFlowGoals', setter: setGoals },
                 { key: 'financeFlowGoalContributions', setter: setGoalContributions },
                 { key: 'financeFlowBills', setter: setBills },
+                { key: 'financeFlowBillPayments', setter: setBillPayments },
                 { key: 'financeFlowBudgets', setter: setBudgets },
                 { key: 'financeFlowNotifications', setter: setNotifications },
                 { key: 'financeFlowRecurringTransactions', setter: setRecurringTransactions },
@@ -155,12 +158,84 @@ const App: React.FC = () => {
                     setter(decrypted ? JSON.parse(decrypted) : []);
                 }
             }
+
+            // Check budget notifications after data is loaded
+            setTimeout(() => {
+                console.log('Checking budget notifications after data load...');
+                // This will run after state updates are complete
+            }, 100);
         } catch (error) {
             console.error("Failed to load or decrypt data", error);
         }
     };
     loadData();
   }, [sessionKey]);
+
+  // Check budget notifications when transactions or budgets change - with race condition fix
+  useEffect(() => {
+    if (transactions.length > 0 && budgets.length > 0 && notifications.length >= 0) {
+      console.log('Budget notification check triggered...');
+      console.log('Current notifications count:', notifications.length);
+
+      // Check immediately if we haven't processed today
+      const todayStr = new Date().toISOString().split('T')[0];
+      const hasProcessedToday = localStorage.getItem(`budget-notifications-processed-${todayStr}`);
+
+      if (!hasProcessedToday) {
+        console.log('Processing budget notifications for today...');
+
+        // Small delay to ensure any pending state updates complete
+        setTimeout(() => {
+          checkBudgetNotifications();
+
+          // Mark as processed for today immediately after checking
+          localStorage.setItem(`budget-notifications-processed-${todayStr}`, 'true');
+          console.log('Marked budget notifications as processed for today');
+        }, 100);
+      } else {
+        console.log('Budget notifications already processed today, skipping...');
+      }
+    }
+  }, [transactions, budgets, notifications.length]);
+
+  // Clean up old notifications on app start to prevent duplicates
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const today = new Date().toISOString().split('T')[0];
+      const recentNotifications = notifications.filter(n =>
+        n.type === 'budget' && n.date.startsWith(today)
+      );
+
+      console.log(`Found ${recentNotifications.length} budget notifications from today`);
+
+      // If we have multiple budget notifications from today, keep only the most recent ones
+      if (recentNotifications.length > 10) {
+        const notificationsToRemove = recentNotifications
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(10)
+          .map(n => n.id);
+
+        setNotifications(prev => prev.filter(n => !notificationsToRemove.includes(n.id)));
+        console.log('Cleaned up old budget notifications');
+      }
+    }
+  }, []);
+
+  // Debug function to reset notification processing (for testing)
+  const resetNotificationProcessing = () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
+    console.log('Reset notification processing flag');
+    // Force recheck
+    setTimeout(() => {
+      checkBudgetNotifications();
+    }, 100);
+  };
+
+  // Make the function available globally for debugging
+  if (typeof window !== 'undefined') {
+    (window as any).resetNotificationProcessing = resetNotificationProcessing;
+  }
 
   // Schedule bill reminders when bills or user settings change
   useEffect(() => {
@@ -180,15 +255,27 @@ const App: React.FC = () => {
 
       bills.forEach(bill => {
         const today = new Date();
+        const currentMonth = today.toISOString().slice(0, 7); // "YYYY-MM" format
+
+        // Check if bill has already been paid this month
+        const isPaidThisMonth = billPayments.some(
+          payment => payment.billId === bill.id && payment.month === currentMonth
+        );
+
+        // Skip reminder if bill is already paid this month
+        if (isPaidThisMonth) {
+          return;
+        }
+
         const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth();
+        const currentMonthNum = today.getMonth();
 
         // Calculate next bill due date
-        let dueDate = new Date(currentYear, currentMonth, bill.dayOfMonth);
+        let dueDate = new Date(currentYear, currentMonthNum, bill.dayOfMonth);
 
         // If the due date has passed this month, schedule for next month
         if (dueDate <= today) {
-          dueDate = new Date(currentYear, currentMonth + 1, bill.dayOfMonth);
+          dueDate = new Date(currentYear, currentMonthNum + 1, bill.dayOfMonth);
         }
 
         // Calculate reminder date (1 day before due date)
@@ -212,7 +299,7 @@ const App: React.FC = () => {
 
     // Cleanup function
     return cleanup;
-  }, [bills, user]);
+  }, [bills, billPayments, user]);
 
   const createBillReminderNotification = (bill: Bill) => {
     const hasExistingReminder = notifications.some(
@@ -284,6 +371,23 @@ const App: React.FC = () => {
     }
   };
 
+  // Request notification permission on app initialization for mobile users
+  useEffect(() => {
+    if (user && sessionKey) {
+      // Check if we're on a mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                      window.innerWidth <= 768;
+
+      if (isMobile) {
+        console.log('Mobile device detected, requesting notification permission...');
+        // Request permission after a short delay to avoid interrupting app initialization
+        setTimeout(() => {
+          requestNotificationPermission();
+        }, 2000);
+      }
+    }
+  }, [user, sessionKey]);
+
   const sendPushNotification = async (notification: Notification) => {
     const defaultSettings: NotificationSettings = {
       goalProgress: { enabled: true, milestones: [25, 50, 75, 100] },
@@ -315,31 +419,41 @@ const App: React.FC = () => {
     }
 
     // Send push notification via service worker
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    if ('serviceWorker' in navigator) {
       try {
-        const notificationData = {
-          title: notification.title,
-          body: notification.message,
-          tag: `${notification.type}-${notification.relatedId || notification.id}`,
-          urgent: notification.urgent || false,
-          data: {
-            type: notification.type,
-            relatedId: notification.relatedId,
-            url: '/',
-            action: 'default'
-          }
-        };
+        // Check if service worker is ready
+        navigator.serviceWorker.ready.then(registration => {
+          if (registration.active) {
+            const notificationData = {
+              title: notification.title,
+              body: notification.message,
+              tag: `${notification.type}-${notification.relatedId || notification.id}`,
+              urgent: notification.urgent || false,
+              data: {
+                type: notification.type,
+                relatedId: notification.relatedId,
+                url: '/',
+                action: 'default'
+              }
+            };
 
-        // Send message to service worker to show notification
-        navigator.serviceWorker.controller.postMessage({
-          type: 'SHOW_NOTIFICATION',
-          payload: notificationData
+            // Send message to service worker to show notification
+            registration.active.postMessage({
+              type: 'SHOW_NOTIFICATION',
+              payload: notificationData
+            });
+            console.log('Push notification sent via service worker');
+          } else {
+            console.log('Service worker not active yet');
+          }
+        }).catch(error => {
+          console.error('Service worker not ready:', error);
         });
       } catch (error) {
         console.error('Error sending push notification:', error);
       }
     } else {
-      console.log('Service worker not available for push notifications');
+      console.log('Service worker not supported');
     }
   };
   
@@ -417,6 +531,7 @@ const App: React.FC = () => {
                     { key: 'financeFlowGoals', data: goals },
                     { key: 'financeFlowGoalContributions', data: goalContributions },
                     { key: 'financeFlowBills', data: bills },
+                    { key: 'financeFlowBillPayments', data: billPayments },
                     { key: 'financeFlowBudgets', data: budgets },
                     { key: 'financeFlowNotifications', data: notifications },
                     { key: 'financeFlowRecurringTransactions', data: recurringTransactions },
@@ -432,7 +547,7 @@ const App: React.FC = () => {
         }
     };
     saveData();
-  }, [user, sessionKey, transactions, goals, goalContributions, bills, budgets, notifications, recurringTransactions]);
+  }, [user, sessionKey, transactions, goals, goalContributions, bills, billPayments, budgets, notifications, recurringTransactions]);
 
   const handleAuth = (authedUser: User, key: CryptoKey) => {
     setUser(authedUser);
@@ -454,6 +569,7 @@ const App: React.FC = () => {
     setGoals([]);
     setGoalContributions([]);
     setBills([]);
+    setBillPayments([]);
     setBudgets([]);
     setRecurringTransactions([]);
     setNotifications([]);
@@ -467,6 +583,7 @@ const App: React.FC = () => {
       setGoals(data.goals);
       setGoalContributions(data.goalContributions || []);
       setBills(data.bills);
+      setBillPayments(data.billPayments || []);
       setRecurringTransactions(data.recurringTransactions || []);
       setBudgets(data.budgets || []);
       setConfirmationModalState({ ...confirmationModalState, isOpen: false });
@@ -485,6 +602,7 @@ const App: React.FC = () => {
     setIsAddTransactionModalOpen(true);
   };
   
+
   const handleSaveTransaction = (transactionData: Omit<Transaction, 'id' | 'date'> & { id?: string }) => {
     let updatedTransactions;
     let updatedGoals = [...goals];
@@ -554,53 +672,174 @@ const App: React.FC = () => {
     setTransactionToEdit(null);
   };
 
-  const checkBudgetNotifications = (newTransaction: Transaction, allTransactions: Transaction[]) => {
-    if (newTransaction.type !== 'expense') return;
+  const handleDeleteTransaction = (transactionId: string) => {
+    if (!transactionId) return;
 
-    const today = new Date();
-    const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    // Remove the transaction
+    const updatedTransactions = transactions.filter(t => t.id !== transactionId);
+    setTransactions(updatedTransactions);
 
-    const relevantBudget = budgets.find(b => b.category === newTransaction.category && b.month === currentMonthStr);
-    if (!relevantBudget) return;
+    // Remove any goal contributions associated with this transaction
+    const filteredContributions = goalContributions.filter(gc => gc.transactionId !== transactionId);
+    setGoalContributions(filteredContributions);
 
-    const spentInMonth = allTransactions
-        .filter(t => t.type === 'expense' && t.category === newTransaction.category && new Date(t.date).getMonth() === today.getMonth() && new Date(t.date).getFullYear() === today.getFullYear())
-        .reduce((sum, t) => sum + t.amount, 0);
+    // Recalculate goal amounts since contributions were removed
+    const updatedGoals = goals.map(goal => {
+      const goalContributionsForThisGoal = filteredContributions.filter(gc => gc.goalId === goal.id);
+      const newCurrentAmount = goalContributionsForThisGoal.reduce((sum, gc) => sum + gc.amount, 0);
 
-    const spendingRatio = spentInMonth / relevantBudget.amount;
+      return {
+        ...goal,
+        currentAmount: newCurrentAmount,
+        progressHistory: goal.progressHistory.map(entry => {
+          // Update progress history entries that came from the deleted transaction
+          if (entry.transactionId === transactionId) {
+            return { ...entry, source: 'adjustment' as const, transactionId: undefined };
+          }
+          return entry;
+        })
+      };
+    });
+    setGoals(updatedGoals);
 
-    const hasExceededNotification = notifications.some(n => n.relatedId === relevantBudget.id && n.title.includes('Exceeded'));
-    if (spendingRatio >= 1 && !hasExceededNotification) {
-        const notification: Notification = {
-            id: uuidv4(),
-            title: `🚨 Budget Exceeded: ${relevantBudget.category}`,
-            message: `You've spent ${formatCurrency(spentInMonth)} of your ${formatCurrency(relevantBudget.amount)} budget.`,
-            date: new Date().toISOString(),
-            read: false,
-            type: 'budget',
-            relatedId: relevantBudget.id,
-            urgent: true
-        };
-        setNotifications(prev => [notification, ...prev]);
-        console.log('Budget exceeded notification created:', notification.title);
-
-        // Send push notification if enabled
-        sendPushNotification(notification);
-        return; // Don't send 'approaching' if 'exceeded' is sent
+    // Create notification about deletion
+    const deletedTransaction = transactions.find(t => t.id === transactionId);
+    if (deletedTransaction) {
+      const deleteNotification: Notification = {
+        id: uuidv4(),
+        title: '🗑️ Transaction Deleted',
+        message: `Deleted "${deletedTransaction.description}" transaction of ${formatCurrency(deletedTransaction.amount)}.`,
+        date: new Date().toISOString(),
+        read: false,
+        type: 'standard',
+      };
+      setNotifications(prev => [deleteNotification, ...prev]);
     }
 
-    const hasApproachingNotification = notifications.some(n => n.relatedId === relevantBudget.id && n.title.includes('Approaching'));
-    if (spendingRatio >= 0.9 && !hasApproachingNotification && !hasExceededNotification) {
-        const notification: Notification = {
-            id: uuidv4(),
-            title: `Budget Approaching: ${relevantBudget.category}`,
-            message: `You've spent ${formatCurrency(spentInMonth)} of your ${formatCurrency(relevantBudget.amount)} budget (${(spendingRatio * 100).toFixed(0)}%).`,
-            date: new Date().toISOString(),
-            read: false,
-            type: 'budget',
-            relatedId: relevantBudget.id,
-        };
-        setNotifications(prev => [notification, ...prev]);
+    setIsAddTransactionModalOpen(false);
+    setTransactionToEdit(null);
+  };
+
+  const checkBudgetNotifications = (newTransaction?: Transaction, allTransactions?: Transaction[], forceRecheck = false) => {
+    // Prevent multiple simultaneous calls
+    if (budgetNotificationCheckInProgress.current && !forceRecheck) {
+      console.log('Budget notification check already in progress, skipping...');
+      return;
+    }
+
+    budgetNotificationCheckInProgress.current = true;
+
+    try {
+      // Use provided transactions or fall back to current state
+      const transactionsToCheck = allTransactions || transactions;
+      const today = new Date();
+      const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+      // Get current month's budgets
+      const currentMonthBudgets = budgets.filter(b => b.month === currentMonthStr);
+
+    // Check each budget category
+    currentMonthBudgets.forEach(budget => {
+      const spentInMonth = transactionsToCheck
+          .filter(t => t.type === 'expense' &&
+                       t.category === budget.category &&
+                       new Date(t.date).getMonth() === today.getMonth() &&
+                       new Date(t.date).getFullYear() === today.getFullYear())
+          .reduce((sum, t) => sum + t.amount, 0);
+
+      const spendingRatio = spentInMonth / budget.amount;
+
+      // Create unique notification keys for tracking
+      const exceededKey = `budget-exceeded-${budget.id}-${currentMonthStr}`;
+      const approachingKey = `budget-approaching-${budget.id}-${currentMonthStr}`;
+      const eightyKey = `budget-eighty-${budget.id}-${currentMonthStr}`;
+
+      // Check for exceeded budget (100% or more) - improved tracking
+      const todayStr = today.toISOString().split('T')[0];
+      const hasExceededNotification = notifications.some(n =>
+        n.relatedId === budget.id &&
+        n.type === 'budget' &&
+        n.title.includes('Exceeded') &&
+        n.date.startsWith(todayStr) &&
+        n.message.includes(budget.category) &&
+        n.message.includes('budget') // Ensure it's a budget notification
+      );
+
+      if (spendingRatio >= 1 && !hasExceededNotification) {
+          const notification: Notification = {
+              id: uuidv4(),
+              title: `🚨 Budget Exceeded: ${budget.category}`,
+              message: `You've spent ${formatCurrency(spentInMonth)} of your ${formatCurrency(budget.amount)} budget.`,
+              date: new Date().toISOString(),
+              read: false,
+              type: 'budget',
+              relatedId: budget.id,
+              urgent: true
+          };
+          setNotifications(prev => [notification, ...prev]);
+          console.log('Budget exceeded notification created:', notification.title);
+
+          // Send push notification if enabled
+          sendPushNotification(notification);
+          return; // Don't send 'approaching' if 'exceeded' is sent
+      }
+
+      // Check for approaching budget (90% or more) - improved tracking
+      const hasApproachingNotification = notifications.some(n =>
+        n.relatedId === budget.id &&
+        n.type === 'budget' &&
+        n.title.includes('Approaching') &&
+        n.date.startsWith(todayStr) &&
+        n.message.includes(budget.category) &&
+        n.message.includes('budget')
+      );
+
+      if (spendingRatio >= 0.9 && !hasApproachingNotification && spendingRatio < 1) {
+          const notification: Notification = {
+              id: uuidv4(),
+              title: `⚠️ Budget Approaching: ${budget.category}`,
+              message: `You've spent ${formatCurrency(spentInMonth)} of your ${formatCurrency(budget.amount)} budget (${(spendingRatio * 100).toFixed(0)}%).`,
+              date: new Date().toISOString(),
+              read: false,
+              type: 'budget',
+              relatedId: budget.id,
+          };
+          setNotifications(prev => [notification, ...prev]);
+          console.log('Budget approaching notification created:', notification.title);
+
+          // Send push notification if enabled
+          sendPushNotification(notification);
+      }
+
+      // Check for 80% threshold (new lower threshold for better mobile UX)
+      const hasEightyNotification = notifications.some(n =>
+        n.relatedId === budget.id &&
+        n.type === 'budget' &&
+        n.title.includes('80%') &&
+        n.date.startsWith(todayStr) &&
+        n.message.includes(budget.category) &&
+        n.message.includes('budget')
+      );
+
+      if (spendingRatio >= 0.8 && !hasEightyNotification && spendingRatio < 0.9) {
+          const notification: Notification = {
+              id: uuidv4(),
+              title: `📊 Budget Alert: ${budget.category}`,
+              message: `You've used ${(spendingRatio * 100).toFixed(0)}% of your ${budget.category} budget.`,
+              date: new Date().toISOString(),
+              read: false,
+              type: 'budget',
+              relatedId: budget.id,
+          };
+          setNotifications(prev => [notification, ...prev]);
+          console.log('Budget 80% notification created:', notification.title);
+
+          // Send push notification if enabled
+          sendPushNotification(notification);
+      }
+    });
+    } finally {
+      budgetNotificationCheckInProgress.current = false;
     }
   };
 
@@ -705,6 +944,18 @@ const App: React.FC = () => {
       category: bill.category,
     };
     handleSaveTransaction(transaction);
+
+    // Record the bill payment
+    const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM" format
+    const billPayment: BillPayment = {
+      id: uuidv4(),
+      billId: bill.id,
+      month: currentMonth,
+      paidDate: new Date().toISOString(),
+      amount: bill.amount,
+    };
+    setBillPayments(prev => [...prev, billPayment]);
+
     const newNotification: Notification = { id: uuidv4(), title: 'Bill Paid', message: `You successfully paid your ${bill.name} bill of $${bill.amount}.`, date: new Date().toISOString(), read: false, type: 'standard' };
     setNotifications([newNotification, ...notifications]);
   };
@@ -729,10 +980,21 @@ const App: React.FC = () => {
     } else {
         setBudgets([...budgets, { ...budgetData, id: uuidv4() }]);
     }
+
+    // Check budget notifications after budget changes
+    setTimeout(() => {
+      console.log('Checking budget notifications after budget modification...');
+      // Reset the processed flag so user gets fresh notifications for the new budget
+      const todayStr = new Date().toISOString().split('T')[0];
+      localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
+      checkBudgetNotifications();
+    }, 100);
   };
 
   const handleDeleteBudget = (id: string) => {
       setBudgets(budgets.filter(b => b.id !== id));
+
+      // Note: No need to check notifications after deletion as deleted budgets won't trigger notifications
   };
 
 
@@ -891,12 +1153,23 @@ const App: React.FC = () => {
       )}
 
       <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden relative">
         <Header
           user={user}
           notifications={notifications}
-          onMarkAsRead={(id) => setNotifications(notifications.map(n => n.id === id ? {...n, read: true} : n))}
-          onClearAllNotifications={() => setNotifications(notifications.map(n => ({...n, read: true})))}
+          onMarkAsRead={(id) => {
+            setNotifications(notifications.map(n => n.id === id ? {...n, read: true} : n));
+            // Reset the processed flag when user marks notifications as read
+            // so they can get fresh notifications if needed
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
+          }}
+          onClearAllNotifications={() => {
+            setNotifications(notifications.map(n => ({...n, read: true})));
+            // Reset the processed flag when user clears all notifications
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
+          }}
           pageTitle={activeItem}
           onSaveTransaction={handleSaveTransaction}
           isOnline={isOnline}
@@ -912,6 +1185,7 @@ const App: React.FC = () => {
         isOpen={isAddTransactionModalOpen}
         onClose={() => setIsAddTransactionModalOpen(false)}
         onSaveTransaction={handleSaveTransaction}
+        onDeleteTransaction={handleDeleteTransaction}
         transactionToEdit={transactionToEdit}
         initialType={addTransactionModalType}
         smartSuggestionsEnabled={user?.smartFeatures?.categorySuggestions ?? true}
