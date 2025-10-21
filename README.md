@@ -1,161 +1,225 @@
-# Fintracker
+# 💰 Finance Flow
 
-A lightweight personal finance web app powered by AI Studio. Fintracker helps you track income and expenses, analyze trends, and generate customizable reports — all from a Next.js + TypeScript codebase.
+<div align="center">
+ <img width="1200" height="475" alt="Finance Flow Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+A comprehensive **Personal Finance Management** Progressive Web App (PWA) built with React and TypeScript. Take control of your financial life with powerful budgeting, goal tracking, expense management, and intelligent insights - all running securely in your browser with offline support.
 
-## Table of contents
+## ✨ Key Features
 
-- [Key features](#key-features)
-- [Tech stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Getting started (local development)](#getting-started-local-development)
-- [Environment variables](#environment-variables)
-- [Available scripts](#available-scripts)
-- [Deployment (Cloudflare Pages)](#deployment-cloudflare-pages)
-- [Project structure](#project-structure)
-- [Contributing](#contributing)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
+### 🏠 **Dashboard Overview**
+- Real-time balance and spending insights
+- Quick transaction entry
+- Upcoming bills and payment reminders
+- Financial goal progress tracking
+- Monthly budget status at a glance
 
-## Key features
+### 💳 **Transaction Management**
+- **Income & Expense Tracking**: Categorize and monitor all financial activities
+- **Smart Categorization**: AI-powered category suggestions for transactions
+- **Recurring Transactions**: Set up automatic weekly, monthly, or yearly transactions
+- **Search & Filter**: Find specific transactions with advanced filtering options
+- **Bulk Operations**: Efficiently manage multiple transactions
 
-- Real-time income and expense tracking
-- Intelligent financial data analysis (AI-powered)
-- Customizable report generation
-- Clean UI with reusable components
+### 📊 **Budgeting System**
+- **Monthly Budgets**: Set spending limits for different categories
+- **Real-time Alerts**: Get notified when approaching (80%), near (90%), or exceeding (100%) budget limits
+- **Visual Progress**: Track budget performance with intuitive charts
+- **Historical Analysis**: Review past budget performance
 
-## Tech stack
+### 🎯 **Goal Setting & Tracking**
+- **Multiple Goal Types**: Emergency fund, savings, investments, debt payoff, purchases
+- **Automatic Contributions**: Set rules to automatically allocate income to goals
+- **Progress Milestones**: Get notified at 25%, 50%, 75%, and 100% completion
+- **Flexible Allocation**: Percentage-based, category-based, or fixed amount rules
+- **Visual Progress Tracking**: Charts and progress indicators
 
-- TypeScript
-- Next.js
-- React
-- (Optional) Cloudflare Pages for static deployments
+### 📋 **Bill Management**
+- **Bill Tracking**: Monitor recurring bills with due dates
+- **Payment Reminders**: Automated notifications before due dates
+- **Payment History**: Track bill payment history
+- **One-click Payment**: Quick payment recording with automatic transaction creation
 
-## Prerequisites
+### 📈 **Reports & Analytics**
+- **Spending Breakdown**: Visual charts showing spending by category
+- **Income vs Expense Trends**: Track financial patterns over time
+- **Category Analysis**: Deep dive into spending habits
+- **Export Capabilities**: Export data for external analysis
 
-- Node.js 14+ (LTS recommended)
-- npm (or yarn)
-- A valid Gemini API key (or other AI provider key, depending on integration)
-- Git
+### 🔐 **Security & Privacy**
+- **Local-first Architecture**: All data stored encrypted in your browser
+- **End-to-end Encryption**: Sensitive data encrypted with user-derived keys
+- **No Data Collection**: Your financial data never leaves your device
+- **Secure Authentication**: Password-based local authentication system
 
-## Getting started (local development)
+### 📱 **Progressive Web App**
+- **Offline Support**: Full functionality without internet connection
+- **Mobile Optimized**: Responsive design for all screen sizes
+- **App-like Experience**: Install on mobile devices and desktop
+- **Push Notifications**: Timely reminders and alerts (with permission)
+- **Background Sync**: Data syncs when connection is restored
 
-1. Clone the repository
+### 🎨 **User Experience**
+- **Dark/Light Theme**: Automatic theme switching based on system preference
+- **Intuitive Interface**: Clean, modern design focused on usability
+- **Accessibility**: Screen reader support and keyboard navigation
+- **Customizable Notifications**: Configure alerts and quiet hours
+
+## 🛠️ Technical Stack
+
+- **Frontend**: React 19.2.0 with TypeScript
+- **Build Tool**: Vite 6.2.0
+- **Charts**: Recharts 2.12.7
+- **UI Components**: Custom component library with Tailwind CSS
+- **PWA**: Workbox 7.3.0 + Vite PWA Plugin
+- **Icons**: Custom SVG icon system
+- **Encryption**: Web Crypto API for client-side encryption
+- **Carousel**: Swiper 12.0.2 for transaction swiping
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js** (v16 or higher)
+- **npm** or **yarn** package manager
+
+### Installation
+
+1. **Clone the repository**
+  ```bash
+  git clone <repository-url>
+  cd finance-flow
+  ```
+
+2. **Install dependencies**
+  ```bash
+  npm install
+  ```
+
+3. **Start development server**
+  ```bash
+  npm run dev
+  ```
+
+4. **Open your browser**
+  Navigate to `http://localhost:5173`
+
+### Production Build
+
 ```bash
-git clone https://github.com/Alex2003763/Fintracker.git
-cd Fintracker
-```
-
-2. Install dependencies
-```bash
-npm install
-# or
-# yarn
-```
-
-3. Create a local environment file
-Create a `.env.local` in the project root (see [Environment variables](#environment-variables)).
-
-4. Start the development server
-```bash
-npm run dev
-# or
-# yarn dev
-```
-
-5. Open your browser to http://localhost:3000
-
-## Environment variables
-
-Store secrets in `.env.local` (this file should not be committed). Example:
-```env
-# Server-side only
-GEMINI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxx
-
-# Example Next.js public var (exposed to the browser)
-NEXT_PUBLIC_ANALYTICS_ID=UA-XXXXXXXX-X
-```
-
-Notes:
-- Keep API keys and secrets out of version control.
-- If you deploy to Cloudflare Pages, add the same variables to your Pages project settings.
-
-## Available scripts
-
-- `npm run dev` — Start Next.js in development mode (http://localhost:3000)
-- `npm run build` — Build the project for production
-- `npm run start` — Start the production server (after `build`)
-- `npm run export` — Export a static site into the `out/` directory (if your app is compatible with `next export`)
-
-Typical static export workflow (if applicable):
-```bash
+# Build for production
 npm run build
-npm run export
-# output will be in ./out
+
+# Preview production build
+npm run preview
 ```
 
-If your app uses server-side features (API routes, SSR, or server-only AI calls), prefer a platform that supports Node.js or Next.js server runtime (Vercel, Cloudflare Pages with Functions, etc.).
+## 📖 Usage Guide
 
-## Deployment (Cloudflare Pages)
+### Getting Started
 
-Option A — Static export (simple):
-1. Ensure your app is compatible with `next export`.
-2. Set the build command to:
-```bash
-npm run build && npm run export
+1. **Create Account**: Set up your secure local account on first launch
+2. **Add Transactions**: Start by recording your income and expenses
+3. **Set Budgets**: Create monthly spending limits for different categories
+4. **Create Goals**: Set financial targets and allocation rules
+5. **Add Bills**: Track recurring payments with reminder notifications
+
+### Navigation
+
+- **🏠 Home**: Dashboard with financial overview and quick actions
+- **💳 Transactions**: View, edit, and manage all transactions
+- **📊 Reports**: Analyze spending patterns and trends
+- **💰 Budgets**: Monitor and adjust monthly budgets
+- **🎯 Goals**: Track progress toward financial targets
+- **⚙️ Settings**: Configure preferences and manage account
+
+### Mobile Experience
+
+Finance Flow is optimized for mobile use:
+- **Touch-friendly Interface**: Large buttons and intuitive gestures
+- **PWA Installation**: Add to home screen for app-like experience
+- **Offline Functionality**: Full feature set works without internet
+- **Push Notifications**: Get reminded about bills and budget limits
+
+## 🏗️ Project Structure
+
 ```
-3. Set the output directory to:
+finance-flow/
+├── public/                 # Static assets and PWA files
+│   ├── offline.html       # Offline fallback page
+│   └── sw-custom.js       # Custom service worker logic
+├── components/            # React components
+│   ├── Dashboard.tsx      # Main dashboard component
+│   ├── TransactionsPage.tsx # Transaction management
+│   ├── BudgetsPage.tsx    # Budget management interface
+│   ├── GoalsPage.tsx      # Goal setting and tracking
+│   ├── SettingsPage.tsx   # User preferences
+│   └── modals/           # Modal components
+├── utils/                # Utility functions
+│   ├── formatters.ts     # Currency and data formatting
+│   ├── goalUtils.ts      # Goal calculation logic
+│   └── categoryAI.ts     # AI categorization helpers
+├── types.ts              # TypeScript type definitions
+├── constants.tsx         # App constants and categories
+└── App.tsx              # Main application component
 ```
-out
-```
-4. Add environment variables in the Cloudflare Pages dashboard (e.g., `GEMINI_API_KEY`).
 
-Option B — Server-side / Functions (recommended if you rely on server-only functionality):
-- Use a platform that supports Next.js server functions (Vercel provides full Next.js support). Cloudflare Pages supports Functions — check their documentation to configure Next.js with Pages Functions or use a custom adapter.
+## 🔒 Security Features
 
-Cloudflare Pages tips:
-- Add necessary environment variables in the Pages UI under "Settings > Environment Variables".
-- If you need server-side runtime, enable Pages Functions or choose a server-capable deployment platform.
+- **Client-side Encryption**: All sensitive data encrypted before storage
+- **Password-based Key Derivation**: Strong encryption keys from user passwords
+- **Local Storage Only**: No data transmitted to external servers
+- **Secure Authentication**: Protected local authentication system
+- **No Tracking**: Zero analytics or data collection
 
-## Project structure
+## 🤝 Contributing
 
-Fintracker/
-├─ components/     # Reusable UI components (Buttons, Forms, Layouts)  
-├─ pages/          # Next.js pages and API routes  
-├─ public/         # Static assets (images, favicon)  
-├─ styles/         # Global and component styles  
-├─ .env.local      # Local env vars (not committed)  
-└─ package.json    # Project scripts and dependencies
+We welcome contributions! Here's how to get started:
 
-## Contributing
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** and test thoroughly
+4. **Commit your changes**: `git commit -m 'Add amazing feature'`
+5. **Push to branch**: `git push origin feature/amazing-feature`
+6. **Open a Pull Request**
 
-Contributions are welcome! To contribute:
+### Development Guidelines
 
-1. Fork the repository.
-2. Create a new branch named `feature/your-feature` or `fix/issue-description`.
-3. Make your changes and add tests where appropriate.
-4. Commit and push your branch.
-5. Open a pull request describing the change and why it's needed.
+- **TypeScript**: All code must be properly typed
+- **Responsive Design**: Ensure mobile-first approach
+- **Accessibility**: Follow WCAG guidelines
+- **Testing**: Test on multiple devices and browsers
+- **Documentation**: Update README for new features
 
-Please follow:
-- Clear, concise commit messages
-- Consistent code style (run linters/formatters before submitting)
-- Include tests or update existing ones for new behavior
+## 📋 Feature Roadmap
 
-If you'd like, open an issue first to discuss large features.
+- [ ] **Multi-currency Support**: Handle multiple currencies
+- [ ] **Bank Integration**: Connect with financial institutions (opt-in)
+- [ ] **Advanced Analytics**: More detailed financial insights
+- [ ] **Export Options**: PDF reports and CSV exports
+- [ ] **Investment Tracking**: Portfolio and investment management
+- [ ] **Receipt Scanning**: OCR for automatic transaction entry
+- [ ] **Collaborative Features**: Share budgets with family members
 
-## Troubleshooting
+## 🐛 Issues & Support
 
-- "Port 3000 already in use": change the port or stop the process that is using port 3000.
-- Missing environment variables: ensure `.env.local` exists and values are set; restart the dev server after changing env vars.
-- Build failures: run `npm run build` locally to reproduce and fix errors before deploying.
+- **Bug Reports**: [Create an issue](https://github.com/your-repo/issues) with detailed information
+- **Feature Requests**: Use the discussions tab for feature suggestions
+- **Questions**: Check existing documentation or create a discussion
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-If you'd like, I can:
-- Add a CONTRIBUTING.md and PR template,
-- Add CI workflow (GitHub Actions) to run lint/tests on PRs,
-- Add badges (build, coverage) once CI is set up.
+## 🙏 Acknowledgments
+
+- **Icons**: Custom icon set designed for financial applications
+- **Community**: Thanks to all contributors and users
+- **Open Source**: Built with amazing open source libraries
+
+---
+
+<div align="center">
+ <p><strong>Take control of your financial future with Finance Flow</strong></p>
+ <p>💡 Track • 🎯 Plan • 📈 Achieve</p>
+</div>
