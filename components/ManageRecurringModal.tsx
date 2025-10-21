@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { RecurringTransaction } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
-import { RecurringIcon, PlusIcon } from './icons';
+import { RecurringIcon, PlusIcon, SettingsIcon } from './icons';
 import { formatCurrency } from '../utils/formatters';
 import BaseModal from './BaseModal';
+import ConfirmationModal from './ConfirmationModal';
 import { FormField, Input, Select, Button, ToggleButton, Tabs } from './ModalForm';
 
 interface ManageRecurringModalProps {
@@ -14,7 +15,13 @@ interface ManageRecurringModalProps {
   onDeleteRecurringTransaction: (id: string) => void;
 }
 
-const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onClose, recurringTransactions, onSaveRecurringTransaction, onDeleteRecurringTransaction }) => {
+const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({
+  isOpen,
+  onClose,
+  recurringTransactions,
+  onSaveRecurringTransaction,
+  onDeleteRecurringTransaction
+}) => {
   const [activeTab, setActiveTab] = useState('add');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -25,6 +32,8 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
   const [itemToEditId, setItemToEditId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<RecurringTransaction | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -46,6 +55,26 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
     setCategory(TRANSACTION_CATEGORIES.expense['Food & Drink'][0]);
     setItemToEditId(null);
     setActiveTab('add');
+    setErrors({});
+  };
+
+  const handleDeleteClick = (transaction: RecurringTransaction) => {
+    setItemToDelete(transaction);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (itemToDelete) {
+      await onDeleteRecurringTransaction(itemToDelete.id);
+      setShowDeleteConfirm(false);
+      setItemToDelete(null);
+      resetForm();
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+    setItemToDelete(null);
   };
 
   const handleEditClick = (rt: RecurringTransaction) => {
@@ -56,6 +85,7 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
     setCategory(rt.category);
     setFrequency(rt.frequency);
     setStartDate(new Date(rt.startDate).toISOString().split('T')[0]);
+    setActiveTab('add');
   };
 
   const validateForm = () => {
@@ -102,7 +132,7 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
         category,
         frequency,
         startDate,
-        nextDueDate: startDate, // The backend logic will process this on next load.
+        nextDueDate: startDate,
       });
       resetForm();
     } catch (error) {
@@ -111,10 +141,8 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
       setIsSubmitting(false);
     }
   };
-  
+
   if (!isOpen) return null;
-  
-  const inputStyle = "block w-full px-3 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-md text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] sm:text-sm placeholder:text-[rgb(var(--color-text-muted-rgb))] transition-colors";
 
   const tabs = [
     {
@@ -136,9 +164,10 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
       onClose={onClose}
       title="Manage Recurring Transactions"
       size="xl"
+      animation="slide-up"
       aria-label="Manage recurring transactions modal"
     >
-      <div className="flex flex-col h-full max-h-[80vh]">
+      <div className="flex flex-col h-full max-h-[85vh]">
         <Tabs
           tabs={tabs}
           activeTab={activeTab}
@@ -146,32 +175,36 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
           className="px-4 sm:px-6"
         />
 
-        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[rgb(var(--color-card-rgb))] to-[rgb(var(--color-card-muted-rgb))]">
+        <div className="flex-1 overflow-y-auto">
           {activeTab === 'add' && (
-            <div className="p-3 sm:p-4 animate-in slide-in-from-top duration-300">
-              <div className="bg-[rgb(var(--color-card-muted-rgb))] rounded-lg p-3 sm:p-4 border border-[rgb(var(--color-border-rgb))] shadow-md">
-                <div className="flex items-center mb-6">
-                  <div className="bg-gradient-to-br from-[rgb(var(--color-primary-rgb))] to-[rgb(var(--color-primary-hover-rgb))] bg-opacity-20 p-3 rounded-xl mr-4 shadow-sm">
-                    <RecurringIcon className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg text-[rgb(var(--color-text-rgb))] mb-1">
-                      {itemToEditId ? 'Edit Recurring Transaction' : 'Add New Recurring Transaction'}
-                    </h3>
-                    <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
-                      {itemToEditId ? 'Modify your recurring transaction details' : 'Set up automatic income or expense tracking'}
-                    </p>
+            <div className="p-4 sm:p-6">
+              <div className="max-w-2xl mx-auto">
+                {/* Header Card */}
+                <div className="bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-2xl p-6 mb-6 border border-[rgb(var(--color-primary-rgb))]/20">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-gradient-to-br from-[rgb(var(--color-primary-rgb))] to-[rgb(var(--color-primary-hover-rgb))] p-3 rounded-xl shadow-lg">
+                      <RecurringIcon className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-xl text-[rgb(var(--color-text-rgb))] mb-1">
+                        {itemToEditId ? 'Edit Recurring Transaction' : 'Add New Recurring Transaction'}
+                      </h3>
+                      <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                        {itemToEditId ? 'Modify your recurring transaction details' : 'Set up automatic income or expense tracking'}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Form Card */}
+                <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] shadow-sm p-6">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Description - Full Width */}
                     <FormField
                       label="Description"
                       htmlFor="recurring-description"
                       required
                       error={errors.description}
-                      className="lg:col-span-2"
                     >
                       <Input
                         id="recurring-description"
@@ -183,54 +216,58 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
                         }}
                         placeholder="e.g. Monthly Salary, Rent Payment"
                         error={errors.description}
-                        className="w-full"
+                        className="text-base"
                       />
                     </FormField>
 
-                    <FormField
-                      label="Amount"
-                      htmlFor="recurring-amount"
-                      required
-                      error={errors.amount}
-                    >
-                      <Input
-                        id="recurring-amount"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={amount}
-                        onChange={(e) => {
-                          setAmount(e.target.value);
-                          if (errors.amount) setErrors({ ...errors, amount: '' });
-                        }}
-                        placeholder="0.00"
+                    {/* Amount and Frequency Row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField
+                        label="Amount"
+                        htmlFor="recurring-amount"
+                        required
                         error={errors.amount}
-                        inputMode="decimal"
-                        pattern="[0-9]*"
-                        leftIcon={
-                          <span className="text-[rgb(var(--color-text-muted-rgb))] font-medium">$</span>
-                        }
-                        className="w-full"
-                      />
-                    </FormField>
-
-                    <FormField
-                      label="Frequency"
-                      htmlFor="recurring-frequency"
-                      required
-                    >
-                      <Select
-                        id="recurring-frequency"
-                        value={frequency}
-                        onChange={(e) => setFrequency(e.target.value as 'weekly' | 'monthly' | 'yearly')}
-                        className="w-full"
                       >
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                        <option value="yearly">Yearly</option>
-                      </Select>
-                    </FormField>
+                        <Input
+                          id="recurring-amount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={amount}
+                          onChange={(e) => {
+                            setAmount(e.target.value);
+                            if (errors.amount) setErrors({ ...errors, amount: '' });
+                          }}
+                          placeholder="0.00"
+                          error={errors.amount}
+                          inputMode="decimal"
+                          pattern="[0-9]*"
+                          leftIcon={
+                            <span className="text-[rgb(var(--color-text-muted-rgb))] font-semibold text-lg">$</span>
+                          }
+                          className="text-base"
+                        />
+                      </FormField>
 
+                      <FormField
+                        label="Frequency"
+                        htmlFor="recurring-frequency"
+                        required
+                      >
+                        <Select
+                          id="recurring-frequency"
+                          value={frequency}
+                          onChange={(e) => setFrequency(e.target.value as 'weekly' | 'monthly' | 'yearly')}
+                          className="text-base"
+                        >
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="yearly">Yearly</option>
+                        </Select>
+                      </FormField>
+                    </div>
+
+                    {/* Start Date */}
                     <FormField
                       label="Start Date"
                       htmlFor="recurring-start-date"
@@ -246,20 +283,20 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
                           if (errors.startDate) setErrors({ ...errors, startDate: '' });
                         }}
                         error={errors.startDate}
-                        className="w-full"
+                        className="text-base"
                       />
                     </FormField>
 
+                    {/* Type Toggle - Full Width */}
                     <FormField
                       label="Type"
                       htmlFor="recurring-type"
                       required
-                      className="lg:col-span-2"
                     >
                       <ToggleButton
                         options={[
-                          { value: 'expense', label: 'Expense' },
-                          { value: 'income', label: 'Income' }
+                          { value: 'expense', label: '💸 Expense' },
+                          { value: 'income', label: '💰 Income' }
                         ]}
                         value={type}
                         onChange={(value) => {
@@ -269,17 +306,17 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
                       />
                     </FormField>
 
+                    {/* Category - Full Width */}
                     <FormField
                       label="Category"
                       htmlFor="recurring-category"
                       required
-                      className="lg:col-span-2"
                     >
                       <Select
                         id="recurring-category"
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full"
+                        className="text-base"
                       >
                         {Object.entries(TRANSACTION_CATEGORIES[type]).map(([group, subcategories]) => (
                           <optgroup label={group} key={group}>
@@ -290,124 +327,187 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({ isOpen, onC
                         ))}
                       </Select>
                     </FormField>
-                  </div>
 
-                  <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-[rgb(var(--color-border-rgb))]">
-                    {itemToEditId && (
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-[rgb(var(--color-border-rgb))]">
+                      {itemToEditId && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            onClick={() => {
+                              const transaction = recurringTransactions.find(t => t.id === itemToEditId);
+                              if (transaction) {
+                                handleDeleteClick(transaction);
+                              }
+                            }}
+                            disabled={isSubmitting}
+                            className="flex-1 sm:flex-none order-3 sm:order-1"
+                          >
+                            Delete Transaction
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={resetForm}
+                            disabled={isSubmitting}
+                            className="flex-1 sm:flex-none order-2 sm:order-2"
+                          >
+                            Cancel Edit
+                          </Button>
+                        </>
+                      )}
                       <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={resetForm}
-                        disabled={isSubmitting}
-                        className="w-full sm:w-auto order-2 sm:order-1 hover:scale-105 transition-transform duration-200"
+                        type="submit"
+                        variant="primary"
+                        loading={isSubmitting}
+                        className={`min-h-[48px] ${itemToEditId ? 'flex-1 sm:flex-none order-1 sm:order-3' : 'flex-1 sm:flex-none'}`}
                       >
-                        Cancel Edit
+                        {itemToEditId ? 'Save Changes' : 'Add Recurring Transaction'}
                       </Button>
-                    )}
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      loading={isSubmitting}
-                      className="w-full sm:w-auto order-1 sm:order-2 hover:scale-105 transition-transform duration-200"
-                    >
-                      {itemToEditId ? 'Save Changes' : 'Add Recurring'}
-                    </Button>
-                  </div>
-                </form>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           )}
 
           {activeTab === 'all' && (
-            <div className="p-3 sm:p-4 space-y-3 animate-in slide-in-from-bottom duration-300">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <div className="bg-gradient-to-br from-[rgb(var(--color-primary-rgb))] to-[rgb(var(--color-primary-hover-rgb))] bg-opacity-20 p-2 rounded-lg mr-3">
-                    <RecurringIcon className="h-5 w-5 text-white" />
+            <div className="p-4 sm:p-6">
+              <div className="max-w-4xl mx-auto">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-[rgb(var(--color-primary-rgb))] p-3 rounded-xl">
+                      <RecurringIcon className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg sm:text-xl text-[rgb(var(--color-text-rgb))]">
+                        Recurring Transactions
+                      </h3>
+                      <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                        {recurringTransactions.length} {recurringTransactions.length === 1 ? 'transaction' : 'transactions'}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-lg text-[rgb(var(--color-text-rgb))]">
-                    Your Recurring Transactions
-                  </h3>
                 </div>
-                <div className="bg-[rgb(var(--color-primary-rgb))] px-3 py-2 rounded-full shadow-sm">
-                  <span className="text-white font-bold text-sm">
-                    {recurringTransactions.length} {recurringTransactions.length === 1 ? 'Transaction' : 'Transactions'}
-                  </span>
-                </div>
-              </div>
 
-              <div className="max-h-96 overflow-y-auto border border-[rgb(var(--color-border-rgb))] rounded-xl bg-[rgb(var(--color-card-rgb))]">
-                {recurringTransactions.length > 0 ? (
-                  <div className="divide-y divide-[rgb(var(--color-border-rgb))]">
-                    {recurringTransactions.map(rt => (
-                      <div key={rt.id} className="group flex items-center justify-between p-3 hover:bg-gradient-to-r hover:from-[rgb(var(--color-card-muted-rgb))] hover:to-transparent transition-all duration-200 border-b border-[rgb(var(--color-border-rgb))] last:border-b-0">
-                        <div className="flex items-center flex-1 min-w-0">
-                          <div className={`p-2 rounded-lg mr-3 flex-shrink-0 ${rt.type === 'income' ? 'bg-gradient-to-br from-green-100 to-green-50' : 'bg-gradient-to-br from-red-100 to-red-50'}`}>
-                            <RecurringIcon className={`h-4 w-4 ${rt.type === 'income' ? 'text-green-600' : 'text-red-600'}`} />
+                {/* Transactions List */}
+                <div className="space-y-4">
+                  {recurringTransactions.length > 0 ? (
+                    recurringTransactions.map(rt => (
+                      <button
+                        key={rt.id}
+                        onClick={() => handleEditClick(rt)}
+                        className="w-full text-left bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-5 hover:shadow-md hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
+                      >
+                        <div className="flex items-center gap-4">
+                          {/* Icon & Basic Info */}
+                          <div className={`p-3 rounded-xl flex-shrink-0 group-hover:scale-105 transition-transform duration-200 ${
+                            rt.type === 'income'
+                              ? 'bg-green-50 border border-green-200'
+                              : 'bg-red-50 border border-red-200'
+                          }`}>
+                            <RecurringIcon className={`h-5 w-5 ${
+                              rt.type === 'income' ? 'text-green-600' : 'text-red-600'
+                            }`} />
                           </div>
+
+                          {/* Content */}
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-[rgb(var(--color-text-rgb))] text-sm truncate mb-0.5">
-                              {rt.description}
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-semibold text-[rgb(var(--color-text-rgb))] text-base sm:text-lg truncate group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">
+                                {rt.description}
+                              </h4>
+                              <div className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                                rt.type === 'income'
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}>
+                                {rt.type}
+                              </div>
                             </div>
-                            <div className="text-sm text-[rgb(var(--color-text-muted-rgb))] flex items-center">
-                              <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${rt.type === 'income' ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                              {rt.category} • {rt.frequency}
+                            <div className="flex items-center gap-4 text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                              <span className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  rt.type === 'income' ? 'bg-green-400' : 'bg-red-400'
+                                }`}></div>
+                                {rt.category}
+                              </span>
+                              <span className="capitalize">{rt.frequency.replace('ly', '')}</span>
                             </div>
                           </div>
-                          <div className="text-right ml-3 flex-shrink-0">
-                            <div className={`font-bold text-base mb-0.5 ${rt.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+
+                          {/* Amount */}
+                          <div className="text-right flex-shrink-0">
+                            <div className={`font-bold text-lg sm:text-xl group-hover:scale-105 transition-transform duration-200 ${
+                              rt.type === 'income' ? 'text-green-600' : 'text-red-600'
+                            }`}>
                               {rt.type === 'income' ? '+' : '-'}{formatCurrency(rt.amount)}
                             </div>
-                            <div className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                            <div className="text-xs sm:text-sm text-[rgb(var(--color-text-muted-rgb))]">
                               per {rt.frequency.replace('ly', '')}
                             </div>
                           </div>
                         </div>
-                        <div className="flex space-x-2 ml-4">
-                          <button
-                            onClick={() => {
-                              handleEditClick(rt);
-                              setActiveTab('add');
-                            }}
-                            className="px-3 py-1.5 text-sm font-medium text-[rgb(var(--color-primary-rgb))] hover:bg-[rgb(var(--color-primary-rgb))] hover:bg-opacity-5 hover:text-[rgb(var(--color-primary-hover-rgb))] rounded-md transition-all duration-200"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => onDeleteRecurringTransaction(rt.id)}
-                            className="px-3 py-1.5 text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600 rounded-md transition-all duration-200"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 sm:py-12">
+                      <div className="bg-[rgb(var(--color-card-muted-rgb))] rounded-full p-4 w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 flex items-center justify-center">
+                        <RecurringIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[rgb(var(--color-text-rgb))]" />
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center">
-                    <div className="bg-gradient-to-br from-[rgb(var(--color-card-muted-rgb))] to-[rgb(var(--color-border-rgb))] rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                      <RecurringIcon className="h-8 w-8 text-[rgb(var(--color-text-rgb))]" />
+                      <h4 className="text-lg sm:text-xl font-semibold text-[rgb(var(--color-text-rgb))] mb-2">
+                        No recurring transactions yet
+                      </h4>
+                      <p className="text-sm sm:text-base text-[rgb(var(--color-text-muted-rgb))] mb-4 sm:mb-6">
+                        Automate your financial tracking.
+                      </p>
+                      <Button
+                        onClick={() => setActiveTab('add')}
+                        variant="primary"
+                        className="min-h-[44px] px-6"
+                      >
+                        <PlusIcon className="h-4 w-4 mr-2" />
+                        Add Transaction
+                      </Button>
                     </div>
-                    <h4 className="text-lg font-semibold text-[rgb(var(--color-text-rgb))] mb-2">
-                      No recurring transactions yet
-                    </h4>
-                    <p className="text-base text-[rgb(var(--color-text-muted-rgb))] mb-4">
-                      Automate your financial tracking by setting up recurring income and expenses.
-                    </p>
-                    <button
-                      onClick={() => setActiveTab('add')}
-                      className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[rgb(var(--color-primary-rgb))] to-[rgb(var(--color-primary-hover-rgb))] text-[rgb(var(--color-primary-text-rgb))] font-medium rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 text-sm"
-                    >
-                      <PlusIcon className="h-3 w-3 mr-2" />
-                      Add Your First Transaction
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Recurring Transaction"
+        message={
+          <div className="space-y-2">
+            <p>Are you sure you want to delete this recurring transaction?</p>
+            {itemToDelete && (
+              <div className="bg-[rgb(var(--color-card-muted-rgb))] rounded-lg p-3 mt-3">
+                <p className="font-semibold text-[rgb(var(--color-text-rgb))]">
+                  {itemToDelete.description}
+                </p>
+                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                  {itemToDelete.type === 'income' ? '+' : '-'}{formatCurrency(itemToDelete.amount)} per {itemToDelete.frequency.replace('ly', '')}
+                </p>
+              </div>
+            )}
+            <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mt-3">
+              This action cannot be undone.
+            </p>
+          </div>
+        }
+        confirmButtonText="Delete"
+        confirmButtonVariant="danger"
+        cancelButtonText="Keep"
+      />
     </BaseModal>
   );
 };

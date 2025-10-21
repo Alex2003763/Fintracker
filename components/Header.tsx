@@ -34,14 +34,14 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
     }, [showNotifications]);
 
     return (
-        <header className="sticky top-0 z-50 flex items-center justify-between h-20 px-4 md:px-6 transition-colors flex-shrink-0 bg-[rgb(var(--color-bg-rgb))] border-b border-[rgb(var(--color-border-rgb))]">
-            {/* Mobile Title */}
-            <div className="flex items-center space-x-3 md:hidden">
-              <FinanceFlowIcon className="h-7 w-7 text-green-500" />
-              <h1 className="text-xl font-bold text-[rgb(var(--color-text-rgb))]">Finance Flow</h1>
-            </div>
-            {/* Desktop Title */}
-            <h1 className="hidden md:block text-2xl font-bold text-[rgb(var(--color-text-rgb))]">{pageTitle}</h1>
+         <header className="sticky top-0 z-50 flex items-center justify-between h-20 px-4 md:px-6 transition-colors flex-shrink-0 bg-[rgb(var(--color-bg-rgb))] border-b border-[rgb(var(--color-border-rgb))] mobile-safe-area">
+             {/* Mobile Title */}
+             <div className="flex items-center space-x-3 md:hidden min-w-0 flex-1">
+               <FinanceFlowIcon className="h-7 w-7 text-green-500 flex-shrink-0" />
+               <h1 className="text-xl font-bold text-[rgb(var(--color-text-rgb))] truncate">Finance Flow</h1>
+             </div>
+             {/* Desktop Title */}
+             <h1 className="hidden md:block text-2xl font-bold text-[rgb(var(--color-text-rgb))]">{pageTitle}</h1>
             
             <div className="flex items-center space-x-4">
                  {/* Network Status Indicator */}

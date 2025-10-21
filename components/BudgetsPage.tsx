@@ -166,16 +166,16 @@ const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onMana
   const overallProgress = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[rgb(var(--color-text-rgb))]">
-            Monthly Budgets
-          </h1>
-          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
-            Track your spending against planned budgets
-          </p>
-        </div>
+     <div className="space-y-4 mobile-content">
+       <div className="flex items-center justify-between">
+         <div>
+           <h1 className="text-xl sm:text-2xl font-bold text-[rgb(var(--color-text-rgb))]">
+             Monthly Budgets
+           </h1>
+           <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+             Track your spending against planned budgets
+           </p>
+         </div>
         <button
           onClick={onManageBudgets}
           className="flex items-center px-3 py-2 text-sm font-medium text-[rgb(var(--color-primary-text-rgb))] bg-[rgb(var(--color-primary-rgb))] rounded-md shadow-sm hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--color-primary-rgb))] transition-colors"
@@ -186,7 +186,7 @@ const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onMana
         </button>
       </div>
 
-      <div className="bg-gradient-to-br from-[rgb(var(--color-card-rgb))] to-[rgb(var(--color-card-muted-rgb))] p-4 rounded-lg shadow-sm border border-[rgb(var(--color-border-rgb))]">
+      <div className="bg-gradient-to-br from-[rgb(var(--color-card-rgb))] to-[rgb(var(--color-card-muted-rgb))] p-6 sm:p-8 rounded-lg shadow-sm border border-[rgb(var(--color-border-rgb))]">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-bold text-lg text-[rgb(var(--color-text-rgb))]">

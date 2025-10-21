@@ -132,6 +132,7 @@ const ManageBudgetsModal: React.FC<ManageBudgetsModalProps> = ({ isOpen, onClose
       onClose={onClose}
       title="Manage Budgets"
       size="xl"
+      animation="slide-up"
       aria-label="Manage budgets modal"
     >
       <div className="flex flex-col h-full max-h-[80vh]">

@@ -258,14 +258,14 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user }) => {
   }
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Financial Reports</h1>
-      
-      <div className="bg-[rgb(var(--color-card-rgb))] p-4 md:p-6 rounded-lg shadow space-y-8 transition-colors">
-        <AIInsightsCard user={user} transactions={transactions} />
-      </div>
+     <div className="space-y-8 mobile-content">
+       <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Financial Reports</h1>
 
-      <div className="bg-[rgb(var(--color-card-rgb))] p-4 md:p-6 rounded-lg shadow space-y-8 transition-colors">
+       <div className="bg-[rgb(var(--color-card-rgb))] p-6 md:p-8 rounded-lg shadow space-y-8 transition-colors">
+         <AIInsightsCard user={user} transactions={transactions} />
+       </div>
+ 
+       <div className="bg-[rgb(var(--color-card-rgb))] p-6 md:p-8 rounded-lg shadow space-y-8 transition-colors">
         <div>
           <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))] mb-4">Monthly Summary</h2>
           <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg">

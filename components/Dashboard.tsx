@@ -25,21 +25,21 @@ const Dashboard: React.FC<DashboardProps> = ({
     onManageBills
 }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="lg:col-span-2">
-        <BalanceCard transactions={transactions} onAddTransaction={onAddTransaction} setActiveItem={setActiveItem} />
-      </div>
-      <TransactionsCard 
-        transactions={transactions.slice(0, 5)} 
-        onEditTransaction={onEditTransaction}
-        setActiveItem={setActiveItem}
-      />
-      <div className="space-y-6">
-        <SpendingBreakdownCard transactions={transactions} />
-        <UpcomingBillsCard bills={bills} onPayBill={onPayBill} onManageBills={onManageBills} />
-      </div>
-    </div>
-  );
+     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mobile-content p-2 sm:p-0">
+       <div className="lg:col-span-2">
+         <BalanceCard transactions={transactions} onAddTransaction={onAddTransaction} setActiveItem={setActiveItem} />
+       </div>
+       <TransactionsCard
+         transactions={transactions.slice(0, 5)}
+         onEditTransaction={onEditTransaction}
+         setActiveItem={setActiveItem}
+       />
+       <div className="space-y-6">
+         <SpendingBreakdownCard transactions={transactions} />
+         <UpcomingBillsCard bills={bills} onPayBill={onPayBill} onManageBills={onManageBills} />
+       </div>
+     </div>
+   );
 };
 
 export default Dashboard;

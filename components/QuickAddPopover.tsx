@@ -61,13 +61,14 @@ const QuickAddPopover: React.FC<QuickAddPopoverProps> = ({ isOpen, onClose, onSa
 
     return (
         <BaseModal
-            isOpen={isOpen}
-            onClose={onClose}
-            title="Quick Add Transaction"
-            size="sm"
-            aria-label="Quick add transaction form"
-        >
-            <form onSubmit={handleSubmit} className="space-y-4 p-6">
+             isOpen={isOpen}
+             onClose={onClose}
+             title="Quick Add Transaction"
+             size="sm"
+             animation="bounce"
+             aria-label="Quick add transaction form"
+         >
+             <form onSubmit={handleSubmit} className="space-y-4 p-4 sm:p-6">
                 <FormField
                     label="Description & Amount"
                     htmlFor="quick-add-input"
@@ -133,7 +134,7 @@ const QuickAddPopover: React.FC<QuickAddPopoverProps> = ({ isOpen, onClose, onSa
                         type="submit"
                         variant="primary"
                         loading={isSubmitting}
-                        className="w-full sm:w-auto"
+                        className="w-full sm:w-auto min-h-[44px]"
                     >
                         Add Transaction
                     </Button>

@@ -7,6 +7,7 @@ interface BaseModalProps {
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   variant?: 'default' | 'sidebar';
+  animation?: 'slide-up' | 'scale' | 'fade' | 'bounce';
   showCloseButton?: boolean;
   closeOnBackdropClick?: boolean;
   closeOnEscape?: boolean;
@@ -22,6 +23,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   children,
   size = 'md',
   variant = 'default',
+  animation = 'slide-up',
   showCloseButton = true,
   closeOnBackdropClick = true,
   closeOnEscape = true,
@@ -32,19 +34,57 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
 
-  // Size configurations
-  const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    full: 'max-w-full mx-4',
-  };
+  // Size configurations - mobile optimized
+   const sizeClasses = {
+     sm: 'max-w-sm mx-4',
+     md: 'max-w-md mx-4',
+     lg: 'max-w-lg mx-4',
+     xl: 'max-w-xl mx-4',
+     full: 'max-w-full mx-2 sm:mx-4',
+   };
 
   const variantClasses = {
     default: '',
     sidebar: 'h-full max-h-screen rounded-l-2xl rounded-r-none',
   };
+
+  // Detect if user prefers reduced motion and mobile device
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isMobile = window.innerWidth < 768;
+
+  // Animation configurations with mobile optimizations
+  const animationClasses = {
+    'slide-up': {
+      backdrop: `modal-fade-in`,
+      modal: `animate-slide-in-from-bottom`,
+      modalBase: `transform transition-all ease-out`,
+      modalEnter: 'opacity-100 translate-y-0 scale-100',
+      modalExit: 'opacity-0 translate-y-full scale-95',
+    },
+    'scale': {
+      backdrop: `modal-fade-in`,
+      modal: `animate-zoom-in`,
+      modalBase: `transform transition-all ease-out`,
+      modalEnter: 'opacity-100 scale-100',
+      modalExit: 'opacity-0 scale-90',
+    },
+    'fade': {
+      backdrop: `modal-fade-in`,
+      modal: `modal-fade-in`,
+      modalBase: `transform transition-all ease-out`,
+      modalEnter: 'opacity-100',
+      modalExit: 'opacity-0',
+    },
+    'bounce': {
+      backdrop: `modal-fade-in`,
+      modal: `animate-slide-in-from-bottom`,
+      modalBase: `transform transition-all ease-out`,
+      modalEnter: 'opacity-100 translate-y-0 scale-100',
+      modalExit: 'opacity-0 translate-y-full scale-95',
+    },
+  };
+
+  const currentAnimation = animationClasses[animation];
 
   // Focus management
   const handleFocus = useCallback(() => {
@@ -125,9 +165,9 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   return (
     <div
       className={`
-        fixed inset-0 z-50 flex items-center justify-center p-4
+        fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4
         bg-black/60 backdrop-blur-sm
-        animate-in fade-in duration-300
+        ${currentAnimation.backdrop}
         ${className}
       `}
       onClick={handleBackdropClick}
@@ -142,24 +182,32 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
           bg-[rgb(var(--color-card-rgb))]
           ${sizeClasses[size]}
           ${variantClasses[variant]}
-          w-full rounded-2xl shadow-2xl
-          max-h-[90vh] overflow-hidden
-          transform transition-all duration-300 ease-out
-          animate-in slide-in-from-bottom-4 fade-in
-          ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}
+          w-full rounded-t-2xl sm:rounded-2xl shadow-2xl
+          max-h-[95vh] sm:max-h-[90vh] overflow-hidden
+          ${currentAnimation.modalBase}
+          ${currentAnimation.modal}
         `}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between p-6 pb-4 border-b border-[rgb(var(--color-border-rgb))]">
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">
+          <div className={`
+            flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 border-b border-[rgb(var(--color-border-rgb))]
+            transform transition-all ${prefersReducedMotion || isMobile ? 'duration-150' : 'duration-300'} ease-out
+            ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}
+          `} style={{ transitionDelay: isOpen ? (prefersReducedMotion || isMobile ? '50ms' : '100ms') : '0ms' }}>
+            <h2 className="text-lg sm:text-xl font-semibold text-[rgb(var(--color-text-rgb))] pr-4">
               {title}
             </h2>
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-2 -mr-2 text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] rounded-lg transition-colors"
+                className={`
+                  p-2 -mr-2 text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center flex-shrink-0
+                  transform transition-all ${prefersReducedMotion || isMobile ? 'duration-100' : 'duration-200'} ease-out
+                  ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}
+                `}
+                style={{ transitionDelay: isOpen ? (prefersReducedMotion || isMobile ? '100ms' : '200ms') : '0ms' }}
                 aria-label="Close modal"
               >
                 <svg
@@ -181,7 +229,11 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className={`
+          flex-1 overflow-y-auto
+          transform transition-all ${prefersReducedMotion || isMobile ? 'duration-150' : 'duration-300'} ease-out
+          ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}
+        `} style={{ transitionDelay: isOpen ? (prefersReducedMotion || isMobile ? '75ms' : '150ms') : '0ms' }}>
           {children}
         </div>
       </div>

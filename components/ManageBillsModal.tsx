@@ -111,12 +111,13 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({ isOpen, onClose, bi
       isOpen={isOpen}
       onClose={onClose}
       title="Manage Bills"
-      size="lg"
+      size="xl"
+      animation="slide-up"
       aria-label="Manage bills modal"
     >
-      <div className="p-6 space-y-6">
-        {/* Add/Edit Form */}
-        <div className="bg-[rgb(var(--color-card-muted-rgb))] rounded-lg p-4">
+      <div className="flex flex-col h-full max-h-[calc(100vh-12rem)]">
+        {/* Add/Edit Form - Fixed height with internal scrolling if needed */}
+        <div className="flex-shrink-0 bg-[rgb(var(--color-card-muted-rgb))] rounded-lg p-4 mb-4">
           <h3 className="font-semibold text-lg text-[rgb(var(--color-text-rgb))] mb-4">
             {billToEditId ? 'Edit Bill' : 'Add New Bill'}
           </h3>
@@ -233,29 +234,29 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({ isOpen, onClose, bi
           </form>
         </div>
 
-        {/* Bills List */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-lg text-[rgb(var(--color-text-rgb))]">
-            Your Bills
+        {/* Bills List - Scrollable */}
+        <div className="flex-1 min-h-0">
+          <h3 className="font-semibold text-lg text-[rgb(var(--color-text-rgb))] mb-3 sticky top-0 bg-[rgb(var(--color-card-rgb))] py-2 z-10">
+            Your Bills ({bills.length})
           </h3>
-          <div className="max-h-60 overflow-y-auto space-y-2">
+          <div className="flex-1 overflow-y-auto max-h-[calc(100vh-20rem)] space-y-2 pb-2">
             {bills.length > 0 ? bills.map(bill => (
-              <div key={bill.id} className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))] transition-colors">
-                <div className="flex items-center">
-                  <BillIcon className="h-5 w-5 mr-3 text-[rgb(var(--color-text-muted-rgb))]" />
-                  <div>
-                    <p className="font-semibold text-[rgb(var(--color-text-rgb))]">{bill.name}</p>
+              <div key={bill.id} className="flex items-center justify-between p-3 bg-[rgb(var(--color-card-muted-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))] transition-colors border border-transparent hover:border-[rgb(var(--color-border-rgb))]">
+                <div className="flex items-center min-w-0 flex-1">
+                  <BillIcon className="h-5 w-5 mr-3 text-[rgb(var(--color-text-muted-rgb))] flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-[rgb(var(--color-text-rgb))] truncate">{bill.name}</p>
                     <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
                       {formatCurrency(bill.amount)} - Due on day {bill.dayOfMonth}
                     </p>
                   </div>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 ml-3">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleEditClick(bill)}
-                    className="text-xs"
+                    className="text-xs px-2 py-1"
                   >
                     Edit
                   </Button>
@@ -263,17 +264,17 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({ isOpen, onClose, bi
                     variant="danger"
                     size="sm"
                     onClick={() => onDeleteBill(bill.id)}
-                    className="text-xs"
+                    className="text-xs px-2 py-1"
                   >
                     Delete
                   </Button>
                 </div>
               </div>
             )) : (
-              <div className="text-center py-8 text-[rgb(var(--color-text-muted-rgb))]">
-                <BillIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No bills configured yet.</p>
-                <p className="text-sm mt-1">Add your first bill to get started.</p>
+              <div className="text-center py-12 text-[rgb(var(--color-text-muted-rgb))]">
+                <BillIcon className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                <p className="text-lg font-medium mb-2">No bills configured yet.</p>
+                <p className="text-sm">Add your first bill using the form above to get started.</p>
               </div>
             )}
           </div>

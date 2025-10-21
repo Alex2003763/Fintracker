@@ -167,9 +167,9 @@ const GoalItem: React.FC<{
 
 const GoalsPage: React.FC<GoalsPageProps> = ({ goals, goalContributions, onAddNewGoal, onEditGoal, onDeleteGoal, onOpenConfirmModal }) => {
   return (
-    <div className="space-y-6">
-      <div className="relative">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Financial Goals</h1>
+     <div className="space-y-6 mobile-content">
+       <div className="relative">
+         <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Financial Goals</h1>
         <button
           onClick={onAddNewGoal}
           className="absolute top-0 right-0 flex items-center px-3 py-2 text-xs sm:text-sm sm:px-4 sm:py-2 font-semibold text-[rgb(var(--color-primary-text-rgb))] bg-[rgb(var(--color-primary-rgb))] rounded-lg shadow-md hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 transition-colors"
@@ -181,7 +181,7 @@ const GoalsPage: React.FC<GoalsPageProps> = ({ goals, goalContributions, onAddNe
       </div>
 
       {goals.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2 sm:px-0">
           {goals.map(goal => (
             <GoalItem
               key={goal.id}

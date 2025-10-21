@@ -31,6 +31,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       onClose={onClose}
       title={title}
       size="sm"
+      animation="scale"
       aria-label={`Confirmation: ${title}`}
     >
       <div className="p-6">

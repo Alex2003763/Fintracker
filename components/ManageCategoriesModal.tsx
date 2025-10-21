@@ -94,6 +94,7 @@ const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
       onClose={onClose}
       title="Manage Categories"
       size="2xl"
+      animation="slide-up"
     >
       <div className="flex flex-col h-[85vh] max-h-[700px]">
         {/* Compact Tab Navigation */}

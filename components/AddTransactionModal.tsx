@@ -144,6 +144,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       onClose={onClose}
       title={isEditing ? 'Edit Transaction' : 'Add Transaction'}
       size="lg"
+      animation="slide-up"
       aria-label={`${isEditing ? 'Edit' : 'Add'} transaction form`}
     >
       <form onSubmit={handleSubmit} className="space-y-4 p-3 sm:p-6 max-h-[calc(100vh-12rem)] overflow-y-auto">

@@ -83,19 +83,19 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransactio
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 md:gap-6 max-w-sm ml-0 md:ml-6 mt-12 md:mt-16">
+          <div className="flex justify-start gap-4 md:gap-6 mt-8 md:mt-12 pb-6 md:pb-8 mb-2 max-w-full">
             {actionButtons.map(button => (
-                <div key={button.name} className="flex flex-col items-center space-y-2">
+                <div key={button.name} className="flex flex-col items-center space-y-1.5 md:space-y-2">
                     <button
                         onClick={button.action}
-                        className="h-16 w-16 md:h-20 md:w-20 bg-[rgb(var(--color-card-rgb))] rounded-full flex items-center justify-center shadow-lg hover:bg-[rgba(var(--color-card-rgb),0.8)] hover:scale-105 active:scale-95 transition-all duration-200 group"
+                        className="h-14 w-14 md:h-16 md:w-16 bg-[rgb(var(--color-card-rgb))] rounded-full flex items-center justify-center shadow-lg hover:bg-[rgba(var(--color-card-rgb),0.8)] hover:scale-105 active:scale-95 transition-all duration-200 group"
                         aria-label={button.name}
                     >
-                        <div className="h-12 w-12 md:h-14 md:w-14 rounded-full border-2 border-[rgb(var(--color-border-rgb))] flex items-center justify-center group-hover:border-[rgba(var(--color-border-rgb),0.7)] transition-colors">
-                            <button.icon className="h-6 w-6 md:h-7 md:w-7 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-text-rgb))]" />
+                        <div className="h-10 w-10 md:h-12 md:w-12 rounded-full border-2 border-[rgb(var(--color-border-rgb))] flex items-center justify-center group-hover:border-[rgba(var(--color-border-rgb),0.7)] transition-colors">
+                            <button.icon className="h-5 w-5 md:h-6 md:w-6 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-text-rgb))]" />
                         </div>
                     </button>
-                    <span className="text-xs md:text-sm font-medium text-blue-100 text-center leading-tight">{button.name}</span>
+                    <span className="text-xs font-medium text-blue-100 text-center leading-tight">{button.name}</span>
                 </div>
             ))}
           </div>
