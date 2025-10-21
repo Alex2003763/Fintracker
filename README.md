@@ -1,20 +1,71 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+text
+# Fintracker
 
-# Run and deploy your AI Studio app
+Fintracker is a web application powered by AI Studio, designed to help users track and analyze their personal finances effortlessly.
 
-This contains everything you need to run your app locally.
+## Key Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1BrGsFhEkfbW_YiysXyCgWs_R3LM_9wXn
+- Real-time income and expense tracking
+- Intelligent financial data analysis
+- Customizable report generation
 
-## Run Locally
+## Tech Stack
 
-**Prerequisites:**  Node.js
+- TypeScript
+- Next.js
+
+## Prerequisites
+
+- Node.js (version 14 or higher)
+- A valid Gemini API key
+
+## Installation and Local Setup
+
+1. Clone the repository:
+
+git clone https://github.com/Alex2003763/Fintracker.git
+cd Fintracker
+text
+2. Install dependencies:
+
+npm install
+text
+3. Configure environment variables directly in your deployment platform (see Deployment section).
+4. Start the development server:
+
+npm run dev
+text
+5. Open your browser and navigate to `http://localhost:3000` to view the app.
+
+## Deployment on Cloudflare
+
+1. Push the project to GitHub.  
+2. In Cloudflare Pages, create a new project and link it to this repository.  
+3. Configure the build command as `npm run build` and the output directory as `out`.  
+4. Deploy the project. Cloudflare will provide a custom domain where your app will be live.
+
+## Project Structure
 
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Fintracker/
+├─ components/ # Reusable UI components
+├─ pages/ # Next.js page routes
+├─ public/ # Static assets
+├─ styles/ # Global styles
+└─ package.json # Project settings and dependencies
+text
+
+## Contributing
+
+Contributions are welcome!
+
+1. Fork the repository  
+2. Create a new branch: `feature/your-feature`  
+3. Commit your changes and push to your branch  
+4. Open a Pull Request  
+
+Please ensure consistent code style and passing tests.
+
+## License
+
+MIT License
