@@ -1,4 +1,4 @@
-text
+
 # Fintracker
 
 Fintracker is a web application powered by AI Studio, designed to help users track and analyze their personal finances effortlessly.
