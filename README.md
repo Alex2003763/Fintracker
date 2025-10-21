@@ -1,9 +1,5 @@
 # 💰 Finance Flow
 
-<div align="center">
- <img width="1200" height="475" alt="Finance Flow Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
 A comprehensive **Personal Finance Management** Progressive Web App (PWA) built with React and TypeScript. Take control of your financial life with powerful budgeting, goal tracking, expense management, and intelligent insights - all running securely in your browser with offline support.
 
 ## ✨ Key Features
