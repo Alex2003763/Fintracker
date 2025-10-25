@@ -1,1 +1,250 @@
+/* Global CSS Layout for Finance Flow App */
 
+/* 1. Base Styles and Reset */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure full height for root elements */
+#root {
+  height: 100%;
+}
+
+/* 2. Layout Structure: Fixed Header, Scrollable Content, Fixed Footer */
+/* Header is already sticky via Tailwind in Header.tsx, but ensure consistency */
+.header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: rgb(var(--color-bg-rgb));
+  border-bottom: 1px solid rgb(var(--color-border-rgb));
+  transition: all 0.3s ease;
+}
+
+/* Bottom navigation is fixed on mobile via Tailwind in BottomNav.tsx */
+.bottom-nav-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background-color: rgb(var(--color-card-rgb));
+  border-top: 1px solid rgb(var(--color-border-rgb));
+  transition: all 0.3s ease;
+}
+
+/* Main content area: Ensure it's scrollable and accounts for fixed elements */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 5rem; /* Space for bottom nav on mobile */
+  transition: padding 0.3s ease;
+}
+
+/* On desktop, adjust padding since bottom nav is hidden */
+@media (min-width: 768px) {
+  .main-content {
+    padding-bottom: 1.5rem; /* Smaller padding on desktop */
+  }
+}
+
+/* 3. Modal Styles: Enhance BaseModal with global styles */
+/* BaseModal already handles fixed positioning and backdrop, but add global enhancements */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.modal-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Prevent body scroll when modal is open (already handled in BaseModal, but ensure globally) */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Modal content animations */
+.modal-content {
+  background-color: rgb(var(--color-card-rgb));
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-height: 95vh;
+  overflow: hidden;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-out;
+}
+
+.modal-content.open {
+  transform: translateY(0);
+}
+
+/* 4. Responsive Media Queries for Mobile (≤768px) */
+/* Ensure only main content scrolls, header and footer fixed */
+@media (max-width: 767px) {
+  /* Adjust main content for mobile bottom nav */
+  .main-content {
+    padding-bottom: 5rem; /* Account for fixed bottom nav height */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  }
+
+  /* Ensure header is fixed and doesn't scroll */
+  .header-sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+
+  /* Bottom nav fixed */
+  .bottom-nav-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+
+  /* Modal adjustments for mobile */
+  .modal-overlay {
+    align-items: flex-end; /* Modals slide from bottom on mobile */
+    padding: 0.5rem;
+  }
+
+  .modal-content {
+    width: 100%;
+    max-width: none;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+/* 5. Smooth Transitions for Layout Changes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Specific transitions for interactive elements */
+button, a, input, select, textarea {
+  transition: all 0.2s ease;
+}
+
+button:hover, a:hover {
+  transform: translateY(-1px);
+}
+
+button:active, a:active {
+  transform: translateY(0);
+}
+
+/* 6. Accessibility Features */
+/* Focus management for modals (enhanced from BaseModal) */
+.modal-overlay:focus {
+  outline: none;
+}
+
+.modal-content:focus {
+  outline: 2px solid rgb(var(--color-primary-rgb));
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .modal-content {
+    border: 2px solid rgb(var(--color-text-rgb));
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .modal-content {
+    transition: none;
+  }
+}
+
+/* 7. Additional Responsive Adjustments for Different Screen Sizes and Orientations */
+/* Tablet (768px to 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .main-content {
+    padding: 1.5rem;
+  }
+
+  .modal-overlay {
+    align-items: center;
+  }
+
+  .modal-content {
+    max-width: 28rem;
+    border-radius: 1rem;
+  }
+}
+
+/* Large screens (1024px+) */
+@media (min-width: 1024px) {
+  .main-content {
+    padding: 1.5rem 2rem;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+  .main-content {
+    padding-bottom: 3rem; /* Reduced padding in landscape */
+  }
+
+  .modal-content {
+    max-height: 80vh; /* Adjust for landscape */
+  }
+}
+
+/* Dark mode adjustments (if applicable) */
+@media (prefers-color-scheme: dark) {
+  .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Print styles (optional) */
+@media print {
+  .modal-overlay,
+  .bottom-nav-fixed,
+  .header-sticky {
+    display: none;
+  }
+
+  .main-content {
+    overflow: visible;
+    padding: 0;
+  }
+}
