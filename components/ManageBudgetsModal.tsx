@@ -48,7 +48,7 @@ const ManageBudgetsModal: React.FC<ManageBudgetsModalProps> = ({
         setCategory(budgetToEdit.category);
       } else {
         setAmount('');
-        setCategory(availableCategories || '');
+        setCategory(availableCategories[0] ?? '');
       }
       setErrors({});
     }
