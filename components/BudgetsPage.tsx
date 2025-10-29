@@ -1,15 +1,16 @@
 import React, { useMemo } from 'react';
 import { Budget, Transaction } from '../types';
-import { PlusIcon } from './icons';
+import { PlusIcon, PencilIcon } from './icons';
 import { formatCurrency } from '../utils/formatters';
 import { CATEGORY_ICON_MAP } from '../constants';
 
 interface BudgetItemProps {
   budget: Budget;
   spent: number;
+  onEdit: (budget: Budget) => void;
 }
 
-const BudgetItem: React.FC<BudgetItemProps> = ({ budget, spent }) => {
+const BudgetItem: React.FC<BudgetItemProps> = ({ budget, spent, onEdit }) => {
   const progress = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
   const progressClamped = Math.min(Math.max(progress, 0), 100);
   const remaining = Math.max(0, budget.amount - spent);
@@ -41,7 +42,15 @@ const BudgetItem: React.FC<BudgetItemProps> = ({ budget, spent }) => {
   const Icon = CATEGORY_ICON_MAP[budget.category] || CATEGORY_ICON_MAP['Other'];
 
   return (
-    <div className="group bg-[rgb(var(--color-card-rgb))] p-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/20">
+    <div className="relative group bg-[rgb(var(--color-card-rgb))] p-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/20">
+      <button
+        onClick={() => onEdit(budget)}
+        className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-[rgb(var(--color-primary-rgb))]/10 text-[rgb(var(--color-primary-rgb))] hover:bg-[rgb(var(--color-primary-rgb))]/20 transition-colors duration-200"
+        aria-label={`Edit budget for ${budget.category}`}
+      >
+        <PencilIcon className="h-4 w-4" />
+      </button>
+      
       {/* Line 1: Icon, Category, Status */}
       <div className="flex items-center gap-3 mb-3">
         <div className={`rounded-full p-2 transition-all duration-200 ${colors.bg} shadow-sm`}>
@@ -129,9 +138,10 @@ interface BudgetsPageProps {
   budgets: Budget[];
   transactions: Transaction[];
   onManageBudgets: () => void;
+  onEditBudget: (budget: Budget) => void;
 }
 
-const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onManageBudgets }) => {
+const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onManageBudgets, onEditBudget }) => {
   const { currentMonthBudgets, totalBudget, totalSpent } = useMemo(() => {
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -284,6 +294,7 @@ const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onMana
                 key={budget.id}
                 budget={budget}
                 spent={spent}
+                onEdit={onEditBudget}
               />
             ))}
           </div>

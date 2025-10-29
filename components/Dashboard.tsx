@@ -25,7 +25,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     onManageBills
 }) => {
   return (
-     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mobile-content p-2 sm:p-0">
+     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
        <div className="lg:col-span-2">
          <BalanceCard transactions={transactions} onAddTransaction={onAddTransaction} setActiveItem={setActiveItem} />
        </div>

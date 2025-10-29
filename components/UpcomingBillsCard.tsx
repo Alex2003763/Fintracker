@@ -28,6 +28,22 @@ const UpcomingBillsCard: React.FC<UpcomingBillsCardProps> = ({ bills, onPayBill,
     .slice(0, 3);
   }, [bills]);
 
+  const formatDueDate = (dueDate: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Due today';
+    if (diffDays === 1) return 'Due tomorrow';
+    if (diffDays > 1 && diffDays <= 7) return `Due in ${diffDays} days`;
+    
+    return `Due on ${due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  };
+
   return (
     <div className="bg-[rgb(var(--color-card-rgb))] p-6 rounded-2xl shadow-sm transition-colors">
       <div className="flex justify-between items-center mb-4">
@@ -44,7 +60,7 @@ const UpcomingBillsCard: React.FC<UpcomingBillsCardProps> = ({ bills, onPayBill,
                 </div>
                 <div>
                   <p className="font-semibold text-[rgb(var(--color-text-rgb))]">{bill.name}</p>
-                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Due on {bill.nextDueDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })}</p>
+                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">{formatDueDate(bill.nextDueDate)}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-4">

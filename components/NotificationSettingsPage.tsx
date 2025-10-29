@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, NotificationSettings } from '../types';
 import { ChevronUpIcon } from './icons';
+import { requestNotificationPermission } from '../utils/notifications';
 
 interface NotificationPermissionHandlerProps {
   onPermissionGranted: () => void;
@@ -12,7 +13,6 @@ const NotificationPermissionHandler: React.FC<NotificationPermissionHandlerProps
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    // Check current permission status
     if ('Notification' in window) {
       setPermissionStatus(Notification.permission);
     } else {
@@ -21,33 +21,28 @@ const NotificationPermissionHandler: React.FC<NotificationPermissionHandlerProps
     }
   }, []);
 
-  const requestPermission = async () => {
-    if (!('Notification' in window)) {
-      setMessage('Notifications are not supported in this browser');
-      return;
-    }
-
+  const handleRequestPermission = async () => {
     setIsLoading(true);
     setMessage('');
 
-    try {
-      const permission = await Notification.requestPermission();
-      setPermissionStatus(permission);
+    const granted = await requestNotificationPermission();
 
-      if (permission === 'granted') {
-        setMessage('✅ Notifications enabled successfully!');
-        onPermissionGranted();
-      } else if (permission === 'denied') {
+    if (granted) {
+      setPermissionStatus('granted');
+      setMessage('✅ Notifications enabled successfully!');
+      onPermissionGranted();
+    } else {
+      // After the request, the permission status will be either 'denied' or 'default'
+      const currentPermission = 'Notification' in window ? Notification.permission : 'denied';
+      setPermissionStatus(currentPermission);
+      if (currentPermission === 'denied') {
         setMessage('❌ Notifications were denied. You can enable them in your browser settings.');
       } else {
         setMessage('⚠️ Notifications permission was not granted.');
       }
-    } catch (error) {
-      console.error('Error requesting notification permission:', error);
-      setMessage('❌ Failed to request notification permission.');
-    } finally {
-      setIsLoading(false);
     }
+
+    setIsLoading(false);
   };
 
   const getButtonText = () => {
@@ -66,7 +61,7 @@ const NotificationPermissionHandler: React.FC<NotificationPermissionHandlerProps
   return (
     <div className="space-y-3">
       <button
-        onClick={requestPermission}
+        onClick={handleRequestPermission}
         disabled={isLoading || permissionStatus === 'granted'}
         className={`${getButtonClass()} text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
       >

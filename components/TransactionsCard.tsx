@@ -18,7 +18,7 @@ const TransactionItem: React.FC<{ transaction: Transaction, onEdit: (transaction
 
   return (
     <div 
-      className="flex items-center justify-between py-4 border-b last:border-b-0 border-[rgb(var(--color-border-rgb))] cursor-pointer hover:bg-[rgb(var(--color-card-muted-rgb))] -mx-6 px-6 transition-colors"
+      className="flex items-center justify-between py-3 border-b last:border-b-0 border-[rgb(var(--color-border-rgb))] cursor-pointer hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors"
       onClick={() => onEdit(transaction)}
     >
       <div className="flex items-center">
@@ -39,7 +39,7 @@ const TransactionItem: React.FC<{ transaction: Transaction, onEdit: (transaction
 
 const TransactionsCard: React.FC<TransactionsCardProps> = ({ transactions, onEditTransaction, setActiveItem }) => {
   return (
-    <div className="bg-[rgb(var(--color-card-rgb))] p-6 rounded-2xl shadow-sm overflow-hidden transition-colors">
+    <div className="bg-[rgb(var(--color-card-rgb))] p-4 md:p-6 rounded-2xl shadow-sm overflow-hidden transition-colors">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-[rgb(var(--color-text-rgb))]">Recent Transactions</h2>
         <button onClick={() => setActiveItem('Transactions')} className="text-sm font-semibold text-[rgb(var(--color-primary-subtle-text-rgb))] hover:underline">View All</button>

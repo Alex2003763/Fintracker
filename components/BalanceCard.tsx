@@ -65,7 +65,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransactio
           <div className="flex justify-between items-start mb-6">
             <div className="flex-1">
               <h2 className="text-blue-200 text-base font-medium mb-3">Current Balance</h2>
-              <p className="text-4xl md:text-5xl font-bold leading-tight">{formatCurrency(balance)}</p>
+              <p className="text-4xl md:text-5xl font-bold leading-tight truncate">{formatCurrency(balance)}</p>
             </div>
             <div className="flex flex-col items-end ml-4">
               <div className={`text-sm font-semibold ${changeColor} px-3 py-1.5 rounded-full mb-3`}>
@@ -83,19 +83,17 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransactio
               </button>
             </div>
           </div>
-          <div className="flex justify-start gap-4 md:gap-6 mt-8 md:mt-12 pb-6 md:pb-8 mb-2 max-w-full">
+          <div className="flex justify-around gap-4 md:gap-6 mt-10 md:mt-12">
             {actionButtons.map(button => (
-                <div key={button.name} className="flex flex-col items-center space-y-1.5 md:space-y-2">
+                <div key={button.name} className="flex flex-col items-center space-y-2 text-center">
                     <button
                         onClick={button.action}
-                        className="h-14 w-14 md:h-16 md:w-16 bg-[rgb(var(--color-card-rgb))] rounded-full flex items-center justify-center shadow-lg hover:bg-[rgba(var(--color-card-rgb),0.8)] hover:scale-105 active:scale-95 transition-all duration-200 group"
+                        className="h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center shadow-lg hover:bg-white/20 hover:scale-105 active:scale-95 transition-all duration-200 group"
                         aria-label={button.name}
                     >
-                        <div className="h-10 w-10 md:h-12 md:w-12 rounded-full border-2 border-[rgb(var(--color-border-rgb))] flex items-center justify-center group-hover:border-[rgba(var(--color-border-rgb),0.7)] transition-colors">
-                            <button.icon className="h-5 w-5 md:h-6 md:w-6 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-text-rgb))]" />
-                        </div>
+                        <button.icon className="h-7 w-7 text-white/90 group-hover:text-white" />
                     </button>
-                    <span className="text-xs font-medium text-blue-100 text-center leading-tight">{button.name}</span>
+                    <span className="text-xs font-medium text-blue-100">{button.name}</span>
                 </div>
             ))}
           </div>
@@ -113,53 +111,21 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransactio
 
             <div className="flex-1 flex items-center justify-center">
                 <div className="w-full space-y-3">
-                    {/* Income and Expenses in compact layout */}
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-green-700 dark:text-green-300">Income</p>
-                            </div>
-                        </div>
-                        <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                            {formatCurrency(dailyIncome)}
-                        </p>
+                        <span className="text-sm font-medium text-green-700 dark:text-green-300">Income</span>
+                        <span className="text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(dailyIncome)}</span>
                     </div>
-
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-red-700 dark:text-red-300">Expenses</p>
-                            </div>
-                        </div>
-                        <p className="text-xl font-bold text-red-600 dark:text-red-400">
-                            {formatCurrency(dailyExpense)}
-                        </p>
+                        <span className="text-sm font-medium text-red-700 dark:text-red-300">Expenses</span>
+                        <span className="text-xl font-bold text-red-600 dark:text-red-400">{formatCurrency(dailyExpense)}</span>
                     </div>
-
-                    {/* Simple divider */}
                     <div className="border-t border-[rgb(var(--color-border-rgb))] my-2"></div>
-
-                    {/* Net Result */}
-                    {dailyIncome > 0 || dailyExpense > 0 ? (
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">
-                                Net
-                            </span>
-                            <span className={`text-lg font-bold ${dailyIncome - dailyExpense >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                {dailyIncome - dailyExpense >= 0 ? '+' : ''}{formatCurrency(dailyIncome - dailyExpense)}
-                            </span>
-                        </div>
-                    ) : null}
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Net</span>
+                        <span className={`text-lg font-bold ${dailyIncome - dailyExpense >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {dailyIncome - dailyExpense >= 0 ? '+' : ''}{formatCurrency(dailyIncome - dailyExpense)}
+                        </span>
+                    </div>
                 </div>
             </div>
 

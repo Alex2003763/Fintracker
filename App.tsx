@@ -26,6 +26,7 @@ import PlaceholderPage from './components/PlaceholderPage';
 // FIX: Import `formatCurrency` to resolve `Cannot find name` errors.
 import { encryptData, decryptData, deriveKey, generateSalt, formatCurrency } from './utils/formatters';
 import { processTransactionForGoals, getGoalProgressStats } from './utils/goalUtils';
+import { sendNotification } from './utils/notifications';
 
 const App: React.FC = () => {
   const {
@@ -124,6 +125,7 @@ const App: React.FC = () => {
 
   const [isManageBillsModalOpen, setIsManageBillsModalOpen] = useState(false);
   const [isManageBudgetsModalOpen, setIsManageBudgetsModalOpen] = useState(false);
+  const [budgetToEdit, setBudgetToEdit] = useState<Budget | null>(null);
   const [isManageRecurringModalOpen, setIsManageRecurringModalOpen] = useState(false);
   
   const [confirmationModalState, setConfirmationModalState] = useState({
@@ -556,7 +558,7 @@ const App: React.FC = () => {
     
     // Check if it's a new account to set initial data
     if (!localStorage.getItem('financeFlowTransactions')) {
-      const welcomeNotification: Notification = { id: uuidv4(), title: 'Welcome to Finance Flow!', message: 'Start by adding your first transaction.', date: new Date().toISOString(), read: false, type: 'standard' };
+      const welcomeNotification: Notification = { id: uuidv4(), title: 'Welcome to FinTrack!', message: 'Start by adding your first transaction.', date: new Date().toISOString(), read: false, type: 'standard' };
       setNotifications([welcomeNotification]);
     }
   };
@@ -887,6 +889,7 @@ const App: React.FC = () => {
               }
             };
             setNotifications(prev => [notification, ...prev]);
+            sendNotification(notification.title, { body: notification.message });
             console.log('Goal milestone notification created:', notification.title);
 
             // Send push notification if enabled
@@ -997,6 +1000,10 @@ const App: React.FC = () => {
       // Note: No need to check notifications after deletion as deleted budgets won't trigger notifications
   };
 
+  const handleEditBudget = (budget: Budget) => {
+    setBudgetToEdit(budget);
+    setIsManageBudgetsModalOpen(true);
+  };
 
   // Other Handlers
   const handleUpdateUser = (updatedUser: User) => setUser(updatedUser);
@@ -1072,7 +1079,11 @@ const App: React.FC = () => {
           return <BudgetsPage
             transactions={sortedTransactions}
             budgets={budgets}
-            onManageBudgets={() => setIsManageBudgetsModalOpen(true)}
+            onManageBudgets={() => {
+              setBudgetToEdit(null);
+              setIsManageBudgetsModalOpen(true);
+            }}
+            onEditBudget={handleEditBudget}
            />;
       case 'Goals':
         return <GoalsPage
@@ -1155,38 +1166,35 @@ const App: React.FC = () => {
       )}
 
       <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} />
-      <main className="flex-1 flex flex-col overflow-hidden relative min-h-0">
+      <div className="flex-1 flex flex-col min-h-0">
         <Header
           user={user}
           notifications={notifications}
           onMarkAsRead={(id) => {
             setNotifications(notifications.map(n => n.id === id ? {...n, read: true} : n));
-            // Reset the processed flag when user marks notifications as read
-            // so they can get fresh notifications if needed
             const todayStr = new Date().toISOString().split('T')[0];
             localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
           }}
           onClearAllNotifications={() => {
             setNotifications(notifications.map(n => ({...n, read: true})));
-            // Reset the processed flag when user clears all notifications
             const todayStr = new Date().toISOString().split('T')[0];
             localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
           }}
           pageTitle={activeItem}
-          onSaveTransaction={handleSaveTransaction}
           isOnline={isOnline}
           setActiveItem={setActiveItem}
         />
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-32 md:pb-6 animate-fade-in-up mobile-bottom-nav">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 animate-fade-in-up main-content">
             {renderContent()}
-        </div>
-      </main>
+        </main>
+      </div>
       <BottomNav activeItem={activeItem} setActiveItem={setActiveItem} onAddTransaction={handleOpenAddTransactionModal} />
 
       <AddTransactionModal
         isOpen={isAddTransactionModalOpen}
         onClose={() => setIsAddTransactionModalOpen(false)}
         onSaveTransaction={handleSaveTransaction}
+        user={user}
         onDeleteTransaction={handleDeleteTransaction}
         transactionToEdit={transactionToEdit}
         initialType={addTransactionModalType}
@@ -1215,6 +1223,8 @@ const App: React.FC = () => {
         onSaveBudget={handleSaveBudget}
         onDeleteBudget={handleDeleteBudget}
         transactions={transactions}
+        budgetToEdit={budgetToEdit}
+        onOpenConfirmModal={handleOpenConfirmModal}
        />
       
       <ManageRecurringModal

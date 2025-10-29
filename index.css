@@ -1,3 +1,64 @@
+:root.theme-light {
+  --color-bg-rgb: 243 244 246; /* gray-100 */
+  --color-card-rgb: 255 255 255; /* white */
+  --color-card-muted-rgb: 249 250 251; /* gray-50 */
+  --color-text-rgb: 31 41 55; /* gray-800 */
+  --color-text-muted-rgb: 107 114 128; /* gray-500 */
+  --color-border-rgb: 229 231 235; /* gray-200 */
+  --color-primary-rgb: 37 99 235; /* blue-600 */
+  --color-primary-hover-rgb: 29 78 216; /* blue-700 */
+  --color-primary-text-rgb: 255 255 255; /* white */
+  --color-primary-subtle-text-rgb: 59 130 246; /* blue-500 */
+  --gradient-from-rgb: 59 130 246; /* blue-500 */
+  --gradient-to-rgb: 29 78 216; /* blue-700 */
+}
+:root.theme-dark-slate {
+  --color-bg-rgb: 15 23 42; /* slate-900 */
+  --color-card-rgb: 30 41 59; /* slate-800 */
+  --color-card-muted-rgb: 51 65 85; /* slate-700 */
+  --color-text-rgb: 241 245 249; /* slate-100 */
+  --color-text-muted-rgb: 148 163 184; /* slate-400 */
+  --color-border-rgb: 51 65 85; /* slate-700 */
+  --color-primary-rgb: 59 130 246; /* blue-500 */
+  --color-primary-hover-rgb: 37 99 235; /* blue-600 */
+  --color-primary-text-rgb: 255 255 255; /* white */
+  --color-primary-subtle-text-rgb: 96 165 250; /* blue-400 */
+  --gradient-from-rgb: 51 65 85; /* slate-700 */
+  --gradient-to-rgb: 30 41 59; /* slate-800 */
+}
+:root.theme-dark-green {
+  --color-bg-rgb: 15 23 20; /* green-900 */
+  --color-card-rgb: 25 39 30; /* green-800 */
+  --color-card-muted-rgb: 34 54 40; /* green-700 */
+  --color-text-rgb: 240 253 244; /* green-50 */
+  --color-text-muted-rgb: 167 191 174; /* green-400 */
+  --color-border-rgb: 52 83 61; /* green-600 */
+  --color-primary-rgb: 74 222 128; /* emerald-400 */
+  --color-primary-hover-rgb: 52 211 153; /* emerald-500 */
+  --color-primary-text-rgb: 15 23 20; /* green-900 */
+  --color-primary-subtle-text-rgb: 110 231 183; /* emerald-300 */
+  --gradient-from-rgb: 34 54 40; /* green-700 */
+  --gradient-to-rgb: 25 39 30; /* green-800 */
+}
+:root.theme-dark-crimson {
+  --color-bg-rgb: 28 21 24;
+  --color-card-rgb: 49 33 38;
+  --color-card-muted-rgb: 68 46 54;
+  --color-text-rgb: 255 229 237;
+  --color-text-muted-rgb: 209 174 183;
+  --color-border-rgb: 92 63 71;
+  --color-primary-rgb: 244 63 94; /* rose-500 */
+  --color-primary-hover-rgb: 225 29 72; /* rose-600 */
+  --color-primary-text-rgb: 255 255 255;
+  --color-primary-subtle-text-rgb: 251 113 133; /* rose-400 */
+  --gradient-from-rgb: 68 46 54;
+  --gradient-to-rgb: 49 33 38;
+}
+body {
+  background-color: rgb(var(--color-bg-rgb));
+  background-image: radial-gradient(rgb(var(--color-border-rgb)) 0.5px, transparent 0.5px);
+  background-size: 20px 20px;
+}
 /* Global CSS Layout for Finance Flow App */
 
 /* 1. Base Styles and Reset */
@@ -16,47 +77,16 @@ html, body {
   height: 100%;
 }
 
-/* 2. Layout Structure: Fixed Header, Scrollable Content, Fixed Footer */
-/* Header is already sticky via Tailwind in Header.tsx, but ensure consistency */
-.header-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background-color: rgb(var(--color-bg-rgb));
-  border-bottom: 1px solid rgb(var(--color-border-rgb));
-  transition: all 0.3s ease;
-}
-
-/* Bottom navigation is fixed on mobile via Tailwind in BottomNav.tsx */
-.bottom-nav-fixed {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  background-color: rgb(var(--color-card-rgb));
-  border-top: 1px solid rgb(var(--color-border-rgb));
-  transition: all 0.3s ease;
-}
-
+/* 2. Layout Structure */
 /* Main content area: Ensure it's scrollable and accounts for fixed elements */
 .main-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 5rem; /* Space for bottom nav on mobile */
-  transition: padding 0.3s ease;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
-/* On desktop, adjust padding since bottom nav is hidden */
-@media (min-width: 768px) {
-  .main-content {
-    padding-bottom: 1.5rem; /* Smaller padding on desktop */
-  }
-}
-
-/* 3. Modal Styles: Enhance BaseModal with global styles */
-/* BaseModal already handles fixed positioning and backdrop, but add global enhancements */
+/* 3. Modal Styles */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -80,12 +110,10 @@ html, body {
   visibility: visible;
 }
 
-/* Prevent body scroll when modal is open (already handled in BaseModal, but ensure globally) */
 body.modal-open {
   overflow: hidden;
 }
 
-/* Modal content animations */
 .modal-content {
   background-color: rgb(var(--color-card-rgb));
   border-radius: 1rem;
@@ -100,104 +128,10 @@ body.modal-open {
   transform: translateY(0);
 }
 
-/* 4. Responsive Media Queries for Mobile (≤768px) */
-/* Ensure only main content scrolls, header and footer fixed */
-@media (max-width: 767px) {
-  /* Adjust main content for mobile bottom nav */
+/* 4. Responsive and Accessibility */
+@media (min-width: 768px) {
   .main-content {
-    padding-bottom: 5rem; /* Account for fixed bottom nav height */
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-  }
-
-  /* Ensure header is fixed and doesn't scroll */
-  .header-sticky {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-  }
-
-  /* Bottom nav fixed */
-  .bottom-nav-fixed {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-  }
-
-  /* Modal adjustments for mobile */
-  .modal-overlay {
-    align-items: flex-end; /* Modals slide from bottom on mobile */
-    padding: 0.5rem;
-  }
-
-  .modal-content {
-    width: 100%;
-    max-width: none;
-    border-radius: 1rem 1rem 0 0;
-  }
-}
-
-/* 5. Smooth Transitions for Layout Changes */
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-/* Specific transitions for interactive elements */
-button, a, input, select, textarea {
-  transition: all 0.2s ease;
-}
-
-button:hover, a:hover {
-  transform: translateY(-1px);
-}
-
-button:active, a:active {
-  transform: translateY(0);
-}
-
-/* 6. Accessibility Features */
-/* Focus management for modals (enhanced from BaseModal) */
-.modal-overlay:focus {
-  outline: none;
-}
-
-.modal-content:focus {
-  outline: 2px solid rgb(var(--color-primary-rgb));
-  outline-offset: 2px;
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .modal-overlay {
-    background-color: rgba(0, 0, 0, 0.8);
-  }
-
-  .modal-content {
-    border: 2px solid rgb(var(--color-text-rgb));
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  .modal-content {
-    transition: none;
-  }
-}
-
-/* 7. Additional Responsive Adjustments for Different Screen Sizes and Orientations */
-/* Tablet (768px to 1024px) */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .main-content {
-    padding: 1.5rem;
+    padding-bottom: 1.5rem;
   }
 
   .modal-overlay {
@@ -210,32 +144,44 @@ button:active, a:active {
   }
 }
 
-/* Large screens (1024px+) */
-@media (min-width: 1024px) {
-  .main-content {
-    padding: 1.5rem 2rem;
-  }
-}
-
-/* Landscape orientation on mobile */
 @media (max-width: 767px) and (orientation: landscape) {
   .main-content {
-    padding-bottom: 3rem; /* Reduced padding in landscape */
+    padding-bottom: 3rem;
   }
 
   .modal-content {
-    max-height: 80vh; /* Adjust for landscape */
+    max-height: 80vh;
   }
 }
 
-/* Dark mode adjustments (if applicable) */
+@media (prefers-contrast: high) {
+  .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .modal-content {
+    border: 2px solid rgb(var(--color-text-rgb));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .modal-content {
+    transition: none;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .modal-overlay {
     background-color: rgba(0, 0, 0, 0.7);
   }
 }
 
-/* Print styles (optional) */
 @media print {
   .modal-overlay,
   .bottom-nav-fixed,
@@ -246,5 +192,75 @@ button:active, a:active {
   .main-content {
     overflow: visible;
     padding: 0;
+  }
+}
+
+/* Balance Card Flip Animation */
+.card-flip-container {
+  perspective: 1000px;
+}
+.card-flipper {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+}
+.card-flipper.flipped {
+  transform: rotateY(180deg);
+}
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 1rem; /* 16px */
+}
+.card-back {
+  transform: rotateY(180deg);
+}
+
+/* General Animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+/* Modal Animation */
+.modal-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+.modal-content-slide-up {
+  animation: fadeInUp 0.3s ease-out forwards;
+}
+.animate-slide-in-from-bottom {
+  animation: slideInFromBottom 0.3s ease-out forwards;
+}
+.animate-zoom-in {
+  animation: zoomIn 0.3s ease-out forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }

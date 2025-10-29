@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
-import { Transaction } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Transaction, User } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
 import { suggestCategory, getBestCategorySuggestion, testAI } from '../utils/categoryAI';
+import { parseReceiptWithGemini } from '../utils/ocr';
 import BaseModal from './BaseModal';
 import { FormField, Input, Select, Button, ToggleButton } from './ModalForm';
 import ConfirmationModal from './ConfirmationModal';
@@ -16,7 +17,8 @@ interface AddTransactionModalProps {
    initialType?: 'income' | 'expense';
    initialData?: Partial<Omit<Transaction, 'id' | 'date'>>;
    smartSuggestionsEnabled?: boolean;
- }
+   user: User | null;
+}
 
 const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
    isOpen,
@@ -26,9 +28,16 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
    transactionToEdit,
    initialType = 'expense',
    initialData,
-   smartSuggestionsEnabled = true
- }) => {
+   smartSuggestionsEnabled = true,
+   user
+}) => {
   const isEditing = transactionToEdit !== null;
+
+  const getDefaultCategory = (transactionType: 'income' | 'expense') => {
+    const flattened = Object.values(TRANSACTION_CATEGORIES[transactionType]).flat();
+    return flattened[0] || '';
+  };
+
   const [type, setType] = useState<'income' | 'expense'>(() => transactionToEdit?.type || initialData?.type || initialType);
   const [description, setDescription] = useState(() => transactionToEdit?.description || initialData?.description || '');
   const [amount, setAmount] = useState(() => transactionToEdit?.amount?.toString() || initialData?.amount?.toString() || '');
@@ -36,12 +45,14 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     if (transactionToEdit) return transactionToEdit.category;
     if (initialData?.category) return initialData.category;
     const typeToUse = initialData?.type || initialType;
-    return Object.values(TRANSACTION_CATEGORIES[typeToUse])[0][0];
+    return getDefaultCategory(typeToUse);
   });
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (transactionToEdit) {
@@ -54,17 +65,15 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setType(typeToUse);
       setDescription(initialData?.description || '');
       setAmount(initialData?.amount?.toString() || '');
-      setCategory(initialData?.category || Object.values(TRANSACTION_CATEGORIES[typeToUse])[0][0]);
+      setCategory(initialData?.category || getDefaultCategory(typeToUse));
     }
   }, [transactionToEdit, initialType, initialData]);
 
-  // Test AI on component mount
   useEffect(() => {
     console.log('🚀 Testing AI suggestions...');
     testAI();
   }, []);
 
-  // Generate AI category suggestions when description changes
   useEffect(() => {
     if (smartSuggestionsEnabled && description.length > 2) {
       const availableCategories = Object.values(TRANSACTION_CATEGORIES[type]).flat() as string[];
@@ -77,23 +86,18 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     }
   }, [description, type, smartSuggestionsEnabled]);
 
-
   const handleTypeChange = (newType: 'income' | 'expense') => {
     setType(newType);
     const newTypeCategories = Object.values(TRANSACTION_CATEGORIES[newType]).flat();
     if (!newTypeCategories.includes(category)) {
-      setCategory(Object.values(TRANSACTION_CATEGORIES[newType])[0][0]);
+      setCategory(getDefaultCategory(newType));
     }
     setErrors({});
   };
 
   const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-
-    if (!description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-
+    const newErrors: { [key: string]: string } = {};
+    if (!description.trim()) newErrors.description = 'Description is required';
     if (!amount.trim()) {
       newErrors.amount = 'Amount is required';
     } else {
@@ -102,24 +106,46 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         newErrors.amount = 'Please enter a valid positive amount';
       }
     }
-
-    if (!category) {
-      newErrors.category = 'Category is required';
-    }
-
+    if (!category) newErrors.category = 'Category is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
+  const handleScanReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = event.target.files;
+    const file = fileList?.[0];
+    if (!file) {
       return;
     }
 
-    setIsSubmitting(true);
+    setIsScanning(true);
+    setErrors({});
 
+    try {
+      if (!user?.aiSettings?.apiKey) {
+        throw new Error("API key is not configured. Please set it in the settings.");
+      }
+      const extractedData = await parseReceiptWithGemini(
+        file,
+        user.aiSettings.apiKey,
+        user.aiSettings.model || 'gemini-2.5-flash'
+      );
+      if (extractedData.description) setDescription(extractedData.description);
+      if (extractedData.amount) setAmount(extractedData.amount.toString());
+    } catch (error: any) {
+      setErrors(prev => ({ ...prev, scan: error.message || 'Failed to scan receipt.' }));
+    } finally {
+      setIsScanning(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsSubmitting(true);
     try {
       await onSaveTransaction({
         id: transactionToEdit?.id,
@@ -148,20 +174,46 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       aria-label={`${isEditing ? 'Edit' : 'Add'} transaction form`}
     >
       <form onSubmit={handleSubmit} className="space-y-4 p-3 sm:p-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
-        <FormField
-          label="Type"
-          htmlFor="transaction-type"
-          required
-        >
+        <FormField label="Type" htmlFor="transaction-type" required>
           <ToggleButton
-            options={[
-              { value: 'expense', label: 'Expense' },
-              { value: 'income', label: 'Income' }
-            ]}
+            options={[{ value: 'expense', label: 'Expense' }, { value: 'income', label: 'Income' }]}
             value={type}
             onChange={handleTypeChange}
           />
         </FormField>
+
+        <FormField
+          label="Scan Receipt (Optional)"
+          htmlFor="scan-receipt"
+          error={errors.scan}
+          hint="Upload a receipt to auto-fill description and amount"
+        >
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => fileInputRef.current?.click()}
+            loading={isScanning}
+            className="w-full"
+          >
+            📷 {isScanning ? 'Scanning...' : 'Scan Receipt'}
+          </Button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleScanReceipt}
+            className="hidden"
+            accept="image/*"
+          />
+        </FormField>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center" aria-hidden="true">
+            <div className="w-full border-t border-[rgb(var(--color-border-rgb))]"></div>
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-[rgb(var(--color-card-rgb))] px-2 text-sm text-[rgb(var(--color-text-muted-rgb))]">Or enter manually</span>
+          </div>
+        </div>
 
         <FormField
           label="Description"
@@ -317,3 +369,4 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 };
 
 export default AddTransactionModal;
+

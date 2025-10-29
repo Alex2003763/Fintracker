@@ -1,5 +1,5 @@
 {
-  "name": "Finance Flow",
+  "name": "FinTrack",
   "description": "A personal finance management dashboard to track your balance, transactions, and spending. Features a local user account system to save and manage your financial data securely in your browser.",
   "icon": "icon.png"
 }
