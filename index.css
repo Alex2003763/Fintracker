@@ -264,3 +264,172 @@ body.modal-open {
     transform: scale(1);
   }
 }
+
+/* AI Swiper Card Styles */
+.ai-insights-swiper {
+    --swiper-pagination-color: rgb(var(--color-primary-rgb));
+    --swiper-pagination-bullet-inactive-color: rgb(var(--color-border-rgb));
+    --swiper-pagination-bullet-inactive-opacity: 0.5;
+    --swiper-pagination-bullet-size: 8px;
+    --swiper-pagination-bullet-horizontal-gap: 4px;
+    padding-bottom: 2.5rem; /* Add space for pagination */
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.ai-insights-swiper .swiper-wrapper {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ai-insights-swiper .swiper-slide {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.ai-insights-swiper .swiper-slide > div {
+    width: 100%;
+    max-width: 100%;
+    min-height: 200px;
+    height: auto;
+    box-sizing: border-box;
+}
+
+.ai-insights-swiper .swiper-pagination {
+    position: relative !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    margin-top: 1rem;
+}
+
+.ai-insights-swiper .swiper-pagination-bullets-dynamic {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+}
+
+/* Mobile responsive adjustments */
+@media (min-width: 480px) {
+    .ai-insights-swiper {
+        max-width: 320px;
+    }
+}
+
+@media (min-width: 640px) {
+    .ai-insights-swiper {
+        max-width: 360px;
+    }
+    
+    .ai-insights-swiper .swiper-slide > div {
+        min-height: 240px;
+    }
+}
+
+@media (min-width: 768px) {
+    .ai-insights-swiper {
+        max-width: 400px;
+    }
+    
+    .ai-insights-swiper .swiper-slide > div {
+        min-height: 260px;
+    }
+}
+
+.swiper-pagination-bullet {
+    background-color: rgb(var(--color-border-rgb));
+    opacity: 0.5;
+}
+
+.swiper-pagination-bullet-active {
+    background-color: rgb(var(--color-primary-rgb));
+    opacity: 1;
+}
+
+/* Settings Page Mobile Enhancements */
+@media (max-width: 640px) {
+  /* Improve touch targets on mobile */
+  .settings-button {
+    min-height: 44px;
+  }
+  
+  /* Better spacing for mobile */
+  .settings-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Optimize text readability */
+  .settings-text {
+    line-height: 1.6;
+  }
+  
+  /* Better padding for cards on mobile */
+  .settings-card {
+    padding: 1rem;
+  }
+  
+  /* Ensure proper scrolling */
+  .settings-container {
+    padding-bottom: 2rem;
+  }
+}
+
+/* Improved focus states for accessibility */
+@media (hover: hover) and (pointer: fine) {
+  /* Only apply hover effects on devices that support them */
+  .settings-hover-effect:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Better touch targets for mobile */
+@media (hover: none) and (pointer: coarse) {
+  .settings-touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  
+  /* Increase padding for better touch experience */
+  .settings-mobile-padding {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Landscape mode optimizations for mobile */
+@media (max-width: 900px) and (orientation: landscape) {
+  .settings-landscape {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .settings-landscape .settings-section {
+    margin-bottom: 1rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .settings-high-contrast {
+    border-width: 2px;
+  }
+  
+  .settings-high-contrast:focus {
+    outline: 3px solid rgb(var(--color-primary-rgb));
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .settings-animation {
+    transition: none !important;
+    animation: none !important;
+  }
+}

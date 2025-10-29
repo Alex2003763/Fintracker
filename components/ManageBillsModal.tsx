@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bill } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
-import { BillIcon } from './icons';
+import { BillIcon, PencilIcon, TrashIcon } from './icons';
 import { formatCurrency } from '../utils/formatters';
 import BaseModal from './BaseModal';
 import { FormField, Input, Select, Button } from './ModalForm';
@@ -12,9 +12,20 @@ interface ManageBillsModalProps {
   bills: Bill[];
   onSaveBill: (bill: Omit<Bill, 'id'> & { id?: string }) => void;
   onDeleteBill: (id: string) => void;
+  onOpenConfirmModal: (title: string, message: string, onConfirm: () => void, options?: { confirmText?: string; variant?: 'primary' | 'danger' }) => void;
 }
 
-const ManageBillsModal: React.FC<ManageBillsModalProps> = ({ isOpen, onClose, bills, onSaveBill, onDeleteBill }) => {
+type ViewMode = 'list' | 'form';
+
+const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
+  isOpen,
+  onClose,
+  bills,
+  onSaveBill,
+  onDeleteBill,
+  onOpenConfirmModal
+}) => {
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [dayOfMonth, setDayOfMonth] = useState('');
@@ -26,6 +37,7 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({ isOpen, onClose, bi
   useEffect(() => {
     if (!isOpen) {
       resetForm();
+      setViewMode('list');
     }
   }, [isOpen]);
 
@@ -35,14 +47,26 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({ isOpen, onClose, bi
     setDayOfMonth('');
     setCategory(Object.values(TRANSACTION_CATEGORIES.expense)[0][0]);
     setBillToEditId(null);
+    setErrors({});
   };
 
-  const handleEditClick = (bill: Bill) => {
+  const handleAddNewBill = () => {
+    resetForm();
+    setViewMode('form');
+  };
+
+  const handleEditBill = (bill: Bill) => {
     setBillToEditId(bill.id);
     setName(bill.name);
     setAmount(bill.amount.toString());
     setDayOfMonth(bill.dayOfMonth.toString());
     setCategory(bill.category);
+    setViewMode('form');
+  };
+
+  const handleBackToList = () => {
+    resetForm();
+    setViewMode('list');
   };
 
   const validateForm = () => {
@@ -94,7 +118,9 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({ isOpen, onClose, bi
         dayOfMonth: parsedDay,
         category
       });
-      resetForm();
+      
+      // After successful save, go back to list view
+      handleBackToList();
     } catch (error) {
       console.error('Error saving bill:', error);
     } finally {
@@ -102,184 +128,269 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({ isOpen, onClose, bi
     }
   };
   
+  const handleDeleteClick = (bill: Bill) => {
+    onOpenConfirmModal(
+      'Delete Bill',
+      `Are you sure you want to delete the bill "${bill.name}"? This action cannot be undone.`,
+      () => onDeleteBill(bill.id),
+      { confirmText: 'Delete', variant: 'danger' }
+    );
+  };
+
+  const renderListView = () => (
+    <div className="p-4 sm:p-6">
+      {/* Header with Add Button */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">
+            Your Bills
+          </h3>
+          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mt-1">
+            {bills.length} {bills.length === 1 ? 'bill' : 'bills'} configured
+          </p>
+        </div>
+        <Button
+          onClick={handleAddNewBill}
+          variant="primary"
+          className="flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Bill
+        </Button>
+      </div>
+
+      {/* Bills List */}
+      <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+        {bills.length > 0 ? bills.map(bill => (
+          <div
+            key={bill.id}
+            className="bg-[rgb(var(--color-card-muted-rgb))] rounded-xl p-4 border border-[rgb(var(--color-border-rgb))] transition-all duration-200"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="p-3 bg-[rgb(var(--color-primary-rgb))]/10 rounded-lg">
+                  <BillIcon className="h-6 w-6 text-[rgb(var(--color-primary-rgb))]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-[rgb(var(--color-text-rgb))] truncate">
+                    {bill.name}
+                  </h4>
+                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                    Due on day {bill.dayOfMonth}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end ml-4">
+                <span className="text-lg font-bold text-[rgb(var(--color-primary-rgb))]">
+                  {formatCurrency(bill.amount)}
+                </span>
+                <span className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
+                  {bill.category}
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-[rgb(var(--color-border-rgb))]">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditBill(bill)}
+                className="text-xs px-3 py-2"
+              >
+                <PencilIcon className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => handleDeleteClick(bill)}
+                className="text-xs px-3 py-2"
+              >
+                <TrashIcon className="w-4 h-4 mr-1" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        )) : (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 mx-auto mb-6 bg-[rgb(var(--color-card-muted-rgb))] rounded-full flex items-center justify-center">
+              <BillIcon className="h-12 w-12 text-[rgb(var(--color-text-muted-rgb))] opacity-50" />
+            </div>
+            <h3 className="text-lg font-semibold text-[rgb(var(--color-text-rgb))] mb-2">
+              No bills yet
+            </h3>
+            <p className="text-[rgb(var(--color-text-muted-rgb))] mb-6 max-w-sm mx-auto">
+              Start by adding your recurring bills to keep track of your monthly expenses
+            </p>
+            <Button
+              onClick={handleAddNewBill}
+              variant="primary"
+              className="flex items-center gap-2 mx-auto"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Your First Bill
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderFormView = () => (
+    <div className="p-4 sm:p-6">
+      {/* Header with Back Button */}
+      <div className="flex items-center gap-3 mb-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBackToList}
+          className="p-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </Button>
+        <div>
+          <h3 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">
+            {billToEditId ? 'Edit Bill' : 'Add New Bill'}
+          </h3>
+          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+            {billToEditId ? 'Update your bill details' : 'Enter your bill information'}
+          </p>
+        </div>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-6 max-h-[60vh] overflow-y-auto">
+        <div className="grid grid-cols-1 gap-6">
+          <FormField
+            label="Bill Name"
+            htmlFor="bill-name"
+            required
+            error={errors.name}
+          >
+            <Input
+              id="bill-name"
+              type="text"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (errors.name) setErrors({ ...errors, name: '' });
+              }}
+              placeholder="e.g. Electric Bill, Rent, Internet"
+              error={errors.name}
+            />
+          </FormField>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <FormField
+              label="Amount"
+              htmlFor="bill-amount"
+              required
+              error={errors.amount}
+            >
+              <Input
+                id="bill-amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={amount}
+                onChange={(e) => {
+                  setAmount(e.target.value);
+                  if (errors.amount) setErrors({ ...errors, amount: '' });
+                }}
+                placeholder="0.00"
+                error={errors.amount}
+                inputMode="decimal"
+                pattern="[0-9]*"
+                leftIcon={
+                  <span className="text-[rgb(var(--color-text-muted-rgb))] text-sm">$</span>
+                }
+              />
+            </FormField>
+
+            <FormField
+              label="Due Day"
+              htmlFor="bill-day"
+              required
+              error={errors.dayOfMonth}
+              hint="Which day of the month is this bill due?"
+            >
+              <Input
+                id="bill-day"
+                type="number"
+                min="1"
+                max="31"
+                value={dayOfMonth}
+                onChange={(e) => {
+                  setDayOfMonth(e.target.value);
+                  if (errors.dayOfMonth) setErrors({ ...errors, dayOfMonth: '' });
+                }}
+                placeholder="15"
+                error={errors.dayOfMonth}
+              />
+            </FormField>
+          </div>
+
+          <FormField
+            label="Category"
+            htmlFor="bill-category"
+            required
+          >
+            <Select
+              id="bill-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              {Object.entries(TRANSACTION_CATEGORIES.expense).map(([group, subcategories]) => (
+                <optgroup label={group} key={group}>
+                  {(subcategories as string[]).map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </Select>
+          </FormField>
+        </div>
+
+        {/* Form Actions */}
+        <div className="flex justify-end gap-3 pt-6 border-t border-[rgb(var(--color-border-rgb))]">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleBackToList}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={isSubmitting}
+            className="min-w-[120px]"
+          >
+            {billToEditId ? 'Save Changes' : 'Add Bill'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+
   if (!isOpen) return null;
-  
-  const inputStyle = "block w-full px-3 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-md text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] sm:text-sm placeholder:text-[rgb(var(--color-text-muted-rgb))] transition-colors";
 
   return (
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
       title="Manage Bills"
-      size="xl"
+      size="lg"
       animation="slide-up"
       aria-label="Manage bills modal"
     >
-      <div className="flex flex-col h-full max-h-[calc(100vh-12rem)]">
-        {/* Add/Edit Form - Fixed height with internal scrolling if needed */}
-        <div className="flex-shrink-0 bg-[rgb(var(--color-card-muted-rgb))] rounded-lg p-4 mb-4">
-          <h3 className="font-semibold text-lg text-[rgb(var(--color-text-rgb))] mb-4">
-            {billToEditId ? 'Edit Bill' : 'Add New Bill'}
-          </h3>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                label="Bill Name"
-                htmlFor="bill-name"
-                required
-                error={errors.name}
-              >
-                <Input
-                  id="bill-name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (errors.name) setErrors({ ...errors, name: '' });
-                  }}
-                  placeholder="e.g. Electric Bill"
-                  error={errors.name}
-                />
-              </FormField>
-
-              <FormField
-                label="Amount"
-                htmlFor="bill-amount"
-                required
-                error={errors.amount}
-              >
-                <Input
-                  id="bill-amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={amount}
-                  onChange={(e) => {
-                    setAmount(e.target.value);
-                    if (errors.amount) setErrors({ ...errors, amount: '' });
-                  }}
-                  placeholder="0.00"
-                  error={errors.amount}
-                  inputMode="decimal"
-                  pattern="[0-9]*"
-                  leftIcon={
-                    <span className="text-[rgb(var(--color-text-muted-rgb))] text-sm">$</span>
-                  }
-                />
-              </FormField>
-
-              <FormField
-                label="Day of Month"
-                htmlFor="bill-day"
-                required
-                error={errors.dayOfMonth}
-                hint="When is this bill due each month?"
-              >
-                <Input
-                  id="bill-day"
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={dayOfMonth}
-                  onChange={(e) => {
-                    setDayOfMonth(e.target.value);
-                    if (errors.dayOfMonth) setErrors({ ...errors, dayOfMonth: '' });
-                  }}
-                  placeholder="15"
-                  error={errors.dayOfMonth}
-                />
-              </FormField>
-
-              <FormField
-                label="Category"
-                htmlFor="bill-category"
-                required
-              >
-                <Select
-                  id="bill-category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  {Object.entries(TRANSACTION_CATEGORIES.expense).map(([group, subcategories]) => (
-                    <optgroup label={group} key={group}>
-                      {(subcategories as string[]).map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </Select>
-              </FormField>
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-2">
-              {billToEditId && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={resetForm}
-                  disabled={isSubmitting}
-                >
-                  Cancel Edit
-                </Button>
-              )}
-              <Button
-                type="submit"
-                variant="primary"
-                loading={isSubmitting}
-              >
-                {billToEditId ? 'Save Changes' : 'Add Bill'}
-              </Button>
-            </div>
-          </form>
-        </div>
-
-        {/* Bills List - Scrollable */}
-        <div className="flex-1 min-h-0">
-          <h3 className="font-semibold text-lg text-[rgb(var(--color-text-rgb))] mb-3 sticky top-0 bg-[rgb(var(--color-card-rgb))] py-2 z-10">
-            Your Bills ({bills.length})
-          </h3>
-          <div className="flex-1 overflow-y-auto max-h-[calc(100vh-20rem)] space-y-2 pb-2">
-            {bills.length > 0 ? bills.map(bill => (
-              <div key={bill.id} className="flex items-center justify-between p-3 bg-[rgb(var(--color-card-muted-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))] transition-colors border border-transparent hover:border-[rgb(var(--color-border-rgb))]">
-                <div className="flex items-center min-w-0 flex-1">
-                  <BillIcon className="h-5 w-5 mr-3 text-[rgb(var(--color-text-muted-rgb))] flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-[rgb(var(--color-text-rgb))] truncate">{bill.name}</p>
-                    <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
-                      {formatCurrency(bill.amount)} - Due on day {bill.dayOfMonth}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex space-x-2 ml-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEditClick(bill)}
-                    className="text-xs px-2 py-1"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => onDeleteBill(bill.id)}
-                    className="text-xs px-2 py-1"
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            )) : (
-              <div className="text-center py-12 text-[rgb(var(--color-text-muted-rgb))]">
-                <BillIcon className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                <p className="text-lg font-medium mb-2">No bills configured yet.</p>
-                <p className="text-sm">Add your first bill using the form above to get started.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {viewMode === 'list' ? renderListView() : renderFormView()}
     </BaseModal>
   );
 };

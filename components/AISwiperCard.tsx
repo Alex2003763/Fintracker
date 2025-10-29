@@ -26,17 +26,10 @@ const AISwiperCard: React.FC<AISwiperCardProps> = ({ insights }) => {
                     bulletActiveClass: 'swiper-pagination-bullet-active',
                 }}
                 className="ai-insights-swiper"
-                style={{
-                    '--swiper-pagination-color': 'rgb(var(--color-primary-rgb))',
-                    '--swiper-pagination-bullet-inactive-color': 'rgb(var(--color-border-rgb))',
-                    '--swiper-pagination-bullet-inactive-opacity': '0.5',
-                    '--swiper-pagination-bullet-size': '6px',
-                    '--swiper-pagination-bullet-horizontal-gap': '3px',
-                } as React.CSSProperties}
             >
                 {/* Summary Card */}
                 <SwiperSlide>
-                    <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-5 h-48 flex flex-col shadow-sm">
+                    <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 sm:p-5 min-h-[12rem] sm:h-[16rem] md:h-[18rem] flex flex-col shadow-sm">
                         <div className="flex items-center mb-3">
                             <div className="bg-[rgba(var(--color-primary-rgb),0.1)] rounded-full p-2 mr-3 flex-shrink-0">
                                 <SparklesIcon className="h-4 w-4 text-[rgb(var(--color-primary-rgb))]" />
@@ -55,7 +48,7 @@ const AISwiperCard: React.FC<AISwiperCardProps> = ({ insights }) => {
 
                 {/* What's Going Well Card */}
                 <SwiperSlide>
-                    <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-5 h-48 flex flex-col shadow-sm">
+                    <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 sm:p-5 min-h-[12rem] sm:h-[16rem] md:h-[18rem] flex flex-col shadow-sm">
                         <div className="flex items-center mb-3">
                             <div className="bg-green-100 rounded-full p-2 mr-3 flex-shrink-0">
                                 <CheckCircleIcon className="h-4 w-4 text-green-600" />
@@ -83,7 +76,7 @@ const AISwiperCard: React.FC<AISwiperCardProps> = ({ insights }) => {
 
                 {/* Areas to Watch Card */}
                 <SwiperSlide>
-                    <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-5 h-48 flex flex-col shadow-sm">
+                    <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 sm:p-5 min-h-[12rem] sm:h-[16rem] md:h-[18rem] flex flex-col shadow-sm">
                         <div className="flex items-center mb-3">
                             <div className="bg-amber-100 rounded-full p-2 mr-3 flex-shrink-0">
                                 <ExclamationTriangleIcon className="h-4 w-4 text-amber-600" />
@@ -111,7 +104,7 @@ const AISwiperCard: React.FC<AISwiperCardProps> = ({ insights }) => {
 
                 {/* Actionable Tip Card */}
                 <SwiperSlide>
-                    <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-5 h-48 flex flex-col shadow-sm">
+                    <div className="bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl p-4 sm:p-5 min-h-[12rem] sm:h-[16rem] md:h-[18rem] flex flex-col shadow-sm">
                         <div className="flex items-center mb-3">
                             <div className="bg-[rgba(var(--color-primary-rgb),0.1)] rounded-full p-2 mr-3 flex-shrink-0">
                                 <LightBulbIcon className="h-4 w-4 text-[rgb(var(--color-primary-rgb))]" />
@@ -131,20 +124,6 @@ const AISwiperCard: React.FC<AISwiperCardProps> = ({ insights }) => {
                 </SwiperSlide>
             </Swiper>
 
-            {/* Custom styles for pagination */}
-            <style jsx>{`
-                :global(.swiper-pagination-bullet) {
-                    background-color: rgb(var(--color-border-rgb));
-                    opacity: 0.5;
-                }
-                :global(.swiper-pagination-bullet-active) {
-                    background-color: rgb(var(--color-primary-rgb));
-                    opacity: 1;
-                }
-                :global(.ai-insights-swiper .swiper-pagination) {
-                    margin-top: 1rem;
-                }
-            `}</style>
         </div>
     );
 };

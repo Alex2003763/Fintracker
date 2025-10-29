@@ -26,8 +26,10 @@ const InsightItem: React.FC<{ icon: React.FC<any>, title: string, colorClass: st
 
 const FormattedAIInsights: React.FC<{ insights: AIInsight }> = ({ insights }) => {
     return (
-        <div className="w-full">
-            <AISwiperCard insights={insights} />
+        <div className="flex justify-center w-full max-w-full overflow-hidden">
+            <div className="w-full max-w-lg">
+                <AISwiperCard insights={insights} />
+            </div>
         </div>
     );
 };

@@ -57,7 +57,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, on
       {notifications.length > 0 && (
         <div className="p-2 border-t border-[rgb(var(--color-border-rgb))]">
           <button onClick={onClearAll} className="w-full text-center text-sm font-semibold text-[rgb(var(--color-primary-subtle-text-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] rounded-lg py-2 transition-colors">
-            Mark all as read
+            Clear All
           </button>
         </div>
       )}

@@ -1176,7 +1176,7 @@ const App: React.FC = () => {
             localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
           }}
           onClearAllNotifications={() => {
-            setNotifications(notifications.map(n => ({...n, read: true})));
+            setNotifications([]);
             const todayStr = new Date().toISOString().split('T')[0];
             localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
           }}
@@ -1214,6 +1214,7 @@ const App: React.FC = () => {
         bills={bills}
         onSaveBill={handleSaveBill}
         onDeleteBill={handleDeleteBill}
+        onOpenConfirmModal={handleOpenConfirmModal}
       />
 
       <ManageBudgetsModal

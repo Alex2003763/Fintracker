@@ -26,16 +26,16 @@ const ThemeOption: React.FC<{ id: string, name: string, active: boolean, onClick
     return (
         <button
             onClick={onClick}
-            className={`text-left p-3 rounded border-2 w-full transition-all ${
+            className={`text-left p-2 sm:p-3 rounded border-2 w-full transition-all ${
               active
                 ? 'border-[rgb(var(--color-primary-rgb))] bg-[rgb(var(--color-primary-rgb))] bg-opacity-5'
                 : 'border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]'
             }`}
         >
-            <div className={`p-3 rounded ${isLight ? 'bg-gray-100' : 'bg-slate-900'}`}>
+            <div className={`p-2 sm:p-3 rounded ${isLight ? 'bg-gray-100' : 'bg-slate-900'}`}>
                 <div className="flex items-center justify-between">
-                    <div className={`w-1/2 h-6 rounded ${isLight ? 'bg-white' : 'bg-slate-800'}`}></div>
-                    <div className={`w-6 h-6 rounded-full ${
+                    <div className={`w-1/2 h-4 sm:h-6 rounded ${isLight ? 'bg-white' : 'bg-slate-800'}`}></div>
+                    <div className={`w-4 h-4 sm:w-6 sm:h-6 rounded-full ${
                       id.includes('crimson') ? 'bg-rose-500' :
                       id.includes('green') ? 'bg-emerald-500' :
                       id.includes('slate') ? 'bg-blue-500' :
@@ -43,7 +43,7 @@ const ThemeOption: React.FC<{ id: string, name: string, active: boolean, onClick
                     }`}></div>
                 </div>
             </div>
-            <p className="font-semibold mt-2 text-sm text-[rgb(var(--color-text-rgb))]">{name}</p>
+            <p className="font-semibold mt-1 sm:mt-2 text-xs sm:text-sm text-[rgb(var(--color-text-rgb))] truncate">{name}</p>
         </button>
     )
 }
@@ -66,8 +66,8 @@ const AISettings: React.FC<{ user: User; onUpdateUser: (user: User) => void }> =
     };
 
     return (
-        <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">AI Settings</h2>
+        <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-lg sm:text-xl font-semibold text-[rgb(var(--color-text-rgb))]">AI Settings</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
                 <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
                     Enter your Gemini API key for AI-powered financial insights.
@@ -77,7 +77,7 @@ const AISettings: React.FC<{ user: User; onUpdateUser: (user: User) => void }> =
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder="Gemini API Key"
-                    className="w-full px-3 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))]"
+                    className="w-full px-3 py-2.5 sm:py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] text-sm sm:text-base"
                 />
                 {message && (
                     <p className={`text-sm ${message.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
@@ -86,7 +86,7 @@ const AISettings: React.FC<{ user: User; onUpdateUser: (user: User) => void }> =
                 )}
                 <button
                     type="submit"
-                    className="px-4 py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded hover:bg-[rgb(var(--color-primary-hover-rgb))]"
+                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors"
                 >
                     Save API Key
                 </button>
@@ -200,19 +200,18 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
   }
 
   return (
-    <div className="bg-[rgb(var(--color-background-rgb))] p-6 space-y-8 max-w-4xl mx-auto">
+    <div className="bg-[rgb(var(--color-background-rgb))] px-4 sm:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8 max-w-4xl mx-auto min-h-screen">
       {/* Enhanced Header */}
-      <div className="text-center pb-8 border-b border-[rgb(var(--color-border-rgb))]">
-        <div className="flex items-center justify-center mb-4">
-          <div className="p-3 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-2xl">
-            <SettingsIcon className="w-8 h-8 text-[rgb(var(--color-primary-rgb))]" />
+      <div className="text-center pb-6 sm:pb-8 border-b border-[rgb(var(--color-border-rgb))]">
+        <div className="flex flex-col sm:flex-row items-center justify-center mb-4 space-y-3 sm:space-y-0 sm:space-x-3">
+          <div className="p-2 sm:p-3 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-xl sm:rounded-2xl">
+            <SettingsIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[rgb(var(--color-primary-rgb))]" />
           </div>
-          <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))] mb-3">Settings</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Settings</h1>
         </div>
- 
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Account & Profile Section */}
         <div className="space-y-6">
           <div className="flex items-center space-x-3">
@@ -221,15 +220,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
             </div>
             <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Account & Profile</h2>
           </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
+          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
+              <div className="flex-1">
                 <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Logged in as</p>
-                <p className="font-semibold text-[rgb(var(--color-text-rgb))] text-lg">{user.username}</p>
+                <p className="font-semibold text-[rgb(var(--color-text-rgb))] text-base sm:text-lg break-all">{user.username}</p>
               </div>
               <button
                 onClick={() => setActiveItem?.('Account')}
-                className="px-4 py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 Manage Account
               </button>
@@ -245,9 +244,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
             </div>
             <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Appearance</h2>
           </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-6 shadow-sm">
-            <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mb-6">Choose your preferred theme</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
+            <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mb-4 sm:mb-6">Choose your preferred theme</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {THEMES.map(t => (
                 <ThemeOption
                   key={t.id}
@@ -269,14 +268,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
             </div>
             <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Smart Features</h2>
           </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-6 shadow-sm space-y-6">
+          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
             <AISettings user={user} onUpdateUser={onUpdateUser} />
 
-            <div className="border-t border-[rgb(var(--color-border-rgb))] pt-6">
-              <div className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl">
-                <div>
+            <div className="border-t border-[rgb(var(--color-border-rgb))] pt-4 sm:pt-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl space-y-3 sm:space-y-0">
+                <div className="flex-1">
                   <p className="font-medium text-[rgb(var(--color-text-rgb))]">Smart Category Suggestions</p>
-                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">AI suggests categories based on transaction descriptions</p>
+                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] pr-2">AI suggests categories based on transaction descriptions</p>
                 </div>
                 <button
                   onClick={() => {
@@ -306,17 +305,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
                 </button>
               </div>
 
-              <div className="mt-4">
+              <div className="mt-3 sm:mt-4">
                 <button
                   onClick={() => setShowManageCategories(true)}
-                  className="w-full p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
+                  className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
                 >
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1 pr-2">
                       <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">Manage Categories</p>
                       <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Create and organize custom categories</p>
                     </div>
-                    <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -336,19 +335,19 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
           </div>
           <button
             onClick={() => setShowNotificationSettings(true)}
-            className="w-full bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-6 hover:shadow-md hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
+            className="w-full bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 hover:shadow-md hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-xl">
-                  <BellIcon className="w-6 h-6 text-[rgb(var(--color-primary-rgb))]" />
+              <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg sm:rounded-xl flex-shrink-0">
+                  <BellIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[rgb(var(--color-primary-rgb))]" />
                 </div>
-                <div className="text-left">
-                  <p className="font-semibold text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">Notification Preferences</p>
+                <div className="text-left flex-1 min-w-0">
+                  <p className="font-semibold text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors truncate">Notification Preferences</p>
                   <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Customize alerts and reminders</p>
                 </div>
               </div>
-              <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -365,24 +364,24 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
             </div>
             <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Data & Privacy</h2>
           </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-6 shadow-sm space-y-4">
+          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
             <button
               onClick={handleExport}
-              className="w-full p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
+              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
+                  <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l4-4m-4 4l-4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">Export Data</p>
                     <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Save a backup of all your data</p>
                   </div>
                 </div>
-                <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -390,21 +389,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
 
             <button
               onClick={handleImportClick}
-              className="w-full p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
+              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
+                  <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                     </svg>
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">Import Data</p>
                     <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Restore from a backup file</p>
                   </div>
                 </div>
-                <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -430,22 +429,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
             </div>
             <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Support & Info</h2>
           </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-6 shadow-sm">
+          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
             <ServiceWorkerDebugPanel />
           </div>
         </div>
 
         {/* Sign Out Section */}
         <div className="space-y-6">
-          <div className="bg-gradient-to-r from-[rgba(var(--color-primary-rgb),0.08)] to-[rgba(var(--color-primary-rgb),0.04)] rounded-2xl border border-[rgb(var(--color-primary-rgb))]/20 p-6">
-            <div className="flex items-center justify-between">
-              <div>
+          <div className="bg-gradient-to-r from-[rgba(var(--color-primary-rgb),0.08)] to-[rgba(var(--color-primary-rgb),0.04)] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-primary-rgb))]/20 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
+              <div className="flex-1">
                 <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-1">Sign Out</h3>
                 <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">End your current session</p>
               </div>
               <button
                 onClick={handleSignOut}
-                className="px-6 py-3 bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full sm:w-auto px-6 py-3 bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 Sign Out
               </button>
@@ -454,7 +453,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpdateUser, onSignO
         </div>
 
         {/* Footer */}
-        <div className="text-center text-[rgb(var(--color-text-muted-rgb))] text-sm pt-8 border-t border-[rgb(var(--color-border-rgb))]">
+        <div className="text-center text-[rgb(var(--color-text-muted-rgb))] text-sm pt-6 sm:pt-8 border-t border-[rgb(var(--color-border-rgb))]">
           <p>Finance Flow App v1.3.0</p>
         </div>
       </div>
