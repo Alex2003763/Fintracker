@@ -1,6 +1,6 @@
 import React from 'react';
 import { Transaction, Bill } from '../types';
-import BalanceCard from './BalanceCard';
+import PremiumBalanceCard from './PremiumBalanceCard';
 import TransactionsCard from './TransactionsCard';
 import SpendingBreakdownCard from './SpendingBreakdownCard';
 import UpcomingBillsCard from './UpcomingBillsCard';
@@ -27,7 +27,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   return (
      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
        <div className="lg:col-span-2">
-         <BalanceCard transactions={transactions} onAddTransaction={onAddTransaction} setActiveItem={setActiveItem} />
+         <PremiumBalanceCard
+            transactions={transactions}
+            onAddTransaction={onAddTransaction}
+            setActiveItem={setActiveItem}
+         />
        </div>
        <TransactionsCard
          transactions={transactions.slice(0, 5)}
