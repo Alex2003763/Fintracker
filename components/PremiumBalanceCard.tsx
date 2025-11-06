@@ -73,15 +73,6 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = ({
 
   return (
     <div className={`premium-card-container ${className}`}>
-      <div
-        className={`premium-card-flipper ${isFlipped ? 'flipped' : ''}`}
-        onClick={handleFlip}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-        role="button"
-        aria-label={`Premium balance card showing ${formatCurrency(balance)}. ${isFlipped ? 'Currently showing back of card' : 'Currently showing front of card'}. Press Enter to flip card.`}
-        aria-pressed={isFlipped}
-      >
         {/* Card Front */}
         <div
           className="premium-card-front"
@@ -219,5 +210,6 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = ({
     </div>
   );
 };
+
 
 export default PremiumBalanceCard;
