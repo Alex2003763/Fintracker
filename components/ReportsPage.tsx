@@ -503,7 +503,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ user, transactions }) => {
             <div className="space-y-4 sm:space-y-6">
                 <h2 className="text-lg sm:text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Financial Overview</h2>
                             {/* AI Insights */}
-                <div className="bg-[rgb(var(--color-background-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg p-6" style={{ width: '600px', maxWidth: '90vw' }}>
+                <div className="bg-[rgb(var(--color-background-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg p-6" style={{ width: '500px', maxWidth: '80vw' }}>
                     <AIInsightsCard user={user} transactions={filteredTransactions} />
                 </div>
                 {/* Cash Flow Trend Chart */}
