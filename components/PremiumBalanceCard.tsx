@@ -73,6 +73,15 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = ({
 
   return (
     <div className={`premium-card-container ${className}`}>
+      <div
+        className={`premium-card-flipper ${isFlipped ? 'flipped' : ''}`}
+        onClick={handleFlip}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="button"
+        aria-label={`Premium balance card showing ${formatCurrency(balance)}. ${isFlipped ? 'Currently showing back of card' : 'Currently showing front of card'}. Press Enter to flip card.`}
+        aria-pressed={isFlipped}
+      >
         {/* Card Front */}
         <div
           className="premium-card-front"
@@ -97,20 +106,6 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = ({
                   <span>{sign}{dailyChange.toFixed(1)}%</span>
                 </div>
               </div>
-              <button
-                className="premium-card-flip-button"
-                aria-label="Flip to back of card"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleFlip();
-                }}
-                tabIndex={-1}
-              >
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.012 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                </svg>
-              </button>
             </div>
           </div>
           
@@ -210,6 +205,5 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = ({
     </div>
   );
 };
-
 
 export default PremiumBalanceCard;
