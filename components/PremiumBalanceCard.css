@@ -39,10 +39,6 @@
   justify-content: space-between;
   padding: 24px;
   color: #ffffff;
-  background: linear-gradient(135deg, 
-    rgb(var(--gradient-from-rgb)), 
-    rgb(var(--gradient-to-rgb))
-  );
   transition: all 0.3s ease;
 }
 

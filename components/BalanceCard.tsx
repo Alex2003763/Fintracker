@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Transaction } from '../types';
 import { SalaryIcon, ReportsIcon, CartIcon } from './icons';
 import { formatCurrency } from '../utils/formatters';
+import { useTheme } from './ThemeContext';
 
 interface BalanceCardProps {
   transactions: Transaction[];
@@ -11,6 +12,7 @@ interface BalanceCardProps {
 
 const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransaction, setActiveItem }) => {
   const [isFlipped, setIsFlipped] = useState(false);
+  const { customBackground } = useTheme();
 
   const { balance, dailyChange, dailyIncome, dailyExpense } = useMemo(() => {
     const currentBalance = transactions.reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
@@ -61,7 +63,17 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransactio
     <div className="card-flip-container h-72 md:h-64">
       <div className={`card-flipper ${isFlipped ? 'flipped' : ''} h-full`}>
         {/* Card Front */}
-        <div className="card-front text-white p-6 md:p-8 pb-8 md:pb-10 shadow-lg bg-gradient-to-br from-[rgb(var(--gradient-from-rgb))] to-[rgb(var(--gradient-to-rgb))] transition-colors">
+        <div
+          className="card-front text-white p-6 md:p-8 pb-8 md:pb-10 shadow-lg transition-colors relative overflow-hidden"
+          style={{
+            backgroundImage: customBackground
+              ? `url(${customBackground})`
+              : `linear-gradient(to bottom right, rgb(var(--gradient-from-rgb)), rgb(var(--gradient-to-rgb)))`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        >
           <div className="flex justify-between items-start mb-6">
             <div className="flex-1">
               <h2 className="text-blue-200 text-base font-medium mb-3">Current Balance</h2>
@@ -102,6 +114,11 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransactio
         <div className="card-back bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))] p-4 shadow-lg flex flex-col justify-between">
             <div className="flex justify-between items-start mb-3">
                 <h3 className="text-lg font-bold">Daily Summary</h3>
+                <button onClick={() => setIsFlipped(!isFlipped)} className="text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] transition-colors" aria-label="Flip card">
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                     </svg>
+                </button>
             </div>
 
             <div className="flex-1 flex items-center justify-center">
@@ -134,6 +151,5 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ transactions, onAddTransactio
     </div>
   );
 };
-
 
 export default BalanceCard;

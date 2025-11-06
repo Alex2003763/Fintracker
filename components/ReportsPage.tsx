@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Transaction, User, AIInsight } from '../types';
-import { ReportsIcon, SparklesIcon, CheckCircleIcon, ExclamationTriangleIcon, LightBulbIcon } from './icons';
+import { ReportsIcon, SparklesIcon, CheckCircleIcon, ExclamationTriangleIcon, LightBulbIcon, ChevronDownIcon } from './icons';
 import { formatCurrency } from '../utils/formatters';
 import { CATEGORY_ICON_MAP } from '../constants';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Sector } from 'recharts';
 import AISwiperCard from './AISwiperCard';
 
 interface MonthlyData {
@@ -11,6 +11,28 @@ interface MonthlyData {
   income: number;
   expense: number;
 }
+
+interface CashFlowData {
+  month: string;
+  monthlyFlow: number;
+  cumulativeFlow: number;
+}
+
+interface TimeRangeOption {
+  label: string;
+  value: string;
+  months: number;
+}
+
+const TIME_RANGE_OPTIONS: TimeRangeOption[] = [
+  { label: 'This Month', value: 'current_month', months: 1 },
+  { label: 'Last 3 Months', value: 'last_3_months', months: 3 },
+  { label: 'Last 6 Months', value: 'last_6_months', months: 6 },
+  { label: 'This Year', value: 'current_year', months: 12 },
+  { label: 'All Time', value: 'all_time', months: -1 }
+];
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF4560', '#775DD0', '#546E7A'];
 
 const InsightItem: React.FC<{ icon: React.FC<any>, title: string, colorClass: string, children: React.ReactNode}> = ({ icon: Icon, title, colorClass, children }) => (
     <div className="animate-fade-in-up">
@@ -100,7 +122,18 @@ ${JSON.stringify(recentTransactions)}
             }
 
             const data = await response.json();
-            const text = data.candidates[0].content.parts[0].text;
+            
+            // Replace line 125 with proper validation:
+            if (!data.candidates || data.candidates.length === 0) {
+                throw new Error("No AI response candidates received");
+            }
+
+            const candidate = data.candidates[0];
+            if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+                throw new Error("Invalid AI response structure");
+            }
+
+            const text = candidate.content.parts[0].text;
 
             if (!text) {
                 throw new Error("The AI model returned an empty response. This might be due to a content safety filter.");
@@ -169,152 +202,471 @@ ${JSON.stringify(recentTransactions)}
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-[rgb(var(--color-card-rgb))] p-3 border border-[rgb(var(--color-border-rgb))] rounded-lg shadow-lg">
-          <p className="font-bold text-[rgb(var(--color-text-rgb))] mb-1">{label}</p>
-          <p className="text-sm text-green-500">{`Income: ${formatCurrency(payload[0].value)}`}</p>
-          <p className="text-sm text-red-500">{`Expense: ${formatCurrency(payload[1].value)}`}</p>
+        <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
+          <p className="font-medium text-gray-900">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }} className="text-sm">
+              {entry.name}: {formatCurrency(entry.value)}
+            </p>
+          ))}
         </div>
       );
     }
     return null;
 };
 
-interface ReportsPageProps {
-    transactions: Transaction[];
-    user: User;
-}
-
-const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user }) => {
-
-  const monthlyData: MonthlyData[] = useMemo(() => {
-    const data: { [key: string]: { income: number, expense: number } } = {};
-    const today = new Date();
-
-    for (let i = 5; i >= 0; i--) {
-        const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        data[monthKey] = { income: 0, expense: 0 };
-    }
-    
-    transactions.forEach(t => {
-      const date = new Date(t.date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      if (data[monthKey]) {
-        if (t.type === 'income') {
-          data[monthKey].income += t.amount;
-        } else {
-          data[monthKey].expense += t.amount;
-        }
-      }
-    });
-
-    return Object.keys(data).sort().map(key => {
-        const [year, monthNum] = key.split('-');
-        const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-        const monthLabel = date.toLocaleString('default', { month: 'short' });
-        return { month: monthLabel, income: data[key].income, expense: data[key].expense };
-    });
-  }, [transactions]);
-
-  const yAxisTickFormatter = (value: number) => {
-      if (value >= 1000) {
-          return `$${value / 1000}k`;
-      }
-      return `$${value}`;
-  }
-  
-  const spendingAnalysis = useMemo(() => {
-    const expenses = transactions.filter(t => t.type === 'expense');
-    const totalExpense = expenses.reduce((sum, t) => sum + t.amount, 0);
-    if (totalExpense === 0) return [];
-    
-    const categoryMap: { [key: string]: { total: number, count: number } } = {};
-    expenses.forEach(t => {
-        if (!categoryMap[t.category]) {
-            categoryMap[t.category] = { total: 0, count: 0 };
-        }
-        categoryMap[t.category].total += t.amount;
-        categoryMap[t.category].count++;
-    });
-
-    return Object.entries(categoryMap)
-        .map(([category, data]) => ({
-            category,
-            icon: CATEGORY_ICON_MAP[category] || CATEGORY_ICON_MAP['Other'],
-            ...data,
-            percentage: (data.total / totalExpense) * 100,
-        }))
-        .sort((a, b) => b.total - a.total);
-    }, [transactions]);
-  
-  const hasData = useMemo(() => transactions.length > 0, [transactions]);
-
-  if (!hasData) {
-    return (
-        <div className="flex flex-col items-center justify-center h-full text-center bg-[rgb(var(--color-card-rgb))] rounded-lg shadow p-8 transition-colors">
-            <ReportsIcon className="h-16 w-16 text-[rgb(var(--color-text-muted-rgb))] mb-4" />
-            <h1 className="text-2xl font-bold text-[rgb(var(--color-text-rgb))]">Reports</h1>
-            <p className="mt-2 text-lg text-[rgb(var(--color-text-muted-rgb))]">Add some transactions to see your financial reports.</p>
+const CashFlowTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
+          <p className="font-medium text-gray-900">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }} className="text-sm">
+              {entry.dataKey === 'monthlyFlow' ? 'Monthly Cash Flow' : 'Net Worth'}: {formatCurrency(entry.value)}
+            </p>
+          ))}
         </div>
-    );
-  }
+      );
+    }
+    return null;
+};
+
+const PieTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
+          <p className="font-medium text-gray-900">{data.name}</p>
+          <p className="text-sm text-gray-600">Amount: {formatCurrency(data.value)}</p>
+          <p className="text-sm text-gray-600">Percentage: {data.percentage}%</p>
+        </div>
+      );
+    }
+    return null;
+};
+
+const renderActiveShape = (props: any) => {
+  const RADIAN = Math.PI / 180;
+  const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent } = props;
+  const sin = Math.sin(-RADIAN * midAngle);
+  const cos = Math.cos(-RADIAN * midAngle);
+  const sx = cx + (outerRadius + 8) * cos;
+  const sy = cy + (outerRadius + 8) * sin;
+  const mx = cx + (outerRadius + 20) * cos;
+  const my = cy + (outerRadius + 20) * sin;
+  const ex = mx + (cos >= 0 ? 1 : -1) * 15;
+  const ey = my;
+  const textAnchor = cos >= 0 ? 'start' : 'end';
+
+  // Check if we're on mobile (approximation)
+  const isMobile = window.innerWidth < 640;
+  const nameMaxLength = isMobile ? 8 : 12;
+  const displayName = payload.name.length > nameMaxLength
+    ? payload.name.substring(0, nameMaxLength) + '...'
+    : payload.name;
 
   return (
-     <div className="space-y-8 mobile-content">
-       <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Financial Reports</h1>
-
-       <div className="bg-[rgb(var(--color-card-rgb))] p-6 md:p-8 rounded-lg shadow space-y-8 transition-colors">
-         <AIInsightsCard user={user} transactions={transactions} />
-       </div>
- 
-       <div className="bg-[rgb(var(--color-card-rgb))] p-6 md:p-8 rounded-lg shadow space-y-8 transition-colors">
-        <div>
-          <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))] mb-4">Monthly Summary</h2>
-          <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg">
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                        data={monthlyData}
-                        margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
-                    >
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(var(--color-border-rgb), 0.5)" />
-                        <XAxis dataKey="month" tick={{ fill: 'rgb(var(--color-text-muted-rgb))', fontSize: 12 }} />
-                        <YAxis tickFormatter={yAxisTickFormatter} tick={{ fill: 'rgb(var(--color-text-muted-rgb))', fontSize: 12 }} />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(var(--color-border-rgb), 0.3)' }} />
-                        <Legend />
-                        <Bar dataKey="income" fill="#4ade80" name="Income" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="expense" fill="#f87171" name="Expense" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
-              </div>
-          </div>
-        </div>
-        
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Spending Analysis by Category</h2>
-          <div className="p-4 border border-[rgb(var(--color-border-rgb))] rounded-lg space-y-4">
-              {spendingAnalysis.length > 0 ? spendingAnalysis.map(item => (
-                  <div key={item.category}>
-                      <div className="flex justify-between items-center mb-1">
-                          <div className="flex items-center">
-                              <div className="bg-[rgb(var(--color-card-muted-rgb))] rounded-full p-2 mr-3">
-                                  <item.icon className="h-5 w-5 text-[rgb(var(--color-text-muted-rgb))]" />
-                              </div>
-                              <span className="font-medium text-[rgb(var(--color-text-rgb))]">{item.category}</span>
-                          </div>
-                          <span className="font-semibold text-[rgb(var(--color-text-rgb))]">{formatCurrency(item.total)}</span>
-                      </div>
-                      <div className="w-full bg-[rgb(var(--color-card-muted-rgb))] rounded-full h-2">
-                          <div className="bg-[rgb(var(--color-primary-rgb))] h-2 rounded-full" style={{ width: `${item.percentage}%` }}></div>
-                      </div>
-                      <div className="text-right text-xs text-[rgb(var(--color-text-muted-rgb))] mt-1">{item.percentage.toFixed(1)}% of total expenses</div>
-                  </div>
-              )) : <p className="text-center text-[rgb(var(--color-text-muted-rgb))] py-4">No expense data to analyze.</p>}
-          </div>
-      </div>
-    </div>
-    </div>
+    <g>
+      <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="text-xs sm:text-sm font-medium">
+        {displayName}
+      </text>
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+      />
+      <Sector
+        cx={cx}
+        cy={cy}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        innerRadius={outerRadius + 4}
+        outerRadius={outerRadius + 8}
+        fill={fill}
+      />
+      <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+      <circle cx={ex} cy={ey} r={1.5} fill={fill} stroke="none" />
+      <text x={ex + (cos >= 0 ? 1 : -1) * 8} y={ey} textAnchor={textAnchor} fill="#333" className="text-xs font-medium">
+        {isMobile ? formatCurrency(payload.value).replace('$', '') : formatCurrency(payload.value)}
+      </text>
+      <text x={ex + (cos >= 0 ? 1 : -1) * 8} y={ey} dy={14} textAnchor={textAnchor} fill="#999" className="text-xs">
+        {`${(percent * 100).toFixed(1)}%`}
+      </text>
+    </g>
   );
+};
+
+interface ReportsPageProps {
+    user: User;
+    transactions: Transaction[];
+}
+
+const ReportsPage: React.FC<ReportsPageProps> = ({ user, transactions }) => {
+    const [selectedTimeRange, setSelectedTimeRange] = useState('last_3_months');
+    const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+    const [activeIncomeIndex, setActiveIncomeIndex] = useState<number | undefined>(undefined);
+
+    const getFilteredTransactions = (timeRange: string) => {
+        const now = new Date();
+        let cutoffDate = new Date();
+
+        switch (timeRange) {
+            case 'current_month':
+                cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case 'last_3_months':
+                cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                break;
+            case 'last_6_months':
+                cutoffDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+                break;
+            case 'current_year':
+                cutoffDate = new Date(now.getFullYear(), 0, 1);
+                break;
+            case 'all_time':
+                return transactions;
+            default:
+                cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        }
+
+        return transactions.filter(t => new Date(t.date) >= cutoffDate);
+    };
+
+    const filteredTransactions = useMemo(() => getFilteredTransactions(selectedTimeRange), [transactions, selectedTimeRange]);
+
+    const monthlyData = useMemo(() => {
+        const data: { [key: string]: MonthlyData } = {};
+        
+        filteredTransactions.forEach(transaction => {
+            const date = new Date(transaction.date);
+            const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+            const monthLabel = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+            
+            if (!data[monthKey]) {
+                data[monthKey] = { month: monthLabel, income: 0, expense: 0 };
+            }
+            
+            if (transaction.type === 'income') {
+                data[monthKey].income += transaction.amount;
+            } else {
+                data[monthKey].expense += Math.abs(transaction.amount);
+            }
+        });
+        
+        return Object.keys(data)
+            .sort()
+            .map(key => data[key]);
+    }, [filteredTransactions]);
+
+    const cashFlowData = useMemo(() => {
+        let cumulativeFlow = 0;
+        return monthlyData.map(month => {
+            const monthlyFlow = month.income - month.expense;
+            cumulativeFlow += monthlyFlow;
+            return {
+                month: month.month,
+                monthlyFlow,
+                cumulativeFlow
+            };
+        });
+    }, [monthlyData]);
+
+    const categoryData = useMemo(() => {
+        const expenses = filteredTransactions.filter(t => t.type === 'expense');
+        const categoryTotals: { [key: string]: number } = {};
+        
+        expenses.forEach(transaction => {
+            const category = transaction.category || 'Uncategorized';
+            categoryTotals[category] = (categoryTotals[category] || 0) + Math.abs(transaction.amount);
+        });
+        
+        const total = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+        
+        return Object.entries(categoryTotals)
+            .map(([name, value]) => ({
+                name,
+                value,
+                percentage: total > 0 ? Math.round((value / total) * 100) : 0
+            }))
+            .sort((a, b) => b.value - a.value);
+    }, [filteredTransactions]);
+
+    const incomeData = useMemo(() => {
+        const incomes = filteredTransactions.filter(t => t.type === 'income');
+        const categoryTotals: { [key: string]: number } = {};
+        
+        incomes.forEach(transaction => {
+            const category = transaction.category || 'Other Income';
+            categoryTotals[category] = (categoryTotals[category] || 0) + transaction.amount;
+        });
+        
+        const total = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+        
+        return Object.entries(categoryTotals)
+            .map(([name, value]) => ({
+                name,
+                value,
+                percentage: total > 0 ? Math.round((value / total) * 100) : 0
+            }))
+            .sort((a, b) => b.value - a.value);
+    }, [filteredTransactions]);
+
+    const onPieEnter = (_: any, index: number) => {
+        setActiveIndex(index);
+    };
+
+    const onPieLeave = () => {
+        setActiveIndex(undefined);
+    };
+
+    const onIncomeEnter = (_: any, index: number) => {
+        setActiveIncomeIndex(index);
+    };
+
+    const onIncomeLeave = () => {
+        setActiveIncomeIndex(undefined);
+    };
+
+    const totalIncome = filteredTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+    
+    const totalExpenses = filteredTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+    const netIncome = totalIncome - totalExpenses;
+
+    return (
+        <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+            {/* Header with Time Range Filter */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="flex items-center">
+                    <ReportsIcon className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-[rgb(var(--color-primary-rgb))]" />
+                    <h1 className="text-xl sm:text-2xl font-bold text-[rgb(var(--color-text-rgb))]">Financial Reports</h1>
+                </div>
+                <div className="relative w-full sm:w-auto">
+                    <select
+                        value={selectedTimeRange}
+                        onChange={(e) => setSelectedTimeRange(e.target.value)}
+                        className="appearance-none bg-[rgb(var(--color-background-rgb))] border-2 border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-rgb))] px-4 py-3 pr-10 rounded-xl shadow-sm hover:shadow-md hover:border-[rgb(var(--color-primary-rgb))] focus:outline-none focus:ring-4 focus:ring-[rgb(var(--color-primary-rgb))]/20 focus:border-[rgb(var(--color-primary-rgb))] transition-all duration-200 w-full sm:min-w-[160px] text-sm sm:text-base font-medium cursor-pointer"
+                        style={{
+                            backgroundImage: 'none',
+                            backgroundGradient: 'linear-gradient(135deg, rgb(var(--color-background-rgb)) 0%, rgba(var(--color-background-rgb), 0.95) 100%)'
+                        }}
+                    >
+                        {TIME_RANGE_OPTIONS.map(option => (
+                            <option
+                                key={option.value}
+                                value={option.value}
+                                className="bg-[rgb(var(--color-background-rgb))] text-[rgb(var(--color-text-rgb))] py-2 px-4 hover:bg-[rgb(var(--color-primary-rgb))]/10"
+                                style={{
+                                    backgroundColor: 'rgb(var(--color-background-rgb))',
+                                    color: 'rgb(var(--color-text-rgb))'
+                                }}
+                            >
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <ChevronDownIcon className="h-5 w-5 text-[rgb(var(--color-text-muted-rgb))] transition-transform duration-200 group-hover:text-[rgb(var(--color-primary-rgb))]" />
+                    </div>
+                    {/* Enhanced visual indicator */}
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[rgb(var(--color-primary-rgb))]/0 via-[rgb(var(--color-primary-rgb))]/5 to-[rgb(var(--color-primary-rgb))]/0 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
+                </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="bg-[rgb(var(--color-background-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg p-3 sm:p-4">
+                    <h3 className="text-xs sm:text-sm font-medium text-[rgb(var(--color-text-muted-rgb))] uppercase tracking-wide">Total Income</h3>
+                    <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{formatCurrency(totalIncome)}</p>
+                </div>
+                <div className="bg-[rgb(var(--color-background-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg p-3 sm:p-4">
+                    <h3 className="text-xs sm:text-sm font-medium text-[rgb(var(--color-text-muted-rgb))] uppercase tracking-wide">Total Expenses</h3>
+                    <p className="text-lg sm:text-2xl font-bold text-red-600 mt-1">{formatCurrency(totalExpenses)}</p>
+                </div>
+                <div className="bg-[rgb(var(--color-background-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg p-3 sm:p-4 sm:col-span-2 lg:col-span-1">
+                    <h3 className="text-xs sm:text-sm font-medium text-[rgb(var(--color-text-muted-rgb))] uppercase tracking-wide">Net Income</h3>
+                    <p className={`text-lg sm:text-2xl font-bold mt-1 ${netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(netIncome)}
+                    </p>
+                </div>
+            </div>
+
+            {/* Financial Overview Section */}
+            <div className="space-y-4 sm:space-y-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Financial Overview</h2>
+                            {/* AI Insights */}
+                <div className="bg-[rgb(var(--color-background-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg p-6">
+                    <AIInsightsCard user={user} transactions={filteredTransactions} />
+                </div>
+                {/* Cash Flow Trend Chart */}
+                <div className="bg-[rgb(var(--color-background-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-medium text-[rgb(var(--color-text-rgb))] mb-3 sm:mb-4">Net Worth & Cash Flow Trend</h3>
+                    <div className="h-64 sm:h-80">
+                        {cashFlowData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={cashFlowData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-border-rgb))" />
+                                    <XAxis
+                                        dataKey="month"
+                                        tick={{ fontSize: 10, fill: 'rgb(var(--color-text-muted-rgb))' }}
+                                        interval="preserveStartEnd"
+                                    />
+                                    <YAxis
+                                        tick={{ fontSize: 10, fill: 'rgb(var(--color-text-muted-rgb))' }}
+                                        tickFormatter={(value) => formatCurrency(value)}
+                                        width={60}
+                                    />
+                                    <Tooltip content={<CashFlowTooltip />} />
+                                    <Legend />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="monthlyFlow"
+                                        stroke="#0088FE"
+                                        strokeWidth={2}
+                                        name="Monthly Cash Flow"
+                                        dot={{ r: 4 }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="cumulativeFlow"
+                                        stroke="#00C49F"
+                                        strokeWidth={2}
+                                        name="Net Worth"
+                                        dot={{ r: 4 }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-[rgb(var(--color-text-muted-rgb))]">
+                                <div className="text-center">
+                                    <p className="text-lg mb-2">No transaction data available</p>
+                                    <p className="text-sm">for the selected time period</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Monthly Income vs Expenses Chart */}
+                <div className="bg-[rgb(var(--color-background-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-medium text-[rgb(var(--color-text-rgb))] mb-3 sm:mb-4">Monthly Income vs Expenses</h3>
+                    <div className="h-64 sm:h-80">
+                        {monthlyData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={monthlyData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-border-rgb))" />
+                                    <XAxis
+                                        dataKey="month"
+                                        tick={{ fontSize: 10, fill: 'rgb(var(--color-text-muted-rgb))' }}
+                                        interval="preserveStartEnd"
+                                    />
+                                    <YAxis
+                                        tick={{ fontSize: 10, fill: 'rgb(var(--color-text-muted-rgb))' }}
+                                        tickFormatter={(value) => formatCurrency(value)}
+                                        width={60}
+                                    />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend />
+                                    <Bar dataKey="income" fill="#10B981" name="Income" />
+                                    <Bar dataKey="expense" fill="#EF4444" name="Expenses" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-[rgb(var(--color-text-muted-rgb))]">
+                                <div className="text-center">
+                                    <p className="text-lg mb-2">No transaction data available</p>
+                                    <p className="text-sm">for the selected time period</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Category Analysis Charts */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Spending Analysis */}
+                    <div className="bg-[rgb(var(--color-background-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-medium text-[rgb(var(--color-text-rgb))] mb-3 sm:mb-4">Spending by Category</h3>
+                        {categoryData.length > 0 ? (
+                            <div className="h-64 sm:h-80">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            activeIndex={activeIndex}
+                                            activeShape={renderActiveShape}
+                                            data={categoryData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={100}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                            onMouseEnter={onPieEnter}
+                                            onMouseLeave={onPieLeave}
+                                        >
+                                            {categoryData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip content={<PieTooltip />} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        ) : (
+                            <div className="h-80 flex items-center justify-center text-[rgb(var(--color-text-muted-rgb))]">
+                                No expense data available for the selected period
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Income Analysis */}
+                    <div className="bg-[rgb(var(--color-background-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg p-6">
+                        <h3 className="text-lg font-medium text-[rgb(var(--color-text-rgb))] mb-4">Income by Source</h3>
+                        {incomeData.length > 0 ? (
+                            <div className="h-80">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            activeIndex={activeIncomeIndex}
+                                            activeShape={renderActiveShape}
+                                            data={incomeData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={100}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                            onMouseEnter={onIncomeEnter}
+                                            onMouseLeave={onIncomeLeave}
+                                        >
+                                            {incomeData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip content={<PieTooltip />} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        ) : (
+                            <div className="h-80 flex items-center justify-center text-[rgb(var(--color-text-muted-rgb))]">
+                                No income data available for the selected period
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    );
 };
 
 export default ReportsPage;

@@ -31,7 +31,7 @@ const TransactionItem: React.FC<{
 
   return (
     <li
-      className="group flex items-center gap-3 p-3 hover:bg-[rgb(var(--color-card-muted-rgb))] dark:hover:bg-[rgb(var(--color-card-muted-rgb))]/50 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-sm border border-transparent hover:border-[rgb(var(--color-border-rgb))] dark:hover:border-[rgb(var(--color-border-rgb))]/50 w-full min-h-[56px] active:scale-[0.98]"
+      className="group flex items-center gap-3 p-4 hover:bg-[rgb(var(--color-card-muted-rgb))] dark:hover:bg-[rgb(var(--color-card-muted-rgb))]/50 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-sm border border-transparent hover:border-[rgb(var(--color-border-rgb))] dark:hover:border-[rgb(var(--color-border-rgb))]/50 w-full min-h-[56px] active:scale-[0.98]"
       onClick={() => onEdit(transaction)}
     >
       {/* Category Icon */}
@@ -140,7 +140,7 @@ const TransactionsPage: React.FC<{
   };
 
   return (
-     <div className="relative space-y-6">
+     <div className="relative space-y-6 max-w-4xl mx-auto px-4">
        {/* Simplified Header Section */}
        <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl shadow-md p-4 sm:p-6 border border-[rgb(var(--color-border-rgb))] mobile-content">
          {/* Simple Header */}
@@ -191,7 +191,7 @@ const TransactionsPage: React.FC<{
          <div className="flex gap-2 flex-wrap">
            <button
              onClick={() => setFilterType('all')}
-             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors min-h-[36px] ${
                filterType === 'all'
                  ? 'bg-[rgb(var(--color-primary-rgb))] text-white'
                  : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))]'
@@ -201,7 +201,7 @@ const TransactionsPage: React.FC<{
            </button>
            <button
              onClick={() => setFilterType('income')}
-             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors min-h-[36px] ${
                filterType === 'income'
                  ? 'bg-green-600 text-white'
                  : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))]'
@@ -211,7 +211,7 @@ const TransactionsPage: React.FC<{
            </button>
            <button
              onClick={() => setFilterType('expense')}
-             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors min-h-[36px] ${
                filterType === 'expense'
                  ? 'bg-red-600 text-white'
                  : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))]'

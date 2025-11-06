@@ -19,6 +19,7 @@ import ConfirmationModal from './components/ConfirmationModal';
 import ReportsPage from './components/ReportsPage';
 import BudgetsPage from './components/BudgetsPage';
 import ManageBudgetsModal from './components/ManageBudgetsModal';
+import ImageCropModal from './components/ImageCropModal';
 import { Transaction, User, Goal, Bill, RecurringTransaction, Budget, NotificationSettings, GoalContribution, BillPayment } from './types';
 import type { Notification } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -27,6 +28,7 @@ import PlaceholderPage from './components/PlaceholderPage';
 import { encryptData, decryptData, deriveKey, generateSalt, formatCurrency } from './utils/formatters';
 import { processTransactionForGoals, getGoalProgressStats } from './utils/goalUtils';
 import { sendNotification } from './utils/notifications';
+import { processImageForBackground, createPatternBackground } from './utils/imageProcessing';
 
 const App: React.FC = () => {
   const {
@@ -127,6 +129,12 @@ const App: React.FC = () => {
   const [isManageBudgetsModalOpen, setIsManageBudgetsModalOpen] = useState(false);
   const [budgetToEdit, setBudgetToEdit] = useState<Budget | null>(null);
   const [isManageRecurringModalOpen, setIsManageRecurringModalOpen] = useState(false);
+  
+  // Image crop modal states
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [processingType, setProcessingType] = useState<'transparent' | 'pattern'>('transparent');
   
   const [confirmationModalState, setConfirmationModalState] = useState({
       isOpen: false,
@@ -1005,6 +1013,32 @@ const App: React.FC = () => {
     setIsManageBudgetsModalOpen(true);
   };
 
+  // Image Crop Modal Handlers
+  const handleOpenCropModal = (imageSrc: string, type: 'transparent' | 'pattern' = 'transparent') => {
+    setImageToCrop(imageSrc);
+    setProcessingType(type);
+    setIsCropModalOpen(true);
+  };
+
+  const handleCropComplete = async (croppedImageUrl: string) => {
+    setIsCropModalOpen(false);
+    setImageToCrop(null);
+    setIsProcessingImage(true);
+    
+    try {
+      // This will be handled by triggering a custom event that SettingsPage can listen to
+      const event = new CustomEvent('cropComplete', {
+        detail: { croppedImageUrl, processingType }
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Failed to process image. Please try again.');
+    } finally {
+      setIsProcessingImage(false);
+    }
+  };
+
   // Other Handlers
   const handleUpdateUser = (updatedUser: User) => setUser(updatedUser);
 
@@ -1109,6 +1143,10 @@ const App: React.FC = () => {
           onOpenConfirmModal={handleOpenConfirmModal}
           onImportData={handleImportData}
           setActiveItem={setActiveItem}
+          onOpenCropModal={handleOpenCropModal}
+          isProcessingImage={isProcessingImage}
+          processingType={processingType}
+          setProcessingType={setProcessingType}
         />;
       default:
         return <PlaceholderPage title={activeItem} />;
@@ -1235,8 +1273,18 @@ const App: React.FC = () => {
         onSaveRecurringTransaction={handleSaveRecurringTransaction}
         onDeleteRecurringTransaction={handleDeleteRecurringTransaction}
       />
+
+      <ImageCropModal
+        isOpen={isCropModalOpen && !!imageToCrop}
+        onClose={() => {
+          setIsCropModalOpen(false);
+          setImageToCrop(null);
+        }}
+        imageSrc={imageToCrop || ''}
+        onCropComplete={handleCropComplete}
+      />
       
-      <ConfirmationModal 
+      <ConfirmationModal
           isOpen={confirmationModalState.isOpen}
           onClose={() => setConfirmationModalState({ ... confirmationModalState, isOpen: false })}
           onConfirm={confirmationModalState.onConfirm}
