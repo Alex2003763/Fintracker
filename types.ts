@@ -14,6 +14,11 @@ export interface Transaction {
   amount: number;
   type: 'income' | 'expense';
   category: string;
+  emoji?: string; // Optional emoji for the transaction
+}
+
+export interface CategoryEmoji {
+  [category: string]: string; // Maps category name to emoji
 }
 
 export interface SpendingCategory {
@@ -71,11 +76,19 @@ export interface Goal {
 }
 
 export interface Bill {
-  id: string;
-  name: string;
-  amount: number;
-  dayOfMonth: number; // 1-31
-  category: string;
+   id: string;
+   name: string;
+   amount: number;
+   dayOfMonth: number; // 1-31
+   category: string;
+}
+
+export interface BillPayment {
+   id: string;
+   billId: string;
+   month: string; // "YYYY-MM" format
+   paidDate: string; // ISO date string
+   amount: number;
 }
 
 export interface RecurringTransaction {
@@ -145,4 +158,5 @@ export interface User {
         categorySuggestions: boolean;
     };
     notificationSettings?: NotificationSettings;
+    categoryEmojis?: CategoryEmoji; // Custom emoji mappings for categories
 }

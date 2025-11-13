@@ -47,6 +47,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     const typeToUse = initialData?.type || initialType;
     return getDefaultCategory(typeToUse);
   });
+  const [suggestedEmoji, setSuggestedEmoji] = useState<string | undefined>(transactionToEdit?.emoji || initialData?.emoji);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -60,12 +61,14 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setDescription(transactionToEdit.description);
       setAmount(transactionToEdit.amount.toString());
       setCategory(transactionToEdit.category);
+      setSuggestedEmoji(transactionToEdit.emoji);
     } else {
       const typeToUse = initialData?.type || initialType;
       setType(typeToUse);
       setDescription(initialData?.description || '');
       setAmount(initialData?.amount?.toString() || '');
       setCategory(initialData?.category || getDefaultCategory(typeToUse));
+      setSuggestedEmoji(initialData?.emoji);
     }
   }, [transactionToEdit, initialType, initialData]);
 
@@ -132,6 +135,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       );
       if (extractedData.description) setDescription(extractedData.description);
       if (extractedData.amount) setAmount(extractedData.amount.toString());
+      if (extractedData.emoji) setSuggestedEmoji(extractedData.emoji);
     } catch (error: any) {
       setErrors(prev => ({ ...prev, scan: error.message || 'Failed to scan receipt.' }));
     } finally {
@@ -153,6 +157,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         amount: parseFloat(amount),
         type,
         category,
+        emoji: suggestedEmoji,
       });
       onClose();
     } catch (error) {
@@ -204,6 +209,31 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             className="hidden"
             accept="image/*"
           />
+          {suggestedEmoji && (
+            <div className="mt-3 p-3 bg-[rgba(var(--color-primary-rgb),0.05)] border border-[rgba(var(--color-primary-rgb),0.2)] rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{suggestedEmoji}</span>
+                <div className="flex-1">
+                  <p className="text-sm text-[rgb(var(--color-text-rgb))] font-medium">
+                    AI suggested emoji
+                  </p>
+                  <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
+                    This emoji will be saved with your transaction
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSuggestedEmoji(undefined)}
+                  className="p-1 text-[rgb(var(--color-text-muted-rgb))] hover:text-red-600 transition-colors"
+                  title="Remove emoji"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
         </FormField>
 
         <div className="relative my-4">

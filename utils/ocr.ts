@@ -60,12 +60,16 @@ export const parseReceiptWithGemini = async (
               Analyze this receipt image and extract the following information in JSON format:
               1. "description": The name of the merchant or a brief description of the purchase.
               2. "amount": The total amount paid.
+              3. "emoji": A single relevant emoji that best represents this transaction (e.g., ☕ for coffee, 🍔 for fast food, 🏪 for groceries, ⛽ for gas, 🎬 for movies, etc.)
 
-              Only return a valid JSON object with these two keys. For example:
+              Only return a valid JSON object with these three keys. For example:
               {
                 "description": "STARBUCKS",
-                "amount": 15.75
+                "amount": 15.75,
+                "emoji": "☕"
               }
+              
+              Choose the most appropriate emoji that represents the type of transaction or merchant.
             `,
           },
           imagePart,
@@ -129,6 +133,7 @@ export const parseReceiptWithGemini = async (
     return {
       description: parsedResult.description,
       amount: parsedResult.amount,
+      emoji: parsedResult.emoji,
     };
 
   } catch (e: any) {

@@ -116,6 +116,7 @@ const App: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const initialProcessingDone = useRef(false);
   const budgetNotificationCheckInProgress = useRef(false);
+  const mainContentRef = useRef<HTMLElement>(null);
 
   // Modal states
   const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
@@ -1092,20 +1093,23 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (activeItem) {
       case 'Home':
-        return <Dashboard 
+        return <Dashboard
           transactions={sortedTransactions}
           bills={bills}
-          onAddTransaction={handleOpenAddTransactionModal} 
+          onAddTransaction={handleOpenAddTransactionModal}
           onEditTransaction={handleEditTransaction}
           setActiveItem={setActiveItem}
           onPayBill={handlePayBill}
           onManageBills={() => setIsManageBillsModalOpen(true)}
+          user={user}
         />;
       case 'Transactions':
-        return <TransactionsPage 
-          transactions={sortedTransactions} 
-          onEditTransaction={handleEditTransaction} 
+        return <TransactionsPage
+          transactions={sortedTransactions}
+          onEditTransaction={handleEditTransaction}
           onOpenManageRecurring={() => setIsManageRecurringModalOpen(true)}
+          scrollContainerRef={mainContentRef}
+          categoryEmojis={user?.categoryEmojis}
         />;
       case 'Reports':
           return <ReportsPage transactions={sortedTransactions} user={user!} />;
@@ -1222,7 +1226,7 @@ const App: React.FC = () => {
           isOnline={isOnline}
           setActiveItem={setActiveItem}
         />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 animate-fade-in-up main-content">
+        <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 animate-fade-in-up main-content">
             {renderContent()}
         </main>
       </div>

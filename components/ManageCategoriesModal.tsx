@@ -1,24 +1,32 @@
 import React, { useState } from 'react';
 import BaseModal from './BaseModal';
 import { Button } from './ModalForm';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import { CategoryEmoji } from '../types';
 
 interface ManageCategoriesModalProps {
   isOpen: boolean;
   onClose: () => void;
   categories: { [key: string]: string[] };
   onUpdateCategories: (categories: { [key: string]: string[] }) => void;
+  categoryEmojis?: CategoryEmoji;
+  onUpdateCategoryEmojis?: (emojis: CategoryEmoji) => void;
 }
 
 const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
   isOpen,
   onClose,
   categories,
-  onUpdateCategories
+  onUpdateCategories,
+  categoryEmojis = {},
+  onUpdateCategoryEmojis
 }) => {
   const [activeTab, setActiveTab] = useState<string>('');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [editingCategory, setEditingCategory] = useState<{ group: string; category: string } | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [emojiPickerPosition, setEmojiPickerPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   // Set first tab as active when modal opens
   React.useEffect(() => {
@@ -88,12 +96,37 @@ const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
     setEditValue('');
   };
 
+  const handleEmojiClick = (category: string, event: React.MouseEvent) => {
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    setEmojiPickerPosition({
+      top: rect.bottom + window.scrollY,
+      left: rect.left + window.scrollX
+    });
+    setShowEmojiPicker(category);
+  };
+
+  const handleEmojiSelect = (emojiData: EmojiClickData, category: string) => {
+    if (onUpdateCategoryEmojis) {
+      const updatedEmojis = { ...categoryEmojis, [category]: emojiData.emoji };
+      onUpdateCategoryEmojis(updatedEmojis);
+    }
+    setShowEmojiPicker(null);
+  };
+
+  const handleRemoveEmoji = (category: string) => {
+    if (onUpdateCategoryEmojis) {
+      const updatedEmojis = { ...categoryEmojis };
+      delete updatedEmojis[category];
+      onUpdateCategoryEmojis(updatedEmojis);
+    }
+  };
+
   return (
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
       title="Manage Categories"
-      size="2xl"
+      size="xl"
       animation="slide-up"
     >
       <div className="flex flex-col h-[85vh] max-h-[700px]">
@@ -216,13 +249,44 @@ const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
                         </div>
                       ) : (
                         <>
-                          <div className="p-3 cursor-pointer" onClick={() => handleEditCategory(activeTab, category)}>
-                            <span className="text-sm font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors block">
+                          <div className="p-3 cursor-pointer flex items-center gap-2" onClick={() => handleEditCategory(activeTab, category)}>
+                            {categoryEmojis[category] ? (
+                              <span className="text-xl flex-shrink-0">{categoryEmojis[category]}</span>
+                            ) : (
+                              <div className="w-5 h-5 bg-[rgb(var(--color-card-muted-rgb))] rounded flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs text-[rgb(var(--color-text-muted-rgb))]">📁</span>
+                              </div>
+                            )}
+                            <span className="text-sm font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors block flex-1 truncate">
                               {category}
                             </span>
                           </div>
                           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <div className="flex space-x-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEmojiClick(category, e);
+                                }}
+                                className="p-1.5 text-[rgb(var(--color-primary-rgb))] hover:text-[rgb(var(--color-primary-hover-rgb))] hover:bg-[rgba(var(--color-primary-rgb),0.1)] rounded transition-colors"
+                                title={categoryEmojis[category] ? 'Change emoji' : 'Add emoji'}
+                              >
+                                <span className="text-sm">{categoryEmojis[category] ? '😊' : '➕'}</span>
+                              </button>
+                              {categoryEmojis[category] && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveEmoji(category);
+                                  }}
+                                  className="p-1.5 text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors"
+                                  title="Remove emoji"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -308,7 +372,31 @@ const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
         </div>
       </div>
 
-      <style jsx>{`
+      {/* Emoji Picker Overlay */}
+      {showEmojiPicker && (
+        <>
+          <div
+            className="fixed inset-0 z-50"
+            onClick={() => setShowEmojiPicker(null)}
+          />
+          <div
+            className="fixed z-50"
+            style={{
+              top: `${emojiPickerPosition.top}px`,
+              left: `${emojiPickerPosition.left}px`,
+              transform: 'translateX(-50%)'
+            }}
+          >
+            <EmojiPicker
+              onEmojiClick={(emojiData) => handleEmojiSelect(emojiData, showEmojiPicker)}
+              autoFocusSearch={false}
+              theme={document.documentElement.classList.contains('dark') ? 'dark' as any : 'light' as any}
+            />
+          </div>
+        </>
+      )}
+
+      <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }

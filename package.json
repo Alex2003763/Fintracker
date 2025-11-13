@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@types/react-image-crop": "^8.1.6",
+    "emoji-picker-react": "^4.15.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-image-crop": "^11.0.10",

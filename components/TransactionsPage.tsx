@@ -1,14 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Transaction } from '../types';
+import { Transaction, CategoryEmoji } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { RecurringIcon, SearchIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
-import { CATEGORY_ICON_MAP } from '../constants';
+import CategoryIcon from './CategoryIcon';
 
 const TransactionItem: React.FC<{
   transaction: Transaction,
-  onEdit: (transaction: Transaction) => void
-}> = ({ transaction, onEdit }) => {
-  const Icon = CATEGORY_ICON_MAP[transaction.category] || CATEGORY_ICON_MAP['Other'];
+  onEdit: (transaction: Transaction) => void,
+  categoryEmojis?: CategoryEmoji
+}> = ({ transaction, onEdit, categoryEmojis }) => {
+  const displayEmoji = transaction.emoji || categoryEmojis?.[transaction.category];
   const isIncome = transaction.type === 'income';
   const amountColor = isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
   const bgColor = isIncome ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
@@ -36,7 +37,11 @@ const TransactionItem: React.FC<{
     >
       {/* Category Icon */}
       <div className={`${iconBgColor} rounded-lg p-1.5 sm:p-2 transition-all duration-200 group-hover:scale-105 shadow-sm flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center`}>
-        <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${iconColor}`} />
+        <CategoryIcon
+          category={transaction.category}
+          emoji={displayEmoji}
+          className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${iconColor}`}
+        />
       </div>
 
       {/* Transaction Details */}
@@ -104,7 +109,9 @@ const TransactionsPage: React.FC<{
     transactions: Transaction[],
     onEditTransaction: (transaction: Transaction) => void,
     onOpenManageRecurring: () => void,
-}> = ({ transactions, onEditTransaction, onOpenManageRecurring }) => {
+    scrollContainerRef?: React.RefObject<HTMLElement>,
+    categoryEmojis?: CategoryEmoji
+}> = ({ transactions, onEditTransaction, onOpenManageRecurring, scrollContainerRef, categoryEmojis }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -140,16 +147,36 @@ const TransactionsPage: React.FC<{
   // Handle scroll to show/hide scroll-to-top button
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      setShowScrollTop(scrollTop > 300);
+      const scrollContainer = scrollContainerRef?.current;
+      if (scrollContainer) {
+        const scrollTop = scrollContainer.scrollTop;
+        setShowScrollTop(scrollTop > 300);
+      } else {
+        // Fallback to window scroll if ref is not available
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        setShowScrollTop(scrollTop > 300);
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    const scrollContainer = scrollContainerRef?.current;
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    } else {
+      // Fallback to window scroll if ref is not available
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, [scrollContainerRef]);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const scrollContainer = scrollContainerRef?.current;
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Fallback to window scroll if ref is not available
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   return (
@@ -262,7 +289,7 @@ const TransactionsPage: React.FC<{
                {/* Transaction Items */}
                <div className="space-y-2">
                  {(transactionsInGroup as Transaction[]).map(transaction => (
-                   <TransactionItem key={transaction.id} transaction={transaction} onEdit={onEditTransaction} />
+                   <TransactionItem key={transaction.id} transaction={transaction} onEdit={onEditTransaction} categoryEmojis={categoryEmojis} />
                  ))}
                </div>
              </div>

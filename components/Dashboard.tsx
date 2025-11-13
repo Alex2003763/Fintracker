@@ -1,5 +1,5 @@
 import React from 'react';
-import { Transaction, Bill } from '../types';
+import { Transaction, Bill, CategoryEmoji, User } from '../types';
 import PremiumBalanceCard from './PremiumBalanceCard';
 import TransactionsCard from './TransactionsCard';
 import SpendingBreakdownCard from './SpendingBreakdownCard';
@@ -13,16 +13,18 @@ interface DashboardProps {
   setActiveItem: (item: string) => void;
   onPayBill: (bill: Bill) => void;
   onManageBills: () => void;
+  user?: User;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ 
-    transactions, 
-    bills, 
-    onAddTransaction, 
-    onEditTransaction, 
+const Dashboard: React.FC<DashboardProps> = ({
+    transactions,
+    bills,
+    onAddTransaction,
+    onEditTransaction,
     setActiveItem,
     onPayBill,
-    onManageBills
+    onManageBills,
+    user
 }) => {
   return (
      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
@@ -37,6 +39,7 @@ const Dashboard: React.FC<DashboardProps> = ({
          transactions={transactions.slice(0, 5)}
          onEditTransaction={onEditTransaction}
          setActiveItem={setActiveItem}
+         categoryEmojis={user?.categoryEmojis}
        />
        <div className="space-y-6">
          <SpendingBreakdownCard transactions={transactions} />

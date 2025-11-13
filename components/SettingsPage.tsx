@@ -268,6 +268,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         onUpdateCategories={(categories) => {
           console.log('Updated categories:', categories);
         }}
+        categoryEmojis={user.categoryEmojis}
+        onUpdateCategoryEmojis={(emojis) => {
+          onUpdateUser({
+            ...user,
+            categoryEmojis: emojis
+          });
+        }}
       />
     );
   }

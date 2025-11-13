@@ -1,29 +1,36 @@
 import React from 'react';
-import { Transaction } from '../types';
+import { Transaction, CategoryEmoji } from '../types';
 import { formatCurrency } from '../utils/formatters';
-import { CATEGORY_ICON_MAP } from '../constants';
+import CategoryIcon from './CategoryIcon';
 
 interface TransactionsCardProps {
   transactions: Transaction[];
   onEditTransaction: (transaction: Transaction) => void;
   setActiveItem: (item: string) => void;
+  categoryEmojis?: CategoryEmoji;
 }
 
-const TransactionItem: React.FC<{ transaction: Transaction, onEdit: (transaction: Transaction) => void }> = ({ transaction, onEdit }) => {
-  const Icon = CATEGORY_ICON_MAP[transaction.category] || CATEGORY_ICON_MAP['Other'];
+const TransactionItem: React.FC<{ transaction: Transaction, onEdit: (transaction: Transaction) => void, categoryEmojis?: CategoryEmoji }> = ({ transaction, onEdit, categoryEmojis }) => {
   const amountColor = transaction.type === 'income' ? 'text-green-500' : 'text-[rgb(var(--color-text-rgb))]';
   const formattedAmount = transaction.type === 'income'
     ? `+${formatCurrency(transaction.amount)}`
     : formatCurrency(-transaction.amount);
 
+  // Use transaction emoji first, then category emoji, then default icon
+  const displayEmoji = transaction.emoji || categoryEmojis?.[transaction.category];
+
   return (
-    <div 
+    <div
       className="flex items-center justify-between py-3 border-b last:border-b-0 border-[rgb(var(--color-border-rgb))] cursor-pointer hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors"
       onClick={() => onEdit(transaction)}
     >
       <div className="flex items-center">
         <div className="bg-[rgba(var(--color-border-rgb),0.5)] rounded-full p-3 mr-4">
-          <Icon className="h-6 w-6 text-[rgb(var(--color-text-muted-rgb))]" />
+          <CategoryIcon
+            category={transaction.category}
+            emoji={displayEmoji}
+            className="h-6 w-6 text-[rgb(var(--color-text-muted-rgb))]"
+          />
         </div>
         <div>
           <p className="font-semibold text-[rgb(var(--color-text-rgb))]">{transaction.description}</p>
@@ -37,7 +44,7 @@ const TransactionItem: React.FC<{ transaction: Transaction, onEdit: (transaction
   );
 };
 
-const TransactionsCard: React.FC<TransactionsCardProps> = ({ transactions, onEditTransaction, setActiveItem }) => {
+const TransactionsCard: React.FC<TransactionsCardProps> = ({ transactions, onEditTransaction, setActiveItem, categoryEmojis }) => {
   return (
     <div className="bg-[rgb(var(--color-card-rgb))] p-4 md:p-6 rounded-2xl shadow-sm overflow-hidden transition-colors">
       <div className="flex justify-between items-center mb-4">
@@ -46,7 +53,7 @@ const TransactionsCard: React.FC<TransactionsCardProps> = ({ transactions, onEdi
       </div>
       <div>
         {transactions.map(transaction => (
-          <TransactionItem key={transaction.id} transaction={transaction} onEdit={onEditTransaction} />
+          <TransactionItem key={transaction.id} transaction={transaction} onEdit={onEditTransaction} categoryEmojis={categoryEmojis} />
         ))}
       </div>
     </div>

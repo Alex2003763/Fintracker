@@ -106,7 +106,7 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = ({
                   <span>{sign}{dailyChange.toFixed(1)}%</span>
                 </div>
               </div>
-            </div>
+                      </div>
           </div>
           
           <div className="premium-card-balance">
