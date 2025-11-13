@@ -1187,7 +1187,7 @@ const App: React.FC = () => {
   }
   
   return (
-    <div className="flex h-screen bg-[rgb(var(--color-bg-rgb))] text-[rgb(var(--color-text-rgb))] transition-colors mobile-safe-area">
+    <div className="flex h-full overflow-hidden bg-[rgb(var(--color-bg-rgb))] text-[rgb(var(--color-text-rgb))] transition-colors mobile-safe-area">
       {/* Offline Warning Banner */}
       {showOfflineWarning && (
         <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-yellow-900 px-4 py-2 text-center text-sm font-medium z-50 mobile-safe-area">
