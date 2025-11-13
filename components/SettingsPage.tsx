@@ -24,6 +24,7 @@ interface SettingsPageProps {
   isProcessingImage?: boolean;
   processingType?: 'transparent' | 'pattern';
   setProcessingType?: (type: 'transparent' | 'pattern') => void;
+  onExportData: () => void;
 }
 
 const ThemeOption: React.FC<{ id: string, name: string, active: boolean, onClick: () => void}> = ({ id, name, active, onClick }) => {
@@ -110,13 +111,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onOpenCropModal,
   isProcessingImage = false,
   processingType = 'transparent',
-  setProcessingType
+  setProcessingType,
+  onExportData
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { theme, setTheme, customBackground, setCustomBackground } = useTheme();
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [localProcessingType, setLocalProcessingType] = useState<'transparent' | 'pattern'>('transparent');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Helper function to get theme colors for image processing
   const getThemeColors = () => {
@@ -184,33 +188,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   };
 
   const handleExport = () => {
-    try {
-      const transactions = localStorage.getItem('financeFlowTransactions') || '[]';
-      const goals = localStorage.getItem('financeFlowGoals') || '[]';
-      const bills = localStorage.getItem('financeFlowBills') || '[]';
-
-      const backupData = {
-          user,
-          transactions: JSON.parse(transactions),
-          goals: JSON.parse(goals),
-          bills: JSON.parse(bills),
-          version: '1.3.0',
-          exportedAt: new Date().toISOString(),
-      };
-
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `finance-flow-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-        console.error("Failed to export data", error);
-        alert("An error occurred while exporting your data.");
-    }
+    setIsExporting(true);
+    // Delegate to parent component which has access to decrypted data
+    onExportData();
+    // Reset state after a short delay
+    setTimeout(() => setIsExporting(false), 1000);
   };
 
   const handleImportClick = () => {
@@ -221,26 +203,39 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       const file = event.target.files?.[0];
       if (!file) return;
 
+      setIsImporting(true);
       const reader = new FileReader();
       reader.onload = (e) => {
           try {
               const text = e.target?.result;
               if (typeof text !== 'string') throw new Error("File content is not a string");
               const data = JSON.parse(text);
-              if (data && data.user && Array.isArray(data.transactions) && Array.isArray(data.goals) && Array.isArray(data.bills)) {
-                  onOpenConfirmModal(
-                      'Import Data',
-                      'Are you sure? This will overwrite ALL current data, including your account info.',
-                      () => onImportData(data),
-                      { confirmText: 'Import & Overwrite', variant: 'danger' }
-                  );
-              } else {
-                  alert('Invalid backup file format.');
+              
+              // Validate the backup file structure
+              if (!data || !data.user || !Array.isArray(data.transactions)) {
+                  alert('Invalid backup file format. Missing required data.');
+                  return;
               }
+
+              // Check version compatibility
+              if (data.version && data.version !== '1.3.0') {
+                  console.warn(`Backup version ${data.version} may not be fully compatible with current version 1.3.0`);
+              }
+
+              onOpenConfirmModal(
+                  'Import Data',
+                  'Are you sure? This will overwrite ALL current data, including your account info.',
+                  () => {
+                      onImportData(data);
+                      setIsImporting(false);
+                  },
+                  { confirmText: 'Import & Overwrite', variant: 'danger' }
+              );
           } catch (error) {
               console.error('Error parsing backup file:', error);
-              alert('Failed to read or parse the backup file.');
+              alert('Failed to read or parse the backup file. Please ensure it\'s a valid Finance Flow backup.');
           } finally {
+              setIsImporting(false);
               if (fileInputRef.current) {
                   fileInputRef.current.value = '';
               }
@@ -585,17 +580,24 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
             <button
               onClick={handleExport}
-              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
+              disabled={isExporting}
+              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
                   <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l4-4m-4 4l-4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    {isExporting ? (
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l4-4m-4 4l-4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">Export Data</p>
+                    <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">
+                      {isExporting ? 'Exporting...' : 'Export Data'}
+                    </p>
                     <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Save a backup of all your data</p>
                   </div>
                 </div>
@@ -607,17 +609,24 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
             <button
               onClick={handleImportClick}
-              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
+              disabled={isImporting}
+              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
                   <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                    </svg>
+                    {isImporting ? (
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                      </svg>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">Import Data</p>
+                    <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">
+                      {isImporting ? 'Importing...' : 'Import Data'}
+                    </p>
                     <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Restore from a backup file</p>
                   </div>
                 </div>
