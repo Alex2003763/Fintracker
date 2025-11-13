@@ -588,15 +588,47 @@ const App: React.FC = () => {
     setConfirmationModalState({ ...confirmationModalState, isOpen: false });
   };
   
+  const handleExportData = () => {
+    try {
+      const backupData = {
+        user,
+        transactions,
+        goals,
+        goalContributions,
+        bills,
+        billPayments,
+        budgets,
+        recurringTransactions,
+        notifications,
+        version: '1.3.0',
+        exportedAt: new Date().toISOString(),
+      };
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `finance-flow-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export data", error);
+      alert("An error occurred while exporting your data.");
+    }
+  };
+
   const handleImportData = (data: any) => {
       setUser(data.user); // Note: This bypasses encryption. Import is an advanced feature.
-      setTransactions(data.transactions);
-      setGoals(data.goals);
+      setTransactions(data.transactions || []);
+      setGoals(data.goals || []);
       setGoalContributions(data.goalContributions || []);
-      setBills(data.bills);
+      setBills(data.bills || []);
       setBillPayments(data.billPayments || []);
       setRecurringTransactions(data.recurringTransactions || []);
       setBudgets(data.budgets || []);
+      setNotifications(data.notifications || []);
       setConfirmationModalState({ ...confirmationModalState, isOpen: false });
       initialProcessingDone.current = false;
   };
@@ -1146,6 +1178,7 @@ const App: React.FC = () => {
           onSignOut={handleSignOut}
           onOpenConfirmModal={handleOpenConfirmModal}
           onImportData={handleImportData}
+          onExportData={handleExportData}
           setActiveItem={setActiveItem}
           onOpenCropModal={handleOpenCropModal}
           isProcessingImage={isProcessingImage}
