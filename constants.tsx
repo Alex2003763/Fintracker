@@ -13,24 +13,26 @@ export const NAV_ITEMS = [
 
 export const INITIAL_BALANCE = 0;
 
+import { SubCategory } from './types';
+
 export const TRANSACTION_CATEGORIES: {
-    expense: { [key: string]: string[] };
-    income: { [key: string]: string[] };
+    expense: { [key: string]: SubCategory[] };
+    income: { [key: string]: SubCategory[] };
 } = {
     expense: {
-        'Food & Drink': ['Groceries', 'Restaurants', 'Coffee Shops', 'Takeout'],
-        'Shopping': ['Clothing', 'Electronics', 'Home Goods', 'Hobbies', 'General Shopping'],
-        'Bills & Utilities': ['Rent/Mortgage', 'Utilities', 'Phone', 'Internet', 'Insurance'],
-        'Transportation': ['Gas/Fuel', 'Public Transit', 'Ride Sharing', 'Maintenance'],
-        'Health & Wellness': ['Pharmacy', 'Doctor', 'Gym'],
-        'Entertainment': ['Movies', 'Subscriptions', 'Games'],
-        'Transfers': ['Transfers'],
-        'Other': ['Other'],
+        'Food & Drink': [{ name: 'Groceries' }, { name: 'Restaurants' }, { name: 'Coffee Shops' }, { name: 'Takeout' }],
+        'Shopping': [{ name: 'Clothing' }, { name: 'Electronics' }, { name: 'Home Goods' }, { name: 'Hobbies' }, { name: 'General Shopping' }],
+        'Bills & Utilities': [{ name: 'Rent/Mortgage' }, { name: 'Utilities' }, { name: 'Phone' }, { name: 'Internet' }, { name: 'Insurance' }],
+        'Transportation': [{ name: 'Gas/Fuel' }, { name: 'Public Transit' }, { name: 'Ride Sharing' }, { name: 'Maintenance' }],
+        'Health & Wellness': [{ name: 'Pharmacy' }, { name: 'Doctor' }, { name: 'Gym' }],
+        'Entertainment': [{ name: 'Movies' }, { name: 'Subscriptions' }, { name: 'Games' }],
+        'Transfers': [{ name: 'Transfers' }],
+        'Other': [{ name: 'Other' }],
     },
     income: {
-        'Earned': ['Salary', 'Freelance', 'Bonus'],
-        'Passive': ['Investments'],
-        'Other': ['Savings', 'Other'],
+        'Earned': [{ name: 'Salary' }, { name: 'Freelance' }, { name: 'Bonus' }],
+        'Passive': [{ name: 'Investments' }],
+        'Other': [{ name: 'Savings' }, { name: 'Other' }],
     }
 };
 

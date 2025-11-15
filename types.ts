@@ -81,6 +81,7 @@ export interface Bill {
    amount: number;
    dayOfMonth: number; // 1-31
    category: string;
+   frequency?: 'monthly' | 'weekly' | 'yearly';
 }
 
 export interface BillPayment {
@@ -159,4 +160,13 @@ export interface User {
     };
     notificationSettings?: NotificationSettings;
     categoryEmojis?: CategoryEmoji; // Custom emoji mappings for categories
+    customCategories?: {
+        expense: { [key: string]: SubCategory[] };
+        income: { [key: string]: SubCategory[] };
+    }; // User's custom category structure
+}
+
+export interface SubCategory {
+  name: string;
+  icon?: string;
 }

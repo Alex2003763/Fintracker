@@ -1,5 +1,5 @@
 import React from 'react';
-import { Transaction, CategoryEmoji } from '../types';
+import { Transaction, User } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import CategoryIcon from './CategoryIcon';
 
@@ -7,17 +7,28 @@ interface TransactionsCardProps {
   transactions: Transaction[];
   onEditTransaction: (transaction: Transaction) => void;
   setActiveItem: (item: string) => void;
-  categoryEmojis?: CategoryEmoji;
+  user: User | null;
 }
 
-const TransactionItem: React.FC<{ transaction: Transaction, onEdit: (transaction: Transaction) => void, categoryEmojis?: CategoryEmoji }> = ({ transaction, onEdit, categoryEmojis }) => {
+const TransactionItem: React.FC<{ transaction: Transaction, onEdit: (transaction: Transaction) => void, user: User | null }> = ({ transaction, onEdit, user }) => {
   const amountColor = transaction.type === 'income' ? 'text-green-500' : 'text-[rgb(var(--color-text-rgb))]';
   const formattedAmount = transaction.type === 'income'
     ? `+${formatCurrency(transaction.amount)}`
     : formatCurrency(-transaction.amount);
 
-  // Use transaction emoji first, then category emoji, then default icon
-  const displayEmoji = transaction.emoji || categoryEmojis?.[transaction.category];
+  const getIconForCategory = (categoryName: string) => {
+    if (!user?.customCategories) return undefined;
+    const allCategories = { ...user.customCategories.expense, ...user.customCategories.income };
+    for (const parentCategory in allCategories) {
+      const subCategory = allCategories[parentCategory].find(c => c.name === categoryName);
+      if (subCategory) {
+        return subCategory.icon;
+      }
+    }
+    return undefined;
+  };
+
+  const displayEmoji = transaction.emoji || getIconForCategory(transaction.category);
 
   return (
     <div
@@ -44,7 +55,7 @@ const TransactionItem: React.FC<{ transaction: Transaction, onEdit: (transaction
   );
 };
 
-const TransactionsCard: React.FC<TransactionsCardProps> = ({ transactions, onEditTransaction, setActiveItem, categoryEmojis }) => {
+const TransactionsCard: React.FC<TransactionsCardProps> = ({ transactions, onEditTransaction, setActiveItem, user }) => {
   return (
     <div className="bg-[rgb(var(--color-card-rgb))] p-4 md:p-6 rounded-2xl shadow-sm overflow-hidden transition-colors">
       <div className="flex justify-between items-center mb-4">
@@ -53,7 +64,7 @@ const TransactionsCard: React.FC<TransactionsCardProps> = ({ transactions, onEdi
       </div>
       <div>
         {transactions.map(transaction => (
-          <TransactionItem key={transaction.id} transaction={transaction} onEdit={onEditTransaction} categoryEmojis={categoryEmojis} />
+          <TransactionItem key={transaction.id} transaction={transaction} onEdit={onEditTransaction} user={user} />
         ))}
       </div>
     </div>

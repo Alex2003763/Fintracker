@@ -39,7 +39,7 @@ const Dashboard: React.FC<DashboardProps> = ({
          transactions={transactions.slice(0, 5)}
          onEditTransaction={onEditTransaction}
          setActiveItem={setActiveItem}
-         categoryEmojis={user?.categoryEmojis}
+         user={user}
        />
        <div className="space-y-6">
          <SpendingBreakdownCard transactions={transactions} />

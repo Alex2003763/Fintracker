@@ -12,6 +12,7 @@ interface BaseModalProps {
   closeOnBackdropClick?: boolean;
   closeOnEscape?: boolean;
   className?: string;
+  disableContentPadding?: boolean;
   'aria-label'?: string;
   'aria-describedby'?: string;
 }
@@ -28,6 +29,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   closeOnBackdropClick = true,
   closeOnEscape = true,
   className = '',
+  disableContentPadding = false,
   'aria-label': ariaLabel,
   'aria-describedby': ariaDescribedBy,
 }) => {
@@ -183,7 +185,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
           ${sizeClasses[size]}
           ${variantClasses[variant]}
           w-full rounded-t-2xl sm:rounded-2xl shadow-2xl
-          max-h-[95vh] sm:max-h-[90vh] overflow-hidden
+          max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col
           ${currentAnimation.modalBase}
           ${currentAnimation.modal}
         `}
@@ -230,7 +232,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
 
         {/* Content */}
         <div className={`
-          flex-1 overflow-y-auto
+          flex-1 ${disableContentPadding ? '' : 'overflow-y-auto'}
           transform transition-all ${prefersReducedMotion || isMobile ? 'duration-150' : 'duration-300'} ease-out
           ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}
         `} style={{ transitionDelay: isOpen ? (prefersReducedMotion || isMobile ? '75ms' : '150ms') : '0ms' }}>

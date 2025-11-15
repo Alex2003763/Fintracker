@@ -1,51 +1,51 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Transaction, User } from '../types';
+import { Transaction, User, SubCategory } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
-import { suggestCategory, getBestCategorySuggestion, testAI } from '../utils/categoryAI';
+import { suggestCategory } from '../utils/categoryAI';
 import { parseReceiptWithGemini } from '../utils/ocr';
 import BaseModal from './BaseModal';
 import { FormField, Input, Select, Button, ToggleButton } from './ModalForm';
 import ConfirmationModal from './ConfirmationModal';
 
 interface AddTransactionModalProps {
-   isOpen: boolean;
-   onClose: () => void;
-   onSaveTransaction: (transaction: Omit<Transaction, 'id' | 'date'> & { id?: string }) => void;
-   onDeleteTransaction?: (transactionId: string) => void;
-   transactionToEdit: Transaction | null;
-   initialType?: 'income' | 'expense';
-   initialData?: Partial<Omit<Transaction, 'id' | 'date'>>;
-   smartSuggestionsEnabled?: boolean;
-   user: User | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSaveTransaction: (transaction: Omit<Transaction, 'id' | 'date'> & { id?: string }) => void;
+  onDeleteTransaction?: (transactionId: string) => void;
+  transactionToEdit: Transaction | null;
+  initialType?: 'income' | 'expense';
+  initialData?: Partial<Omit<Transaction, 'id' | 'date'>>;
+  smartSuggestionsEnabled?: boolean;
+  user: User | null;
 }
 
 const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
-   isOpen,
-   onClose,
-   onSaveTransaction,
-   onDeleteTransaction,
-   transactionToEdit,
-   initialType = 'expense',
-   initialData,
-   smartSuggestionsEnabled = true,
-   user
+  isOpen,
+  onClose,
+  onSaveTransaction,
+  onDeleteTransaction,
+  transactionToEdit,
+  initialType = 'expense',
+  initialData,
+  smartSuggestionsEnabled = true,
+  user
 }) => {
   const isEditing = transactionToEdit !== null;
+  const currentCategories = user?.customCategories || TRANSACTION_CATEGORIES;
 
   const getDefaultCategory = (transactionType: 'income' | 'expense') => {
-    const flattened = Object.values(TRANSACTION_CATEGORIES[transactionType]).flat();
-    return flattened[0] || '';
+    const flattened = Object.values(currentCategories[transactionType]).flat();
+    return flattened[0]?.name || '';
   };
 
   const [type, setType] = useState<'income' | 'expense'>(() => transactionToEdit?.type || initialData?.type || initialType);
   const [description, setDescription] = useState(() => transactionToEdit?.description || initialData?.description || '');
   const [amount, setAmount] = useState(() => transactionToEdit?.amount?.toString() || initialData?.amount?.toString() || '');
-  const [category, setCategory] = useState(() => {
+  const [category, setCategory] = useState<string>(() => {
     if (transactionToEdit) return transactionToEdit.category;
     if (initialData?.category) return initialData.category;
     const typeToUse = initialData?.type || initialType;
-    return getDefaultCategory(typeToUse);
+    return getDefaultCategory(typeToUse) as string;
   });
   const [suggestedEmoji, setSuggestedEmoji] = useState<string | undefined>(transactionToEdit?.emoji || initialData?.emoji);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
@@ -67,33 +67,27 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setType(typeToUse);
       setDescription(initialData?.description || '');
       setAmount(initialData?.amount?.toString() || '');
-      setCategory(initialData?.category || getDefaultCategory(typeToUse));
+      setCategory(initialData?.category || getDefaultCategory(typeToUse) as string);
       setSuggestedEmoji(initialData?.emoji);
     }
   }, [transactionToEdit, initialType, initialData]);
 
   useEffect(() => {
-    console.log('🚀 Testing AI suggestions...');
-    testAI();
-  }, []);
-
-  useEffect(() => {
     if (smartSuggestionsEnabled && description.length > 2) {
-      const availableCategories = Object.values(TRANSACTION_CATEGORIES[type]).flat() as string[];
+      const availableCategories = Object.values(currentCategories[type]).flat().map(c => c.name);
       const suggestions = suggestCategory(description, availableCategories)
         .map(suggestion => suggestion.category);
       setAiSuggestions(suggestions);
-      console.log('🤖 AI Suggestions for "' + description + '":', suggestions);
     } else {
       setAiSuggestions([]);
     }
-  }, [description, type, smartSuggestionsEnabled]);
+  }, [description, type, smartSuggestionsEnabled, currentCategories]);
 
   const handleTypeChange = (newType: 'income' | 'expense') => {
     setType(newType);
-    const newTypeCategories = Object.values(TRANSACTION_CATEGORIES[newType]).flat();
-    if (!newTypeCategories.includes(category)) {
-      setCategory(getDefaultCategory(newType));
+    const newTypeCategories = Object.values(currentCategories[newType]).flat();
+    if (!newTypeCategories.map(c => c.name).includes(category as string)) {
+      setCategory(getDefaultCategory(newType) as string);
     }
     setErrors({});
   };
@@ -131,7 +125,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       const extractedData = await parseReceiptWithGemini(
         file,
         user.aiSettings.apiKey,
-       'gemini-2.5-flash-lite'
+        'gemini-2.5-flash-lite'
       );
       if (extractedData.description) setDescription(extractedData.description);
       if (extractedData.amount) setAmount(extractedData.amount.toString());
@@ -156,7 +150,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         description: description.trim(),
         amount: parseFloat(amount),
         type,
-        category,
+        category: category as string,
         emoji: suggestedEmoji,
       });
       onClose();
@@ -167,7 +161,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     }
   };
 
-  const categories = TRANSACTION_CATEGORIES[type];
+  const categories = currentCategories[type];
 
   return (
     <BaseModal
@@ -338,8 +332,8 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           >
             {Object.entries(categories).map(([group, subcategories]) => (
               <optgroup label={group} key={group}>
-                {(subcategories as string[]).map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {(subcategories as SubCategory[]).map(cat => (
+                  <option key={cat.name} value={cat.name}>{cat.icon} {cat.name}</option>
                 ))}
               </optgroup>
             ))}
@@ -399,4 +393,3 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 };
 
 export default AddTransactionModal;
-

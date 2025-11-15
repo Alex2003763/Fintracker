@@ -3,6 +3,7 @@ import { FinanceFlowIcon } from './icons';
 import { User } from '../types';
 import { generateSalt, deriveKey, encryptData, decryptData } from '../utils/formatters';
 import LoadingScreen from './LoadingScreen';
+import { TRANSACTION_CATEGORIES } from '../constants';
 
 interface AuthPageProps {
   onAuth: (user: User, sessionKey: CryptoKey) => void;
@@ -64,11 +65,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
         const key = await deriveKey(password, salt);
         const passwordCheckEncrypted = await encryptData(JSON.stringify({ check: 'ok' }), key);
 
-        const newUser: User = { 
-            username, 
-            salt, 
-            passwordCheck: JSON.stringify(passwordCheckEncrypted), 
-            avatar: '' 
+        const newUser: User = {
+            username,
+            salt,
+            passwordCheck: JSON.stringify(passwordCheckEncrypted),
+            avatar: '',
+            customCategories: {
+                expense: { ...TRANSACTION_CATEGORIES.expense },
+                income: { ...TRANSACTION_CATEGORIES.income }
+            }
         };
         
         // Clear old unencrypted data if it exists

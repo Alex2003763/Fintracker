@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect } from 'react';
 import { User } from '../types';
 import { useTheme, THEMES } from './ThemeContext';
 import { SparklesIcon, BellIcon, SettingsIcon, UserIcon } from './icons';
 import ServiceWorkerDebugPanel from './ServiceWorkerDebugPanel';
 import NotificationSettingsPage from './NotificationSettingsPage';
-import ManageCategoriesModal from './ManageCategoriesModal';
 import { TRANSACTION_CATEGORIES } from '../constants';
 import { processImageForBackground, createPatternBackground } from '../utils/imageProcessing';
 
@@ -117,7 +116,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { theme, setTheme, customBackground, setCustomBackground } = useTheme();
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const [showManageCategories, setShowManageCategories] = useState(false);
   const [localProcessingType, setLocalProcessingType] = useState<'transparent' | 'pattern'>('transparent');
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -254,25 +252,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     );
   }
 
-  if (showManageCategories) {
-    return (
-      <ManageCategoriesModal
-        isOpen={showManageCategories}
-        onClose={() => setShowManageCategories(false)}
-        categories={TRANSACTION_CATEGORIES.expense}
-        onUpdateCategories={(categories) => {
-          console.log('Updated categories:', categories);
-        }}
-        categoryEmojis={user.categoryEmojis}
-        onUpdateCategoryEmojis={(emojis) => {
-          onUpdateUser({
-            ...user,
-            categoryEmojis: emojis
-          });
-        }}
-      />
-    );
-  }
  
    return (
      <div className="bg-[rgb(var(--color-background-rgb))] px-4 sm:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8 max-w-4xl mx-auto min-h-screen">
@@ -520,7 +499,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
               <div className="mt-3 sm:mt-4">
                 <button
-                  onClick={() => setShowManageCategories(true)}
+                  onClick={() => setActiveItem?.('Manage Categories')}
                   className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
                 >
                   <div className="flex items-center justify-between">

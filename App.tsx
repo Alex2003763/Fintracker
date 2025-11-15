@@ -19,8 +19,9 @@ import ConfirmationModal from './components/ConfirmationModal';
 import ReportsPage from './components/ReportsPage';
 import BudgetsPage from './components/BudgetsPage';
 import ManageBudgetsModal from './components/ManageBudgetsModal';
+import ManageCategoriesPage from './components/ManageCategoriesPage';
 import ImageCropModal from './components/ImageCropModal';
-import { Transaction, User, Goal, Bill, RecurringTransaction, Budget, NotificationSettings, GoalContribution, BillPayment } from './types';
+import { Transaction, User, Goal, Bill, RecurringTransaction, Budget, NotificationSettings, GoalContribution, BillPayment, SubCategory } from './types';
 import type { Notification } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import PlaceholderPage from './components/PlaceholderPage';
@@ -29,6 +30,7 @@ import { encryptData, decryptData, deriveKey, generateSalt, formatCurrency } fro
 import { processTransactionForGoals, getGoalProgressStats } from './utils/goalUtils';
 import { sendNotification } from './utils/notifications';
 import { processImageForBackground, createPatternBackground } from './utils/imageProcessing';
+import { TRANSACTION_CATEGORIES } from './constants';
 
 const App: React.FC = () => {
   const {
@@ -561,6 +563,30 @@ const App: React.FC = () => {
   }, [user, sessionKey, transactions, goals, goalContributions, bills, billPayments, budgets, notifications, recurringTransactions]);
 
   const handleAuth = (authedUser: User, key: CryptoKey) => {
+    // Initialize or migrate customCategories
+    if (!authedUser.customCategories) {
+      authedUser.customCategories = {
+        expense: { ...TRANSACTION_CATEGORIES.expense },
+        income: { ...TRANSACTION_CATEGORIES.income }
+      };
+    } else {
+      // Migration for users with old string[] structure
+      const migrateCategories = (categories: { [key: string]: any[] }) => {
+        const newCategories: { [key: string]: any[] } = {};
+        for (const key in categories) {
+          newCategories[key] = categories[key].map(c => {
+            if (typeof c === 'string') {
+              return { name: c, icon: '' };
+            }
+            return c;
+          });
+        }
+        return newCategories;
+      };
+      authedUser.customCategories.expense = migrateCategories(authedUser.customCategories.expense);
+      authedUser.customCategories.income = migrateCategories(authedUser.customCategories.income);
+    }
+    
     setUser(authedUser);
     setSessionKey(key);
     initialProcessingDone.current = false; // Reset for new session
@@ -1075,6 +1101,12 @@ const App: React.FC = () => {
   // Other Handlers
   const handleUpdateUser = (updatedUser: User) => setUser(updatedUser);
 
+  const handleUpdateCategories = (updatedCategories: { expense: { [key: string]: SubCategory[] }, income: { [key: string]: SubCategory[] } }) => {
+    if (user) {
+      setUser({ ...user, customCategories: updatedCategories });
+    }
+  };
+
   const handleChangePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
     if (!user || !sessionKey) return false;
     try {
@@ -1185,6 +1217,8 @@ const App: React.FC = () => {
           processingType={processingType}
           setProcessingType={setProcessingType}
         />;
+      case 'Manage Categories':
+        return <ManageCategoriesPage user={user} onUpdateCategories={handleUpdateCategories} setActiveItem={setActiveItem} />;
       default:
         return <PlaceholderPage title={activeItem} />;
     }
@@ -1290,6 +1324,7 @@ const App: React.FC = () => {
         onSaveBill={handleSaveBill}
         onDeleteBill={handleDeleteBill}
         onOpenConfirmModal={handleOpenConfirmModal}
+        user={user}
       />
 
       <ManageBudgetsModal

@@ -1,3 +1,5 @@
+// ManageBillsModal.tsx
+
 import React, { useState, useEffect } from 'react';
 import { Bill } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
@@ -6,16 +8,30 @@ import { formatCurrency } from '../utils/formatters';
 import BaseModal from './BaseModal';
 import { FormField, Input, Select, Button } from './ModalForm';
 
+import { User } from '../types';
+
 interface ManageBillsModalProps {
   isOpen: boolean;
   onClose: () => void;
   bills: Bill[];
   onSaveBill: (bill: Omit<Bill, 'id'> & { id?: string }) => void;
   onDeleteBill: (id: string) => void;
-  onOpenConfirmModal: (title: string, message: string, onConfirm: () => void, options?: { confirmText?: string; variant?: 'primary' | 'danger' }) => void;
+  onOpenConfirmModal: (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    options?: { confirmText?: string; variant?: 'primary' | 'danger' }
+  ) => void;
+  user?: User | null;
 }
 
 type ViewMode = 'list' | 'form';
+
+const FREQUENCY_OPTIONS = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'yearly', label: 'Yearly' },
+];
 
 const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
   isOpen,
@@ -23,16 +39,22 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
   bills,
   onSaveBill,
   onDeleteBill,
-  onOpenConfirmModal
+  onOpenConfirmModal,
+  user,
 }) => {
+  const currentCategories = user?.customCategories?.expense || TRANSACTION_CATEGORIES.expense;
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [dayOfMonth, setDayOfMonth] = useState('');
-  const [category, setCategory] = useState(Object.values(TRANSACTION_CATEGORIES.expense)[0][0]);
+  // Default to first subcategory of first expense group
+  const defaultCategory =
+    Object.values(currentCategories)[0][0]?.name || '';
+  const [category, setCategory] = useState(defaultCategory);
+  const [frequency, setFrequency] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
   const [billToEditId, setBillToEditId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (!isOpen) {
@@ -45,7 +67,10 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
     setName('');
     setAmount('');
     setDayOfMonth('');
-    setCategory(Object.values(TRANSACTION_CATEGORIES.expense)[0][0]);
+    setCategory(
+      Object.values(currentCategories)[0][0]?.name || ''
+    );
+    setFrequency('monthly');
     setBillToEditId(null);
     setErrors({});
   };
@@ -59,8 +84,9 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
     setBillToEditId(bill.id);
     setName(bill.name);
     setAmount(bill.amount.toString());
-    setDayOfMonth(bill.dayOfMonth.toString());
+    setDayOfMonth(bill.dayOfMonth ? bill.dayOfMonth.toString() : '');
     setCategory(bill.category);
+    setFrequency(bill.frequency || 'monthly');
     setViewMode('form');
   };
 
@@ -70,7 +96,7 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
   };
 
   const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
+    const newErrors: { [key: string]: string } = {};
 
     if (!name.trim()) {
       newErrors.name = 'Bill name is required';
@@ -85,12 +111,14 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
       }
     }
 
-    if (!dayOfMonth.trim()) {
-      newErrors.dayOfMonth = 'Day of month is required';
-    } else {
-      const parsedDay = parseInt(dayOfMonth, 10);
-      if (isNaN(parsedDay) || parsedDay < 1 || parsedDay > 31) {
-        newErrors.dayOfMonth = 'Please enter a valid day (1-31)';
+    if (frequency === 'monthly') {
+      if (!dayOfMonth.trim()) {
+        newErrors.dayOfMonth = 'Day of month is required';
+      } else {
+        const parsedDay = parseInt(dayOfMonth, 10);
+        if (isNaN(parsedDay) || parsedDay < 1 || parsedDay > 31) {
+          newErrors.dayOfMonth = 'Please enter a valid day (1-31)';
+        }
       }
     }
 
@@ -109,17 +137,17 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
 
     try {
       const parsedAmount = parseFloat(amount);
-      const parsedDay = parseInt(dayOfMonth, 10);
+      const parsedDay = frequency === 'monthly' ? parseInt(dayOfMonth, 10) : 1;
 
       await onSaveBill({
         id: billToEditId || undefined,
         name: name.trim(),
         amount: parsedAmount,
         dayOfMonth: parsedDay,
-        category
+        category,
+        frequency,
       });
-      
-      // After successful save, go back to list view
+
       handleBackToList();
     } catch (error) {
       console.error('Error saving bill:', error);
@@ -127,7 +155,7 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
       setIsSubmitting(false);
     }
   };
-  
+
   const handleDeleteClick = (bill: Bill) => {
     onOpenConfirmModal(
       'Delete Bill',
@@ -139,7 +167,6 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
 
   const renderListView = () => (
     <div className="p-4 sm:p-6">
-      {/* Header with Add Button */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">
@@ -161,58 +188,61 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
         </Button>
       </div>
 
-      {/* Bills List */}
       <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-        {bills.length > 0 ? bills.map(bill => (
-          <div
-            key={bill.id}
-            className="bg-[rgb(var(--color-card-muted-rgb))] rounded-xl p-4 border border-[rgb(var(--color-border-rgb))] transition-all duration-200"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                <div className="p-3 bg-[rgb(var(--color-primary-rgb))]/10 rounded-lg">
-                  <BillIcon className="h-6 w-6 text-[rgb(var(--color-primary-rgb))]" />
+        {bills.length > 0 ? (
+          bills.map((bill) => (
+            <div
+              key={bill.id}
+              className="bg-[rgb(var(--color-card-muted-rgb))] rounded-xl p-4 border border-[rgb(var(--color-border-rgb))] transition-all duration-200"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="p-3 bg-[rgb(var(--color-primary-rgb))]/10 rounded-lg">
+                    <BillIcon className="h-6 w-6 text-[rgb(var(--color-primary-rgb))]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-[rgb(var(--color-text-rgb))] truncate">
+                      {bill.name}
+                    </h4>
+                    <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                      {bill.frequency === 'monthly'
+                        ? `Due on day ${bill.dayOfMonth}`
+                        : `Repeats ${bill.frequency}`}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-[rgb(var(--color-text-rgb))] truncate">
-                    {bill.name}
-                  </h4>
-                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
-                    Due on day {bill.dayOfMonth}
-                  </p>
+                <div className="flex flex-col items-end ml-4">
+                  <span className="text-lg font-bold text-[rgb(var(--color-primary-rgb))]">
+                    {formatCurrency(bill.amount)}
+                  </span>
+                  <span className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
+                    {bill.category}
+                  </span>
                 </div>
               </div>
-              <div className="flex flex-col items-end ml-4">
-                <span className="text-lg font-bold text-[rgb(var(--color-primary-rgb))]">
-                  {formatCurrency(bill.amount)}
-                </span>
-                <span className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
-                  {bill.category}
-                </span>
+              <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-[rgb(var(--color-border-rgb))]">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEditBill(bill)}
+                  className="text-xs px-3 py-2"
+                >
+                  <PencilIcon className="w-4 h-4 mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => handleDeleteClick(bill)}
+                  className="text-xs px-3 py-2"
+                >
+                  <TrashIcon className="w-4 h-4 mr-1" />
+                  Delete
+                </Button>
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-[rgb(var(--color-border-rgb))]">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEditBill(bill)}
-                className="text-xs px-3 py-2"
-              >
-                <PencilIcon className="w-4 h-4 mr-1" />
-                Edit
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => handleDeleteClick(bill)}
-                className="text-xs px-3 py-2"
-              >
-                <TrashIcon className="w-4 h-4 mr-1" />
-                Delete
-              </Button>
-            </div>
-          </div>
-        )) : (
+          ))
+        ) : (
           <div className="text-center py-16">
             <div className="w-24 h-24 mx-auto mb-6 bg-[rgb(var(--color-card-muted-rgb))] rounded-full flex items-center justify-center">
               <BillIcon className="h-12 w-12 text-[rgb(var(--color-text-muted-rgb))] opacity-50" />
@@ -241,7 +271,6 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
 
   const renderFormView = () => (
     <div className="p-4 sm:p-6">
-      {/* Header with Back Button */}
       <div className="flex items-center gap-3 mb-6">
         <Button
           variant="ghost"
@@ -263,7 +292,6 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
         </div>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6 max-h-[60vh] overflow-y-auto">
         <div className="grid grid-cols-1 gap-6">
           <FormField
@@ -313,54 +341,74 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
             </FormField>
 
             <FormField
-              label="Due Day"
-              htmlFor="bill-day"
+              label="Category"
+              htmlFor="bill-category"
               required
-              error={errors.dayOfMonth}
-              hint="Which day of the month is this bill due?"
             >
-              <Input
-                id="bill-day"
-                type="number"
-                min="1"
-                max="31"
-                value={dayOfMonth}
-                onChange={(e) => {
-                  setDayOfMonth(e.target.value);
-                  if (errors.dayOfMonth) setErrors({ ...errors, dayOfMonth: '' });
-                }}
-                placeholder="15"
-                error={errors.dayOfMonth}
-              />
+              <Select
+                id="bill-category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                {Object.entries(currentCategories).map(([group, subcategories]) => (
+                  <optgroup label={group} key={group}>
+                    {subcategories.map(cat => (
+                      <option key={cat.name} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </Select>
             </FormField>
           </div>
 
-          <FormField
-            label="Category"
-            htmlFor="bill-category"
-            required
-          >
-            <Select
-              id="bill-category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <FormField
+              label="Frequency"
+              htmlFor="bill-frequency"
+              required
             >
-              {Object.entries(TRANSACTION_CATEGORIES.expense).map(([group, subcategories]) => (
-                <optgroup label={group} key={group}>
-                  {(subcategories as string[]).map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </Select>
-          </FormField>
+              <Select
+                id="bill-frequency"
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value as 'monthly' | 'weekly' | 'yearly')}
+              >
+                {FREQUENCY_OPTIONS.map((freq) => (
+                  <option key={freq.value} value={freq.value}>
+                    {freq.label}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+
+            {frequency === 'monthly' && (
+              <FormField
+                label="Day of Month"
+                htmlFor="bill-day-of-month"
+                required
+                error={errors.dayOfMonth}
+              >
+                <Input
+                  id="bill-day-of-month"
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={dayOfMonth}
+                  onChange={(e) => {
+                    setDayOfMonth(e.target.value);
+                    if (errors.dayOfMonth) setErrors({ ...errors, dayOfMonth: '' });
+                  }}
+                  placeholder="e.g. 1"
+                  error={errors.dayOfMonth}
+                />
+              </FormField>
+            )}
+          </div>
         </div>
 
-        {/* Form Actions */}
-        <div className="flex justify-end gap-3 pt-6 border-t border-[rgb(var(--color-border-rgb))]">
+        <div className="flex justify-end gap-2">
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             onClick={handleBackToList}
             disabled={isSubmitting}
           >
@@ -369,27 +417,17 @@ const ManageBillsModal: React.FC<ManageBillsModalProps> = ({
           <Button
             type="submit"
             variant="primary"
-            loading={isSubmitting}
-            className="min-w-[120px]"
+            disabled={isSubmitting}
           >
-            {billToEditId ? 'Save Changes' : 'Add Bill'}
+            {billToEditId ? 'Update Bill' : 'Add Bill'}
           </Button>
         </div>
       </form>
     </div>
   );
 
-  if (!isOpen) return null;
-
   return (
-    <BaseModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Manage Bills"
-      size="lg"
-      animation="slide-up"
-      aria-label="Manage bills modal"
-    >
+    <BaseModal isOpen={isOpen} onClose={onClose}>
       {viewMode === 'list' ? renderListView() : renderFormView()}
     </BaseModal>
   );
