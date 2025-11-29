@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Transaction } from '../types';
+import { Transaction, SubCategory } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
 import { parseQuickAddInput } from '../utils/formatters';
 import BaseModal from './BaseModal';
@@ -14,12 +14,12 @@ interface QuickAddPopoverProps {
 const QuickAddPopover: React.FC<QuickAddPopoverProps> = ({ isOpen, onClose, onSaveTransaction }) => {
     const [inputValue, setInputValue] = useState('');
     const [type, setType] = useState<'income' | 'expense'>('expense');
-    const [category, setCategory] = useState(TRANSACTION_CATEGORIES.expense['Food & Drink'][0]);
+    const [category, setCategory] = useState(TRANSACTION_CATEGORIES.expense['Food & Drink'][0].name);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        setCategory(Object.values(TRANSACTION_CATEGORIES[type])[0][0]);
+        setCategory(Object.values(TRANSACTION_CATEGORIES[type])[0][0].name);
     }, [type]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -104,7 +104,7 @@ const QuickAddPopover: React.FC<QuickAddPopoverProps> = ({ isOpen, onClose, onSa
                         value={type}
                         onChange={(value) => {
                             setType(value as 'income' | 'expense');
-                            setCategory(Object.values(TRANSACTION_CATEGORIES[value as 'income' | 'expense'])[0][0]);
+                            setCategory(Object.values(TRANSACTION_CATEGORIES[value as 'income' | 'expense'])[0][0].name);
                         }}
                     />
                 </FormField>
@@ -121,8 +121,8 @@ const QuickAddPopover: React.FC<QuickAddPopoverProps> = ({ isOpen, onClose, onSa
                     >
                         {Object.entries(categories).map(([group, subcategories]) => (
                             <optgroup label={group} key={group}>
-                                {(subcategories as string[]).map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
+                                {(subcategories as SubCategory[]).map(cat => (
+                                    <option key={cat.name} value={cat.name}>{cat.name}</option>
                                 ))}
                             </optgroup>
                         ))}

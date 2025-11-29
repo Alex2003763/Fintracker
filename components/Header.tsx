@@ -14,7 +14,7 @@ interface HeaderProps {
      setActiveItem?: (item: string) => void;
  }
 
-const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onClearAllNotifications, pageTitle, isOnline = true, setActiveItem }) => {
+const Header: React.FC<HeaderProps> = React.memo(({ user, notifications, onMarkAsRead, onClearAllNotifications, pageTitle, isOnline = true, setActiveItem }) => {
      const [showNotifications, setShowNotifications] = useState(false);
     const unreadCount = notifications.filter(n => !n.read).length;
     
@@ -51,9 +51,15 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
                  </div>
 
                 <div className="relative notification-panel-wrapper">
-                    <button onClick={() => setShowNotifications(!showNotifications)} className="h-12 w-12 rounded-full flex items-center justify-center bg-[rgb(var(--color-card-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors">
+                    <button
+                        onClick={() => setShowNotifications(!showNotifications)}
+                        className="h-12 w-12 rounded-full flex items-center justify-center bg-[rgb(var(--color-card-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-bg-rgb))]"
+                        aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+                        aria-expanded={showNotifications}
+                        aria-haspopup="true"
+                    >
                         <BellIcon className="h-6 w-6 text-[rgb(var(--color-text-muted-rgb))]" />
-                        {unreadCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[rgb(var(--color-card-rgb))]"></span>}
+                        {unreadCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[rgb(var(--color-card-rgb))]" aria-hidden="true"></span>}
                     </button>
                     {showNotifications && (
                         <NotificationPanel
@@ -67,7 +73,7 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
                     )}
                 </div>
                 <div
-                    className="h-12 w-12 rounded-full bg-[rgb(var(--color-card-muted-rgb))] flex items-center justify-center overflow-hidden cursor-pointer hover:bg-[rgb(var(--color-card-hover-rgb))] transition-colors"
+                    className="h-12 w-12 rounded-full bg-[rgb(var(--color-card-muted-rgb))] flex items-center justify-center overflow-hidden cursor-pointer hover:bg-[rgb(var(--color-card-hover-rgb))] transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-bg-rgb))]"
                     onClick={() => setActiveItem?.('Account')}
                     role="button"
                     tabIndex={0}
@@ -77,7 +83,7 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
                             setActiveItem?.('Account');
                         }
                     }}
-                    aria-label="Open Account"
+                    aria-label="Open Account Settings"
                 >
                     {user.avatar ? (
                         <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />
@@ -88,6 +94,6 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onMarkAsRead, onCl
             </div>
         </header>
     );
-};
+});
 
 export default Header;

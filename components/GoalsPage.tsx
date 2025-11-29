@@ -78,8 +78,20 @@ const GoalItem: React.FC<{
             {safeGoal.priority.toUpperCase()}
           </span>
           <div className="flex space-x-2">
-            <button onClick={onEdit} className="text-sm text-[rgb(var(--color-primary-subtle-text-rgb))] hover:underline">Edit</button>
-            <button onClick={onDelete} className="text-sm text-red-500 hover:underline">Delete</button>
+            <button
+              onClick={onEdit}
+              className="text-sm text-[rgb(var(--color-primary-subtle-text-rgb))] hover:underline focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] rounded px-1"
+              aria-label={`Edit goal: ${safeGoal.name}`}
+            >
+              Edit
+            </button>
+            <button
+              onClick={onDelete}
+              className="text-sm text-red-500 hover:underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1"
+              aria-label={`Delete goal: ${safeGoal.name}`}
+            >
+              Delete
+            </button>
           </div>
         </div>
       </div>
@@ -91,7 +103,14 @@ const GoalItem: React.FC<{
             <span>Progress</span>
             <span>{progressClamped.toFixed(0)}%</span>
           </div>
-          <div className="w-full bg-[rgb(var(--color-border-rgb))] rounded-full h-2.5">
+          <div
+            className="w-full bg-[rgb(var(--color-border-rgb))] rounded-full h-2.5"
+            role="progressbar"
+            aria-valuenow={Math.round(progressClamped)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${safeGoal.name} progress`}
+          >
             <div className="bg-[rgb(var(--color-primary-rgb))] h-2.5 rounded-full transition-all duration-300" style={{ width: `${progressClamped}%` }}></div>
           </div>
           <div className="text-right text-sm text-[rgb(var(--color-text-muted-rgb))] mt-1">

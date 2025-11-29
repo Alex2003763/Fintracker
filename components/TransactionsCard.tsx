@@ -1,7 +1,7 @@
 import React from 'react';
 import { Transaction, User } from '../types';
-import { formatCurrency } from '../utils/formatters';
-import CategoryIcon from './CategoryIcon';
+import Card, { CardHeader, CardTitle, CardContent } from './Card';
+import TransactionRow from './TransactionRow';
 
 interface TransactionsCardProps {
   transactions: Transaction[];
@@ -10,65 +10,46 @@ interface TransactionsCardProps {
   user: User | null;
 }
 
-const TransactionItem: React.FC<{ transaction: Transaction, onEdit: (transaction: Transaction) => void, user: User | null }> = ({ transaction, onEdit, user }) => {
-  const amountColor = transaction.type === 'income' ? 'text-green-500' : 'text-[rgb(var(--color-text-rgb))]';
-  const formattedAmount = transaction.type === 'income'
-    ? `+${formatCurrency(transaction.amount)}`
-    : formatCurrency(-transaction.amount);
-
-  const getIconForCategory = (categoryName: string) => {
-    if (!user?.customCategories) return undefined;
-    const allCategories = { ...user.customCategories.expense, ...user.customCategories.income };
-    for (const parentCategory in allCategories) {
-      const subCategory = allCategories[parentCategory].find(c => c.name === categoryName);
-      if (subCategory) {
-        return subCategory.icon;
-      }
-    }
-    return undefined;
-  };
-
-  const displayEmoji = transaction.emoji || getIconForCategory(transaction.category);
-
+const TransactionsCard: React.FC<TransactionsCardProps> = React.memo(({ transactions, onEditTransaction, setActiveItem, user }) => {
   return (
-    <div
-      className="flex items-center justify-between py-3 border-b last:border-b-0 border-[rgb(var(--color-border-rgb))] cursor-pointer hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors"
-      onClick={() => onEdit(transaction)}
-    >
-      <div className="flex items-center">
-        <div className="bg-[rgba(var(--color-border-rgb),0.5)] rounded-full p-3 mr-4">
-          <CategoryIcon
-            category={transaction.category}
-            emoji={displayEmoji}
-            className="h-6 w-6 text-[rgb(var(--color-text-muted-rgb))]"
-          />
-        </div>
-        <div>
-          <p className="font-semibold text-[rgb(var(--color-text-rgb))]">{transaction.description}</p>
-          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">{new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-        </div>
-      </div>
-      <p className={`font-bold ${amountColor}`}>
-        {formattedAmount}
-      </p>
-    </div>
+    <Card className="flex flex-col">
+      <CardHeader className="flex justify-between items-center">
+        <CardTitle>Recent Transactions</CardTitle>
+        <button
+            onClick={() => setActiveItem('Transactions')}
+            className="text-sm font-semibold text-[rgb(var(--color-primary-subtle-text-rgb))] hover:text-[rgb(var(--color-primary-hover-rgb))] hover:underline focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] rounded px-2 py-1"
+            aria-label="View all transactions"
+        >
+            View All
+        </button>
+      </CardHeader>
+      <CardContent className="overflow-hidden">
+        {transactions.length > 0 ? (
+            <div className="space-y-1">
+            {transactions.map(transaction => (
+                <TransactionRow
+                  key={transaction.id}
+                  transaction={transaction}
+                  onEdit={onEditTransaction}
+                  user={user}
+                  variant="compact"
+                />
+            ))}
+            </div>
+        ) : (
+            <div className="flex flex-col items-center justify-center text-center py-4 text-[rgb(var(--color-text-muted-rgb))]">
+                <div className="bg-[rgba(var(--color-border-rgb),0.3)] p-4 rounded-full mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                </div>
+                <p className="font-medium">No recent transactions</p>
+                <p className="text-sm opacity-75 mt-1">Your recent activity will show up here</p>
+            </div>
+        )}
+      </CardContent>
+    </Card>
   );
-};
-
-const TransactionsCard: React.FC<TransactionsCardProps> = ({ transactions, onEditTransaction, setActiveItem, user }) => {
-  return (
-    <div className="bg-[rgb(var(--color-card-rgb))] p-4 md:p-6 rounded-2xl shadow-sm overflow-hidden transition-colors">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-[rgb(var(--color-text-rgb))]">Recent Transactions</h2>
-        <button onClick={() => setActiveItem('Transactions')} className="text-sm font-semibold text-[rgb(var(--color-primary-subtle-text-rgb))] hover:underline">View All</button>
-      </div>
-      <div>
-        {transactions.map(transaction => (
-          <TransactionItem key={transaction.id} transaction={transaction} onEdit={onEditTransaction} user={user} />
-        ))}
-      </div>
-    </div>
-  );
-};
+});
 
 export default TransactionsCard;

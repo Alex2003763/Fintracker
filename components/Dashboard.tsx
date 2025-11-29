@@ -16,7 +16,7 @@ interface DashboardProps {
   user?: User;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({
+const Dashboard: React.FC<DashboardProps> = React.memo(({
     transactions,
     bills,
     onAddTransaction,
@@ -27,26 +27,31 @@ const Dashboard: React.FC<DashboardProps> = ({
     user
 }) => {
   return (
-     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-       <div className="lg:col-span-2">
+     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-w-7xl mx-auto pb-20 md:pb-6">
+       <div className="md:col-span-2 xl:col-span-3">
          <PremiumBalanceCard
             transactions={transactions}
             onAddTransaction={onAddTransaction}
             setActiveItem={setActiveItem}
+            className="w-full mx-auto"
          />
        </div>
-       <TransactionsCard
-         transactions={transactions.slice(0, 5)}
-         onEditTransaction={onEditTransaction}
-         setActiveItem={setActiveItem}
-         user={user}
-       />
-       <div className="space-y-6">
-         <SpendingBreakdownCard transactions={transactions} />
+       
+       <div className="md:col-span-1 xl:col-span-2 space-y-4">
+         <TransactionsCard
+           transactions={transactions.slice(0, 5)}
+           onEditTransaction={onEditTransaction}
+           setActiveItem={setActiveItem}
+           user={user}
+         />
          <UpcomingBillsCard bills={bills} onPayBill={onPayBill} onManageBills={onManageBills} />
+       </div>
+
+       <div className="md:col-span-1 xl:col-span-1">
+         <SpendingBreakdownCard transactions={transactions} />
        </div>
      </div>
    );
-};
+});
 
 export default Dashboard;

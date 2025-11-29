@@ -73,25 +73,28 @@ const AISettings: React.FC<{ user: User; onUpdateUser: (user: User) => void }> =
     return (
         <div className="space-y-3 sm:space-y-4">
             <h2 className="text-lg sm:text-xl font-semibold text-[rgb(var(--color-text-rgb))]">AI Settings</h2>
-            <form onSubmit={handleSubmit} className="space-y-3">
-                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
-                    Enter your Gemini API key for AI-powered financial insights.
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] leading-relaxed">
+                    Enter your Gemini API key to enable AI-powered financial insights and smart categorization.
                 </p>
-                <input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="Gemini API Key"
-                    className="w-full px-3 py-2.5 sm:py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] text-sm sm:text-base"
-                />
+                <div className="relative">
+                    <input
+                        type="password"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder="Gemini API Key"
+                        className="w-full px-4 py-3 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent transition-all duration-200 text-sm sm:text-base placeholder-[rgb(var(--color-text-muted-rgb))]"
+                        aria-label="Gemini API Key"
+                    />
+                </div>
                 {message && (
-                    <p className={`text-sm ${message.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`p-3 rounded-lg text-sm font-medium animate-fade-in ${message.includes('success') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
                         {message}
-                    </p>
+                    </div>
                 )}
                 <button
                     type="submit"
-                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors"
+                    className="w-full sm:w-auto px-6 py-3 text-sm font-medium bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
                 >
                     Save API Key
                 </button>

@@ -173,14 +173,15 @@ const NotificationSettingsPage: React.FC<NotificationSettingsPageProps> = ({
               </div>
               <h2 className="text-xl font-bold">Goal Progress</h2>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className="relative inline-flex items-center cursor-pointer group">
               <input
                 type="checkbox"
                 checked={settings.goalProgress.enabled}
                 onChange={(e) => updateSetting('goalProgress', 'enabled', e.target.checked)}
                 className="sr-only peer"
+                aria-label="Toggle goal progress notifications"
               />
-              <div className={`w-12 h-7 bg-[rgb(var(--color-border-rgb))] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[rgb(var(--color-primary-rgb))] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-[rgb(var(--color-primary-rgb))]`}></div>
+              <div className={`w-14 h-8 bg-[rgb(var(--color-card-muted-rgb))] border-2 border-[rgb(var(--color-border-rgb))] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[rgb(var(--color-primary-rgb))]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all duration-300 peer-checked:bg-[rgb(var(--color-primary-rgb))] peer-checked:border-[rgb(var(--color-primary-rgb))] shadow-inner`}></div>
             </label>
           </div>
 
@@ -219,14 +220,15 @@ const NotificationSettingsPage: React.FC<NotificationSettingsPageProps> = ({
               </div>
               <h2 className="text-xl font-bold">Bill Reminders</h2>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className="relative inline-flex items-center cursor-pointer group">
               <input
                 type="checkbox"
                 checked={settings.billReminders.enabled}
                 onChange={(e) => updateSetting('billReminders', 'enabled', e.target.checked)}
                 className="sr-only peer"
+                aria-label="Toggle bill reminders"
               />
-              <div className={`w-12 h-7 bg-[rgb(var(--color-border-rgb))] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[rgb(var(--color-primary-rgb))] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-[rgb(var(--color-primary-rgb))]`}></div>
+              <div className={`w-14 h-8 bg-[rgb(var(--color-card-muted-rgb))] border-2 border-[rgb(var(--color-border-rgb))] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[rgb(var(--color-primary-rgb))]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all duration-300 peer-checked:bg-[rgb(var(--color-primary-rgb))] peer-checked:border-[rgb(var(--color-primary-rgb))] shadow-inner`}></div>
             </label>
           </div>
 
@@ -259,14 +261,15 @@ const NotificationSettingsPage: React.FC<NotificationSettingsPageProps> = ({
               </div>
               <h2 className="text-xl font-bold">Budget Alerts</h2>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className="relative inline-flex items-center cursor-pointer group">
               <input
                 type="checkbox"
                 checked={settings.budgetAlerts.enabled}
                 onChange={(e) => updateSetting('budgetAlerts', 'enabled', e.target.checked)}
                 className="sr-only peer"
+                aria-label="Toggle budget alerts"
               />
-              <div className={`w-12 h-7 bg-[rgb(var(--color-border-rgb))] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[rgb(var(--color-primary-rgb))] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-[rgb(var(--color-primary-rgb))]`}></div>
+              <div className={`w-14 h-8 bg-[rgb(var(--color-card-muted-rgb))] border-2 border-[rgb(var(--color-border-rgb))] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[rgb(var(--color-primary-rgb))]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all duration-300 peer-checked:bg-[rgb(var(--color-primary-rgb))] peer-checked:border-[rgb(var(--color-primary-rgb))] shadow-inner`}></div>
             </label>
           </div>
 

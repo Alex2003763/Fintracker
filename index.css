@@ -59,6 +59,45 @@ body {
   background-image: radial-gradient(rgb(var(--color-border-rgb)) 0.5px, transparent 0.5px);
   background-size: 20px 20px;
 }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-border-rgb));
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-text-muted-rgb));
+}
+
+/* Utility Classes */
+.card-base {
+  background-color: rgb(var(--color-card-rgb));
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(var(--color-border-rgb), 0.5);
+}
+
+.card-base:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-color: rgba(var(--color-primary-rgb), 0.3);
+}
+
+.text-primary {
+  color: rgb(var(--color-primary-rgb));
+}
+
+.bg-primary-subtle {
+  background-color: rgba(var(--color-primary-rgb), 0.1);
+}
+
 /* Global CSS Layout for Finance Flow App */
 
 /* 1. Base Styles and Reset */
@@ -316,6 +355,18 @@ body.modal-open {
 }
 
 /* Mobile responsive adjustments */
+@media (max-width: 479px) {
+    .mobile-safe-area {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+    
+    .mobile-content-padding {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
 @media (min-width: 480px) {
     .ai-insights-swiper {
         max-width: 320px;
@@ -391,9 +442,14 @@ body.modal-open {
 
 /* Better touch targets for mobile */
 @media (hover: none) and (pointer: coarse) {
-  .settings-touch-target {
-    min-height: 48px;
-    min-width: 48px;
+  .settings-touch-target,
+  button,
+  a[href],
+  input[type="checkbox"],
+  input[type="radio"],
+  select {
+    min-height: 44px; /* Apple's recommended minimum */
+    min-width: 44px;
   }
   
   /* Increase padding for better touch experience */
@@ -431,5 +487,153 @@ body.modal-open {
   .settings-animation {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+/* Custom breakpoints for TransactionsPage mobile optimization */
+@media (min-width: 375px) {
+  .xs\:inline {
+    display: inline !important;
+  }
+  
+  .xs\:hidden {
+    display: none !important;
+  }
+}
+
+/* TransactionsPage mobile-specific optimizations */
+@media (max-width: 374px) {
+  /* Extra small screens - ultra compact layout */
+  .transactions-page-container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .transaction-item-compact {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  
+  .filter-button-compact {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Mobile-first optimizations for transactions */
+  .transaction-category-text {
+    max-width: 120px;
+  }
+  
+  .transaction-amount-mobile {
+    min-width: 50px;
+    max-width: 80px;
+  }
+  
+  /* Ensure no horizontal overflow */
+  .transactions-container {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+  
+  /* Touch-friendly buttons */
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Responsive search input */
+  .search-input-mobile {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+@media (min-width: 375px) and (max-width: 640px) {
+  /* Standard mobile phones */
+  .transaction-amount-mobile {
+    min-width: 60px;
+    max-width: 90px;
+  }
+  
+  .filter-button-mobile {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+/* High contrast mode support for transactions */
+@media (prefers-contrast: high) {
+  .transaction-item {
+    border-width: 2px;
+  }
+  
+  .transaction-item:focus,
+  .transaction-item:focus-within {
+    outline: 3px solid rgb(var(--color-primary-rgb));
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion for transaction animations */
+@media (prefers-reduced-motion: reduce) {
+  .transaction-item {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .transaction-icon {
+    transition: none !important;
+  }
+  
+  .scroll-to-top-button {
+    transition: none !important;
+  }
+}
+
+/* Print styles for transactions */
+@media print {
+  .scroll-to-top-button,
+  .search-input,
+  .filter-buttons {
+    display: none !important;
+  }
+  
+  .transaction-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* Landscape orientation optimizations for mobile */
+@media (max-width: 900px) and (orientation: landscape) {
+  .transactions-page-header {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .empty-state-mobile {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  
+  .scroll-to-top-button {
+    bottom: 1rem;
+    right: 1rem;
+  }
+}
+
+/* Dark mode specific adjustments for better mobile visibility */
+@media (prefers-color-scheme: dark) {
+  @media (max-width: 640px) {
+    .transaction-item-mobile {
+      border: 1px solid rgba(var(--color-border-rgb), 0.3);
+    }
+    
+    .transaction-item-mobile:hover {
+      border-color: rgba(var(--color-border-rgb), 0.6);
+    }
   }
 }

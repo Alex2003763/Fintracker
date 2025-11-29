@@ -321,13 +321,13 @@ export const Tabs: React.FC<TabsProps> = ({
             }`}
           >
             {/* Icon with refined styling */}
-            {tab.icon && (
+            {tab.icon && React.isValidElement(tab.icon) && (
               <span className={`mr-1.5 transition-all duration-200 ${
                 activeTab === tab.id
                   ? 'text-[rgb(var(--color-primary-rgb))]'
                   : 'text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-text-rgb))]'
               }`}>
-                {React.cloneElement(tab.icon, {
+                {React.cloneElement(tab.icon as React.ReactElement<any>, {
                   className: `h-3.5 w-3.5 ${activeTab === tab.id ? 'text-[rgb(var(--color-primary-rgb))]' : 'text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-text-rgb))]'}`,
                 })}
               </span>

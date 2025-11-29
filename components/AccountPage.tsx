@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { User } from '../types';
-import { UserIcon, UploadIcon, SettingsIcon, CheckCircleIcon } from './icons';
+import { UserIcon, SettingsIcon } from './icons';
+import Card, { CardHeader, CardTitle, CardContent } from './Card';
 
 interface AccountPageProps {
   user: User;
@@ -23,9 +24,8 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (2MB limit)
-      if (file.size > 2 * 1024 * 1024) {
-        setUsernameMessage({ text: 'File size must be less than 2MB.', type: 'error' });
+      if (file.size > 10 * 1024 * 1024) {
+        setUsernameMessage({ text: 'File size must be less than 10MB.', type: 'error' });
         return;
       }
 
@@ -63,7 +63,6 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
     setIsLoading(prev => ({ ...prev, username: true }));
 
     try {
-      // Simulate async operation for better UX
       await new Promise(resolve => setTimeout(resolve, 500));
       onUpdateUser({ ...user, username });
       setUsernameMessage({ text: 'Username updated successfully!', type: 'success' });
@@ -109,203 +108,167 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
   };
 
   return (
-    <div className="bg-[rgb(var(--color-background-rgb))] p-6 space-y-8 max-w-3xl mx-auto">
-      {/* Enhanced Header */}
-      <div className="text-center pb-8 border-b border-[rgb(var(--color-border-rgb))]">
-        <div className="flex items-center justify-center mb-4">
-          <div className="p-3 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-2xl">
-            <UserIcon className="w-8 h-8 text-[rgb(var(--color-primary-rgb))]" />
-          </div>
-          <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))] mb-3"> Account Settings</h1>
+    <div className="space-y-6 max-w-4xl mx-auto px-4">
+      <header className="text-center pb-6 border-b border-[rgb(var(--color-border-rgb))]">
+        <div className="inline-flex items-center justify-center p-3 bg-primary-subtle rounded-full mb-4">
+          <UserIcon className="w-8 h-8 text-[rgb(var(--color-primary-rgb))]" />
         </div>
-       
-      </div>
+        <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Account Settings</h1>
+        <p className="text-[rgb(var(--color-text-muted-rgb))] mt-2">Manage your profile and security preferences</p>
+      </header>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Profile Picture Section */}
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))] mb-4">Profile Picture</h2>
-            <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-6 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-center space-x-6">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 flex items-center justify-center overflow-hidden border-2 border-[rgb(var(--color-border-rgb))] shadow-sm">
-                    {avatar ? (
-                      <img src={avatar} alt="User Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon className="w-12 h-12 text-[rgb(var(--color-text-muted-rgb))]" />
-                    )}
-                  </div>
-                  {isLoading.avatar && (
-                    <div className="absolute inset-0 bg-[rgb(var(--color-card-rgb))]/80 rounded-2xl flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[rgb(var(--color-primary-rgb))]"></div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="relative group">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[rgb(var(--color-card-rgb))] shadow-lg bg-[rgb(var(--color-card-muted-rgb))]">
+                  {avatar ? (
+                    <img src={avatar} alt="User Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <UserIcon className="w-16 h-16 text-[rgb(var(--color-text-muted-rgb))]" />
                     </div>
                   )}
                 </div>
-                <div className="flex-1 space-y-3">
-                  <div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      ref={fileInputRef}
-                      onChange={handleAvatarUpload}
-                      className="hidden"
-                    />
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isLoading.avatar}
-                      className="w-full px-4 py-3 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] disabled:opacity-50 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      {isLoading.avatar ? 'Uploading...' : 'Upload New Picture'}
-                    </button>
-                  </div>
-                  <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">JPG, PNG or GIF. Max size 2MB</p>
-                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading.avatar}
+                  className="absolute bottom-0 right-0 p-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-full shadow-md hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors disabled:opacity-50"
+                  aria-label="Upload new profile picture"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
               </div>
+              {isLoading.avatar && <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Uploading...</p>}
             </div>
-          </div>
-        </div>
 
-        {/* Username Section */}
+            <form onSubmit={handleUpdateUsername} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="username" className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={isLoading.username}
+                  className="w-full px-4 py-2 bg-[rgb(var(--color-bg-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent outline-none transition-all"
+                  placeholder="Enter your username"
+                />
+              </div>
+              {usernameMessage.text && (
+                <p className={`text-sm ${usernameMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`} role="alert">
+                  {usernameMessage.text}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={isLoading.username}
+                className="w-full px-4 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] disabled:opacity-50 transition-colors font-medium"
+              >
+                {isLoading.username ? 'Updating...' : 'Update Username'}
+              </button>
+            </form>
+          </CardContent>
+        </Card>
+
         <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))] mb-4">Username</h2>
-            <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-6 shadow-sm hover:shadow-md transition-all duration-200">
-              <form onSubmit={handleUpdateUsername} className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Security</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">
-                    Current Username
+                  <label htmlFor="current-password" className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">
+                    Current Password
                   </label>
                   <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={isLoading.username}
-                    className="w-full px-4 py-3 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent transition-all duration-200 placeholder:text-[rgb(var(--color-text-muted-rgb))]"
-                    placeholder="Enter your username"
+                    id="current-password"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    disabled={isLoading.password}
+                    className="w-full px-4 py-2 bg-[rgb(var(--color-bg-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent outline-none transition-all"
+                    placeholder="Enter current password"
                   />
                 </div>
-                {usernameMessage.text && (
-                  <div className={`p-3 rounded-lg text-sm font-medium ${
-                    usernameMessage.type === 'success'
-                      ? 'bg-green-50 text-green-700 border border-green-200'
-                      : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}>
-                    {usernameMessage.text}
-                  </div>
+                <div className="space-y-2">
+                  <label htmlFor="new-password" className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">
+                    New Password
+                  </label>
+                  <input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    disabled={isLoading.password}
+                    className="w-full px-4 py-2 bg-[rgb(var(--color-bg-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent outline-none transition-all"
+                    placeholder="Min. 6 characters"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="confirm-password" className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">
+                    Confirm New Password
+                  </label>
+                  <input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    disabled={isLoading.password}
+                    className="w-full px-4 py-2 bg-[rgb(var(--color-bg-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent outline-none transition-all"
+                    placeholder="Confirm new password"
+                  />
+                </div>
+                {passwordMessage.text && (
+                  <p className={`text-sm ${passwordMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`} role="alert">
+                    {passwordMessage.text}
+                  </p>
                 )}
                 <button
                   type="submit"
-                  disabled={isLoading.username}
-                  className="w-full px-4 py-3 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] disabled:opacity-50 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
+                  disabled={isLoading.password}
+                  className="w-full px-4 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] disabled:opacity-50 transition-colors font-medium"
                 >
-                  {isLoading.username ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[rgb(var(--color-primary-text-rgb))] opacity-70"></div>
-                      <span>Updating...</span>
-                    </div>
-                  ) : (
-                    'Update Username'
-                  )}
+                  {isLoading.password ? 'Changing...' : 'Change Password'}
                 </button>
               </form>
-            </div>
-          </div>
-        </div>
-      </div>
+            </CardContent>
+          </Card>
 
-      {/* App Settings Navigation */}
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">App Preferences</h2>
-        <button
-          onClick={() => setActiveItem('Settings')}
-          className="w-full group bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-6 hover:shadow-md hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-xl">
-                <SettingsIcon className="w-6 h-6 text-[rgb(var(--color-primary-rgb))]" />
+          <button
+            onClick={() => setActiveItem('Settings')}
+            className="w-full flex items-center justify-between p-4 bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:border-[rgb(var(--color-primary-rgb))] transition-colors group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-primary-subtle rounded-lg group-hover:bg-[rgb(var(--color-primary-rgb))] group-hover:text-white transition-colors">
+                <SettingsIcon className="w-6 h-6" />
               </div>
               <div className="text-left">
-                <p className="font-semibold text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">App Settings</p>
-                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Themes, notifications, and preferences</p>
+                <p className="font-semibold text-[rgb(var(--color-text-rgb))]">App Preferences</p>
+                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Theme, notifications, and more</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </div>
-        </button>
-      </div>
-
-      {/* Password Section */}
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Security</h2>
-        <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] p-6 shadow-sm hover:shadow-md transition-all duration-200">
-          <form onSubmit={handleChangePassword} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">
-                Current Password
-              </label>
-              <input
-                type="password"
-                placeholder="Enter current password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                disabled={isLoading.password}
-                className="w-full px-4 py-3 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent transition-all duration-200 placeholder:text-[rgb(var(--color-text-muted-rgb))]"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">
-                New Password
-              </label>
-              <input
-                type="password"
-                placeholder="Enter new password (min. 6 characters)"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={isLoading.password}
-                className="w-full px-4 py-3 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent transition-all duration-200 placeholder:text-[rgb(var(--color-text-muted-rgb))]"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                placeholder="Confirm new password"
-                value={confirmNewPassword}
-                onChange={(e) => setConfirmNewPassword(e.target.value)}
-                disabled={isLoading.password}
-                className="w-full px-4 py-3 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent transition-all duration-200 placeholder:text-[rgb(var(--color-text-muted-rgb))]"
-              />
-            </div>
-            {passwordMessage.text && (
-              <div className={`p-3 rounded-lg text-sm font-medium ${
-                passwordMessage.type === 'success'
-                  ? 'bg-green-50 text-green-700 border border-green-200'
-                  : 'bg-red-50 text-red-700 border border-red-200'
-              }`}>
-                {passwordMessage.text}
-              </div>
-            )}
-            <button
-              type="submit"
-              disabled={isLoading.password}
-              className="w-full px-4 py-3 text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {isLoading.password ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white opacity-70"></div>
-                  <span>Changing Password...</span>
-                </div>
-              ) : (
-                'Change Password'
-              )}
-            </button>
-          </form>
+          </button>
         </div>
       </div>
     </div>

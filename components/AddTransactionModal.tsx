@@ -6,6 +6,7 @@ import { parseReceiptWithGemini } from '../utils/ocr';
 import BaseModal from './BaseModal';
 import { FormField, Input, Select, Button, ToggleButton } from './ModalForm';
 import ConfirmationModal from './ConfirmationModal';
+import AmountInput from './AmountInput';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -172,79 +173,71 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       animation="slide-up"
       aria-label={`${isEditing ? 'Edit' : 'Add'} transaction form`}
     >
-      <form onSubmit={handleSubmit} className="space-y-4 p-3 sm:p-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
-        <FormField label="Type" htmlFor="transaction-type" required>
-          <ToggleButton
-            options={[{ value: 'expense', label: 'Expense' }, { value: 'income', label: 'Income' }]}
-            value={type}
-            onChange={handleTypeChange}
-          />
-        </FormField>
+      <form onSubmit={handleSubmit} className="space-y-6 p-3 sm:p-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+          <FormField label="Type" htmlFor="transaction-type" required className="flex-1 w-full">
+            <ToggleButton
+              options={[{ value: 'expense', label: 'Expense' }, { value: 'income', label: 'Income' }]}
+              value={type}
+              onChange={handleTypeChange}
+            />
+          </FormField>
 
-        <FormField
-          label="Scan Receipt (Optional)"
-          htmlFor="scan-receipt"
-          error={errors.scan}
-          hint="Upload a receipt to auto-fill description and amount"
-        >
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => fileInputRef.current?.click()}
-            loading={isScanning}
-            className="w-full"
-          >
-            📷 {isScanning ? 'Scanning...' : 'Scan Receipt'}
-          </Button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleScanReceipt}
-            className="hidden"
-            accept="image/*"
-          />
-          {suggestedEmoji && (
-            <div className="mt-3 p-3 bg-[rgba(var(--color-primary-rgb),0.05)] border border-[rgba(var(--color-primary-rgb),0.2)] rounded-lg">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{suggestedEmoji}</span>
-                <div className="flex-1">
-                  <p className="text-sm text-[rgb(var(--color-text-rgb))] font-medium">
-                    AI suggested emoji
-                  </p>
-                  <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
-                    This emoji will be saved with your transaction
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSuggestedEmoji(undefined)}
-                  className="p-1 text-[rgb(var(--color-text-muted-rgb))] hover:text-red-600 transition-colors"
-                  title="Remove emoji"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
-        </FormField>
-
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center" aria-hidden="true">
-            <div className="w-full border-t border-[rgb(var(--color-border-rgb))]"></div>
-          </div>
-          <div className="relative flex justify-center">
-            <span className="bg-[rgb(var(--color-card-rgb))] px-2 text-sm text-[rgb(var(--color-text-muted-rgb))]">Or enter manually</span>
+          <div className="w-full sm:w-auto">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => fileInputRef.current?.click()}
+              loading={isScanning}
+              className="w-full sm:w-auto whitespace-nowrap"
+              leftIcon={<span>📷</span>}
+            >
+              {isScanning ? 'Scanning...' : 'Scan Receipt'}
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleScanReceipt}
+              className="hidden"
+              accept="image/*"
+            />
           </div>
         </div>
+
+        {errors.scan && (
+          <p className="text-sm text-red-500 mt-1">{errors.scan}</p>
+        )}
+
+        {suggestedEmoji && (
+          <div className="p-3 bg-[rgba(var(--color-primary-rgb),0.05)] border border-[rgba(var(--color-primary-rgb),0.2)] rounded-lg flex items-center gap-3">
+            <span className="text-2xl">{suggestedEmoji}</span>
+            <div className="flex-1">
+              <p className="text-sm text-[rgb(var(--color-text-rgb))] font-medium">
+                AI suggested emoji
+              </p>
+              <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
+                This emoji will be saved with your transaction
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSuggestedEmoji(undefined)}
+              className="p-1 text-[rgb(var(--color-text-muted-rgb))] hover:text-red-600 transition-colors"
+              title="Remove emoji"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         <FormField
           label="Description"
           htmlFor="description"
           required
           error={errors.description}
-          hint="Enter a brief description of the transaction"
+          hint="Enter a brief description"
         >
           <Input
             id="description"
@@ -290,55 +283,49 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           )}
         </FormField>
 
-        <FormField
-          label="Amount"
-          htmlFor="amount"
-          required
-          error={errors.amount}
-          hint="Enter the transaction amount"
-        >
-          <Input
-            id="amount"
-            type="number"
-            step="0.01"
-            min="0"
-            value={amount}
-            onChange={(e) => {
-              setAmount(e.target.value);
-              if (errors.amount) setErrors({ ...errors, amount: '' });
-            }}
-            placeholder="0.00"
-            error={errors.amount}
-            leftIcon={
-              <span className="text-[rgb(var(--color-text-muted-rgb))] text-sm">$</span>
-            }
-          />
-        </FormField>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label htmlFor="amount" className="block text-sm font-medium text-[rgb(var(--color-text-muted-rgb))]">
+              Amount <span className="text-red-500 ml-1">*</span>
+            </label>
+            <div className="bg-[rgb(var(--color-card-muted-rgb))] rounded-lg border border-[rgb(var(--color-border-rgb))] p-1">
+              <AmountInput
+                id="amount"
+                value={amount}
+                onChange={(value) => {
+                  setAmount(value);
+                  if (errors.amount) setErrors({ ...errors, amount: '' });
+                }}
+                error={errors.amount}
+              />
+            </div>
+          </div>
 
-        <FormField
-          label="Category"
-          htmlFor="category"
-          required
-          error={errors.category}
-        >
-          <Select
-            id="category"
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value);
-              if (errors.category) setErrors({ ...errors, category: '' });
-            }}
+          <FormField
+            label="Category"
+            htmlFor="category"
+            required
             error={errors.category}
           >
-            {Object.entries(categories).map(([group, subcategories]) => (
-              <optgroup label={group} key={group}>
-                {(subcategories as SubCategory[]).map(cat => (
-                  <option key={cat.name} value={cat.name}>{cat.icon} {cat.name}</option>
-                ))}
-              </optgroup>
-            ))}
-          </Select>
-        </FormField>
+            <Select
+              id="category"
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                if (errors.category) setErrors({ ...errors, category: '' });
+              }}
+              error={errors.category}
+            >
+              {Object.entries(categories).map(([group, subcategories]) => (
+                <optgroup label={group} key={group}>
+                  {(subcategories as SubCategory[]).map(cat => (
+                    <option key={cat.name} value={cat.name}>{cat.icon} {cat.name}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </Select>
+          </FormField>
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-4 border-t border-[rgb(var(--color-border-rgb))]">
           {isEditing && (

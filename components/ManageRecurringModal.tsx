@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RecurringTransaction } from '../types';
+import { RecurringTransaction, SubCategory } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
 import { RecurringIcon, PlusIcon, SettingsIcon } from './icons';
 import { formatCurrency } from '../utils/formatters';
@@ -26,7 +26,7 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'income' | 'expense'>('expense');
-  const [category, setCategory] = useState(TRANSACTION_CATEGORIES.expense['Food & Drink'][0]);
+  const [category, setCategory] = useState(TRANSACTION_CATEGORIES.expense['Food & Drink'][0].name);
   const [frequency, setFrequency] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [itemToEditId, setItemToEditId] = useState<string | null>(null);
@@ -43,7 +43,7 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({
 
   useEffect(() => {
     const defaultCategory = Object.values(TRANSACTION_CATEGORIES[type])[0][0];
-    setCategory(defaultCategory);
+    setCategory(defaultCategory.name);
   }, [type]);
 
   const resetForm = () => {
@@ -52,7 +52,7 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({
     setType('expense');
     setFrequency('monthly');
     setStartDate(new Date().toISOString().split('T')[0]);
-    setCategory(TRANSACTION_CATEGORIES.expense['Food & Drink'][0]);
+    setCategory(TRANSACTION_CATEGORIES.expense['Food & Drink'][0].name);
     setItemToEditId(null);
     setActiveTab('add');
     setErrors({});
@@ -301,7 +301,7 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({
                         value={type}
                         onChange={(value) => {
                           setType(value as 'income' | 'expense');
-                          setCategory(Object.values(TRANSACTION_CATEGORIES[value as 'income' | 'expense'])[0][0]);
+                          setCategory(Object.values(TRANSACTION_CATEGORIES[value as 'income' | 'expense'])[0][0].name);
                         }}
                       />
                     </FormField>
@@ -320,8 +320,8 @@ const ManageRecurringModal: React.FC<ManageRecurringModalProps> = ({
                       >
                         {Object.entries(TRANSACTION_CATEGORIES[type]).map(([group, subcategories]) => (
                           <optgroup label={group} key={group}>
-                            {(subcategories as string[]).map(cat => (
-                              <option key={cat} value={cat}>{cat}</option>
+                            {(subcategories as SubCategory[]).map(cat => (
+                              <option key={cat.name} value={cat.name}>{cat.name}</option>
                             ))}
                           </optgroup>
                         ))}

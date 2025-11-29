@@ -3,6 +3,7 @@ import { Budget, Transaction } from '../types';
 import { PlusIcon, PencilIcon } from './icons';
 import { formatCurrency } from '../utils/formatters';
 import { CATEGORY_ICON_MAP } from '../constants';
+import Card, { CardHeader, CardTitle, CardContent } from './Card';
 
 interface BudgetItemProps {
   budget: Budget;
@@ -35,102 +36,107 @@ const BudgetItem: React.FC<BudgetItemProps> = ({ budget, spent, onEdit }) => {
   };
 
   const colors = getProgressColor();
-  const circumference = 2 * Math.PI * 40; // radius = 40
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (progressClamped / 100) * circumference;
-
   const Icon = CATEGORY_ICON_MAP[budget.category] || CATEGORY_ICON_MAP['Other'];
 
   return (
-    <div className="relative group bg-[rgb(var(--color-card-rgb))] p-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/20">
+    <Card className="relative group hover:shadow-md transition-all duration-200 border border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/20">
       <button
         onClick={() => onEdit(budget)}
-        className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-[rgb(var(--color-primary-rgb))]/10 text-[rgb(var(--color-primary-rgb))] hover:bg-[rgb(var(--color-primary-rgb))]/20 transition-colors duration-200"
+        className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-[rgb(var(--color-primary-rgb))]/10 text-[rgb(var(--color-primary-rgb))] hover:bg-[rgb(var(--color-primary-rgb))]/20 transition-colors duration-200 opacity-0 group-hover:opacity-100 focus:opacity-100"
         aria-label={`Edit budget for ${budget.category}`}
       >
         <PencilIcon className="h-4 w-4" />
       </button>
       
-      {/* Line 1: Icon, Category, Status */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`rounded-full p-2 transition-all duration-200 ${colors.bg} shadow-sm`}>
-          <Icon className="h-4 w-4 text-gray-700 dark:text-gray-300" />
-        </div>
+      <CardContent className="p-4">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`rounded-full p-2 transition-all duration-200 ${colors.bg} shadow-sm`}>
+            <Icon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+          </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-sm text-[rgb(var(--color-text-rgb))] capitalize truncate">
-              {budget.category}
-            </h3>
-            <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${progress >= 100 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : progress >= 90 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
-              {getStatusText()}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-base text-[rgb(var(--color-text-rgb))] capitalize truncate">
+                {budget.category}
+              </h3>
+              <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${progress >= 100 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : progress >= 90 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
+                {getStatusText()}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Line 2: Progress Bar */}
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-[rgb(var(--color-text-muted-rgb))]">
-            Progress
-          </span>
-          <div className={`text-sm font-bold ${getStatusColor()}`}>
-            {progressClamped.toFixed(0)}%
+        {/* Progress Bar */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-[rgb(var(--color-text-muted-rgb))]">
+              Progress
+            </span>
+            <div className={`text-sm font-bold ${getStatusColor()}`}>
+              {progressClamped.toFixed(0)}%
+            </div>
           </div>
-        </div>
 
-        <div className="w-full bg-[rgb(var(--color-border-rgb))] bg-opacity-30 rounded-full h-3">
           <div
-            className="h-3 rounded-full transition-all duration-500 ease-out"
-            style={{
-              width: `${Math.min(progressClamped, 100)}%`,
-              backgroundColor: colors.stroke
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Line 3: Budget Information */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="text-center p-2 bg-[rgb(var(--color-card-muted-rgb))] rounded-md">
-          <div className="text-xs text-[rgb(var(--color-text-muted-rgb))] mb-1">Budget</div>
-          <div className="font-bold text-sm text-[rgb(var(--color-text-rgb))]">
-            {formatCurrency(budget.amount)}
+            className="w-full bg-[rgb(var(--color-border-rgb))] bg-opacity-30 rounded-full h-2.5 overflow-hidden"
+            role="progressbar"
+            aria-valuenow={Math.round(progressClamped)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${budget.category} budget progress`}
+          >
+            <div
+              className="h-full rounded-full transition-all duration-500 ease-out"
+              style={{
+                width: `${Math.min(progressClamped, 100)}%`,
+                backgroundColor: colors.stroke
+              }}
+            />
           </div>
         </div>
 
-        <div className="text-center p-2 bg-[rgb(var(--color-card-muted-rgb))] rounded-md">
-          <div className="text-xs text-[rgb(var(--color-text-muted-rgb))] mb-1">Spent</div>
-          <div className={`font-bold text-sm ${progress >= 100 ? 'text-red-600' : 'text-[rgb(var(--color-text-rgb))]'} `}>
-            {formatCurrency(spent)}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-2 bg-[rgb(var(--color-bg-rgb))] rounded-lg border border-[rgb(var(--color-border-rgb))]">
+            <div className="text-xs text-[rgb(var(--color-text-muted-rgb))] mb-1">Budget</div>
+            <div className="font-bold text-sm text-[rgb(var(--color-text-rgb))]">
+              {formatCurrency(budget.amount)}
+            </div>
+          </div>
+
+          <div className="p-2 bg-[rgb(var(--color-bg-rgb))] rounded-lg border border-[rgb(var(--color-border-rgb))]">
+            <div className="text-xs text-[rgb(var(--color-text-muted-rgb))] mb-1">Spent</div>
+            <div className={`font-bold text-sm ${progress >= 100 ? 'text-red-600' : 'text-[rgb(var(--color-text-rgb))]'} `}>
+              {formatCurrency(spent)}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Additional info for remaining/over budget */}
-      {(remaining > 0 || progress >= 100) && (
-        <div className="mt-3 pt-3 border-t border-[rgb(var(--color-border-rgb))]">
-          {remaining > 0 && (
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-green-700 dark:text-green-300 font-medium">Remaining:</span>
-              <span className="font-bold text-green-600 dark:text-green-400">
-                {formatCurrency(remaining)}
-              </span>
-            </div>
-          )}
+        {/* Footer Info */}
+        {(remaining > 0 || progress >= 100) && (
+          <div className="mt-4 pt-3 border-t border-[rgb(var(--color-border-rgb))]">
+            {remaining > 0 && (
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-green-700 dark:text-green-300 font-medium">Remaining</span>
+                <span className="font-bold text-green-600 dark:text-green-400">
+                  {formatCurrency(remaining)}
+                </span>
+              </div>
+            )}
 
-          {progress >= 100 && (
-            <div className="flex justify-between items-center text-xs mt-1">
-              <span className="text-red-700 dark:text-red-300 font-medium">Over Budget:</span>
-              <span className="font-bold text-red-600 dark:text-red-400">
-                {formatCurrency(spent - budget.amount)}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+            {progress >= 100 && (
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-red-700 dark:text-red-300 font-medium">Over Budget</span>
+                <span className="font-bold text-red-600 dark:text-red-400">
+                  {formatCurrency(spent - budget.amount)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
@@ -176,151 +182,145 @@ const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onMana
   const overallProgress = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
   return (
-     <div className="space-y-4 mobile-content">
-       <div className="flex items-center justify-between">
+     <div className="space-y-6 max-w-7xl mx-auto px-4 pb-20">
+       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
          <div>
-           <h1 className="text-xl sm:text-2xl font-bold text-[rgb(var(--color-text-rgb))]">
+           <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">
              Monthly Budgets
            </h1>
-           <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+           <p className="text-[rgb(var(--color-text-muted-rgb))] mt-1">
              Track your spending against planned budgets
            </p>
          </div>
         <button
           onClick={onManageBudgets}
-          className="flex items-center px-3 py-2 text-sm font-medium text-[rgb(var(--color-primary-text-rgb))] bg-[rgb(var(--color-primary-rgb))] rounded-md shadow-sm hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--color-primary-rgb))] transition-colors"
+          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[rgb(var(--color-primary-rgb))] rounded-lg shadow-sm hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--color-primary-rgb))] transition-all"
         >
-          <PlusIcon className="h-4 w-4 mr-1.5" />
-          <span className="hidden sm:inline">Manage</span>
-          <span className="sm:hidden">Add</span>
+          <PlusIcon className="h-5 w-5 mr-2" />
+          Manage Budgets
         </button>
       </div>
 
-      <div className="bg-gradient-to-br from-[rgb(var(--color-card-rgb))] to-[rgb(var(--color-card-muted-rgb))] p-6 sm:p-8 rounded-lg shadow-sm border border-[rgb(var(--color-border-rgb))]">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="font-bold text-lg text-[rgb(var(--color-text-rgb))]">
-              Overall Progress
-            </h3>
-            <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
-              Monthly budget performance
-            </p>
-          </div>
-          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-            overallProgress >= 100
-              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-              : overallProgress >= 90
-              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-              : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-          }`}>
-            {overallProgress >= 100 ? 'Over' : overallProgress >= 90 ? 'Near Limit' : 'On Track'}
-          </div>
-        </div>
+      <Card className="bg-gradient-to-br from-[rgb(var(--color-card-rgb))] to-[rgb(var(--color-card-muted-rgb))] border-[rgb(var(--color-border-rgb))]">
+        <CardContent className="p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex-1 w-full">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-lg text-[rgb(var(--color-text-rgb))]">
+                  Overall Progress
+                </h3>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
+                  overallProgress >= 100
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    : overallProgress >= 90
+                    ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                }`}>
+                  {overallProgress >= 100 ? 'Over Budget' : overallProgress >= 90 ? 'Near Limit' : 'On Track'}
+                </div>
+              </div>
+              
+              <div className="relative pt-1">
+                <div className="flex mb-2 items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-[rgb(var(--color-primary-rgb))] bg-[rgb(var(--color-primary-rgb))]/10">
+                      {overallProgress.toFixed(0)}% Used
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-semibold inline-block text-[rgb(var(--color-text-muted-rgb))]">
+                      {formatCurrency(totalSpent)} / {formatCurrency(totalBudget)}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className="overflow-hidden h-4 mb-4 text-xs flex rounded-full bg-[rgb(var(--color-border-rgb))]/50"
+                  role="progressbar"
+                  aria-valuenow={Math.round(overallProgress)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Overall monthly budget progress"
+                >
+                  <div style={{ width: `${Math.min(overallProgress, 100)}%` }} className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ${
+                    overallProgress >= 100 ? 'bg-red-500' : overallProgress >= 90 ? 'bg-yellow-500' : 'bg-[rgb(var(--color-primary-rgb))]'
+                  }`}></div>
+                </div>
+              </div>
 
-        {/* Overall Circular Progress */}
-        <div className="flex items-center justify-center mb-4">
-          <div className="relative w-24 h-24">
-            <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                stroke="rgb(var(--color-border-rgb))"
-                strokeWidth="6"
-                fill="transparent"
-                className="opacity-20"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                stroke={overallProgress >= 100 ? '#ef4444' : overallProgress >= 90 ? '#eab308' : 'rgb(var(--color-primary-rgb))'}
-                strokeWidth="6"
-                fill="transparent"
-                strokeDasharray={`${2 * Math.PI * 40}`}
-                strokeDashoffset={`${2 * Math.PI * 40 - (overallProgress / 100) * 2 * Math.PI * 40}`}
-                strokeLinecap="round"
-                className="transition-all duration-500 ease-out"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className={`text-2xl font-bold ${overallProgress >= 100 ? 'text-red-600' : overallProgress >= 90 ? 'text-yellow-600' : 'text-green-600'}`}>
-                  {overallProgress.toFixed(0)}%
+              <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                {totalBudget > 0 ? (
+                  <>{currentMonthBudgets.length} active budget categories this month.</>
+                ) : (
+                  <>No budgets set for this month.</>
+                )}
+              </p>
+            </div>
+
+            {/* Circular Progress for Desktop */}
+            <div className="hidden md:flex items-center justify-center flex-shrink-0">
+              <div className="relative w-32 h-32">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="transparent"
+                    className="text-[rgb(var(--color-border-rgb))]/30"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="transparent"
+                    strokeDasharray={`${2 * Math.PI * 40}`}
+                    strokeDashoffset={`${2 * Math.PI * 40 - (Math.min(overallProgress, 100) / 100) * 2 * Math.PI * 40}`}
+                    strokeLinecap="round"
+                    className={`transition-all duration-1000 ease-out ${
+                      overallProgress >= 100 ? 'text-red-500' : overallProgress >= 90 ? 'text-yellow-500' : 'text-[rgb(var(--color-primary-rgb))]'
+                    }`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center flex-col">
+                  <span className="text-2xl font-bold text-[rgb(var(--color-text-rgb))]">{overallProgress.toFixed(0)}%</span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <div className="text-center p-2 bg-[rgb(var(--color-bg-rgb))] rounded-md">
-            <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mb-1">Budget</p>
-            <p className="text-sm font-bold text-[rgb(var(--color-text-rgb))]">
-              {formatCurrency(totalBudget)}
-            </p>
-          </div>
-          <div className="text-center p-2 bg-[rgb(var(--color-bg-rgb))] rounded-md">
-            <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mb-1">Spent</p>
-            <p className={`text-sm font-bold ${overallProgress >= 100 ? 'text-red-600' : 'text-[rgb(var(--color-text-rgb))]'} `}>
-              {formatCurrency(totalSpent)}
-            </p>
-          </div>
-        </div>
-
-        <p className="text-center text-xs text-[rgb(var(--color-text-muted-rgb))]">
-          {totalBudget > 0 ? (
-            <>{currentMonthBudgets.length} categories • {overallProgress.toFixed(0)}% used</>
-          ) : (
-            <>No budgets set for this month</>
-          )}
-        </p>
-      </div>
+        </CardContent>
+      </Card>
 
       {currentMonthBudgets.length > 0 ? (
-        <>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-[rgb(var(--color-text-rgb))]">
-              Budget Categories
-            </h2>
-            <div className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
-              {currentMonthBudgets.length} active
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 lg:gap-4">
-            {currentMonthBudgets.map(({ budget, spent }) => (
-              <BudgetItem
-                key={budget.id}
-                budget={budget}
-                spent={spent}
-                onEdit={onEditBudget}
-              />
-            ))}
-          </div>
-        </>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {currentMonthBudgets.map(({ budget, spent }) => (
+            <BudgetItem
+              key={budget.id}
+              budget={budget}
+              spent={spent}
+              onEdit={onEditBudget}
+            />
+          ))}
+        </div>
       ) : (
-        <div className="text-center bg-gradient-to-br from-[rgb(var(--color-card-rgb))] to-[rgb(var(--color-card-muted-rgb))] rounded-lg shadow-sm p-8 mt-4 border border-[rgb(var(--color-border-rgb))]">
-          <div className="w-16 h-16 mx-auto mb-4 bg-[rgb(var(--color-border-rgb))] bg-opacity-20 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-[rgb(var(--color-text-muted-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
+        <div className="text-center py-16 bg-[rgb(var(--color-card-rgb))] rounded-xl border border-[rgb(var(--color-border-rgb))] border-dashed">
+          <div className="w-20 h-20 mx-auto mb-6 bg-[rgb(var(--color-bg-rgb))] rounded-full flex items-center justify-center">
+            <PlusIcon className="w-10 h-10 text-[rgb(var(--color-text-muted-rgb))]" />
           </div>
-
-          <h2 className="text-lg font-bold text-[rgb(var(--color-text-rgb))] mb-2">
+          <h2 className="text-xl font-bold text-[rgb(var(--color-text-rgb))] mb-2">
             No budgets set yet
           </h2>
-
-          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mb-4">
-            Start building better financial habits by creating your first budget.
+          <p className="text-[rgb(var(--color-text-muted-rgb))] mb-8 max-w-md mx-auto">
+            Create a budget to track your spending and save more money.
           </p>
-
           <button
             onClick={onManageBudgets}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-[rgb(var(--color-primary-text-rgb))] bg-[rgb(var(--color-primary-rgb))] rounded-md shadow-sm hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors"
+            className="inline-flex items-center px-6 py-3 text-base font-medium text-white bg-[rgb(var(--color-primary-rgb))] rounded-lg shadow-sm hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors"
           >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Create Budget
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Create First Budget
           </button>
         </div>
       )}
@@ -329,4 +329,3 @@ const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onMana
 };
 
 export default BudgetsPage;
-

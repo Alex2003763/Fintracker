@@ -37,7 +37,7 @@ const ManageBudgetsModal: React.FC<ManageBudgetsModalProps> = ({
     const currentBudgets = budgets.filter(b => b.month === currentMonthStr);
     const budgetedCategories = new Set(currentBudgets.map(b => b.category));
     const allExpenseCategories = Object.values(TRANSACTION_CATEGORIES.expense).flat();
-    const available = allExpenseCategories.filter(c => !budgetedCategories.has(c));
+    const available = allExpenseCategories.filter(c => !budgetedCategories.has(c.name));
     return { availableCategories: available };
   }, [budgets]);
 
@@ -48,7 +48,7 @@ const ManageBudgetsModal: React.FC<ManageBudgetsModalProps> = ({
         setCategory(budgetToEdit.category);
       } else {
         setAmount('');
-        setCategory(availableCategories[0] ?? '');
+        setCategory(availableCategories[0]?.name ?? '');
       }
       setErrors({});
     }
@@ -125,7 +125,7 @@ const ManageBudgetsModal: React.FC<ManageBudgetsModalProps> = ({
                 <option value="" disabled>Select a category</option>
                 {budgetToEdit && <option value={budgetToEdit.category}>{budgetToEdit.category}</option>}
                 {availableCategories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat.name} value={cat.name}>{cat.name}</option>
                 ))}
               </Select>
             </FormField>

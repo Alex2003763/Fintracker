@@ -1,36 +1,41 @@
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import UpdatePrompt from './components/UpdatePrompt';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import Dashboard from './components/Dashboard';
 import BottomNav from './components/BottomNav';
 import AuthPage from './components/AuthPage';
-import AddTransactionModal from './components/AddTransactionModal';
-import TransactionsPage from './components/TransactionsPage';
-import SettingsPage from './components/SettingsPage';
-import GoalsPage from './components/GoalsPage';
-import AccountPage from './components/AccountPage';
-import AddGoalModal from './components/AddGoalModal';
-import ManageBillsModal from './components/ManageBillsModal';
-import ManageRecurringModal from './components/ManageRecurringModal';
 import ConfirmationModal from './components/ConfirmationModal';
-import ReportsPage from './components/ReportsPage';
-import BudgetsPage from './components/BudgetsPage';
-import ManageBudgetsModal from './components/ManageBudgetsModal';
-import ManageCategoriesPage from './components/ManageCategoriesPage';
-import ImageCropModal from './components/ImageCropModal';
 import { Transaction, User, Goal, Bill, RecurringTransaction, Budget, NotificationSettings, GoalContribution, BillPayment, SubCategory } from './types';
 import type { Notification } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import PlaceholderPage from './components/PlaceholderPage';
+import LoadingScreen from './components/LoadingScreen';
 // FIX: Import `formatCurrency` to resolve `Cannot find name` errors.
 import { encryptData, decryptData, deriveKey, generateSalt, formatCurrency } from './utils/formatters';
 import { processTransactionForGoals, getGoalProgressStats } from './utils/goalUtils';
 import { sendNotification } from './utils/notifications';
 import { processImageForBackground, createPatternBackground } from './utils/imageProcessing';
 import { TRANSACTION_CATEGORIES } from './constants';
+
+// Lazy load pages
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const TransactionsPage = React.lazy(() => import('./components/TransactionsPage'));
+const SettingsPage = React.lazy(() => import('./components/SettingsPage'));
+const GoalsPage = React.lazy(() => import('./components/GoalsPage'));
+const AccountPage = React.lazy(() => import('./components/AccountPage'));
+const ReportsPage = React.lazy(() => import('./components/ReportsPage'));
+const BudgetsPage = React.lazy(() => import('./components/BudgetsPage'));
+const ManageCategoriesPage = React.lazy(() => import('./components/ManageCategoriesPage'));
+
+// Lazy load modals
+const AddTransactionModal = React.lazy(() => import('./components/AddTransactionModal'));
+const AddGoalModal = React.lazy(() => import('./components/AddGoalModal'));
+const ManageBillsModal = React.lazy(() => import('./components/ManageBillsModal'));
+const ManageRecurringModal = React.lazy(() => import('./components/ManageRecurringModal'));
+const ManageBudgetsModal = React.lazy(() => import('./components/ManageBudgetsModal'));
+const ImageCropModal = React.lazy(() => import('./components/ImageCropModal'));
 
 const App: React.FC = () => {
   const {
@@ -559,7 +564,9 @@ const App: React.FC = () => {
             }
         }
     };
-    saveData();
+
+    const timeoutId = setTimeout(saveData, 1000); // Debounce save by 1 second
+    return () => clearTimeout(timeoutId);
   }, [user, sessionKey, transactions, goals, goalContributions, bills, billPayments, budgets, notifications, recurringTransactions]);
 
   const handleAuth = (authedUser: User, key: CryptoKey) => {
@@ -1099,15 +1106,15 @@ const App: React.FC = () => {
   };
 
   // Other Handlers
-  const handleUpdateUser = (updatedUser: User) => setUser(updatedUser);
+  const handleUpdateUser = useCallback((updatedUser: User) => setUser(updatedUser), []);
 
-  const handleUpdateCategories = (updatedCategories: { expense: { [key: string]: SubCategory[] }, income: { [key: string]: SubCategory[] } }) => {
+  const handleUpdateCategories = useCallback((updatedCategories: { expense: { [key: string]: SubCategory[] }, income: { [key: string]: SubCategory[] } }) => {
     if (user) {
       setUser({ ...user, customCategories: updatedCategories });
     }
-  };
+  }, [user]);
 
-  const handleChangePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
+  const handleChangePassword = useCallback(async (oldPassword: string, newPassword: string): Promise<boolean> => {
     if (!user || !sessionKey) return false;
     try {
         const tempKey = await deriveKey(oldPassword, user.salt);
@@ -1129,7 +1136,7 @@ const App: React.FC = () => {
         console.error("Password change failed", e);
         return false;
     }
-  };
+  }, [user, sessionKey]);
 
   const handleOpenConfirmModal = useCallback((title: string, message: string, onConfirm: () => void, options: { confirmText?: string; variant?: 'primary' | 'danger' } = {}) => {
     const closeModal = () => setConfirmationModalState(prev => ({ ...prev, isOpen: false }));
@@ -1149,79 +1156,102 @@ const App: React.FC = () => {
     return closeModal;
   }, []);
 
-  const sortedTransactions = useMemo(() => 
-    [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), 
+  const handleMarkAsRead = useCallback((id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? {...n, read: true} : n));
+    const todayStr = new Date().toISOString().split('T')[0];
+    localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
+  }, []);
+
+  const handleClearAllNotifications = useCallback(() => {
+    setNotifications([]);
+    const todayStr = new Date().toISOString().split('T')[0];
+    localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
+  }, []);
+
+  const handleManageBills = useCallback(() => setIsManageBillsModalOpen(true), []);
+  const handleManageBudgets = useCallback(() => {
+    setBudgetToEdit(null);
+    setIsManageBudgetsModalOpen(true);
+  }, []);
+  const handleAddNewGoal = useCallback(() => { setGoalToEdit(null); setIsAddGoalModalOpen(true); }, []);
+  const handleEditGoal = useCallback((goal: Goal) => { setGoalToEdit(goal); setIsAddGoalModalOpen(true); }, []);
+
+  const sortedTransactions = useMemo(() =>
+    [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [transactions]
   );
 
   const renderContent = () => {
-    switch (activeItem) {
-      case 'Home':
-        return <Dashboard
-          transactions={sortedTransactions}
-          bills={bills}
-          onAddTransaction={handleOpenAddTransactionModal}
-          onEditTransaction={handleEditTransaction}
-          setActiveItem={setActiveItem}
-          onPayBill={handlePayBill}
-          onManageBills={() => setIsManageBillsModalOpen(true)}
-          user={user}
-        />;
-      case 'Transactions':
-        return <TransactionsPage
-          transactions={sortedTransactions}
-          onEditTransaction={handleEditTransaction}
-          onOpenManageRecurring={() => setIsManageRecurringModalOpen(true)}
-          scrollContainerRef={mainContentRef}
-          categoryEmojis={user?.categoryEmojis}
-        />;
-      case 'Reports':
-          return <ReportsPage transactions={sortedTransactions} user={user!} />;
-      case 'Budgets':
-          return <BudgetsPage
-            transactions={sortedTransactions}
-            budgets={budgets}
-            onManageBudgets={() => {
-              setBudgetToEdit(null);
-              setIsManageBudgetsModalOpen(true);
-            }}
-            onEditBudget={handleEditBudget}
-           />;
-      case 'Goals':
-        return <GoalsPage
-          goals={goals}
-          goalContributions={goalContributions}
-          onAddNewGoal={() => { setGoalToEdit(null); setIsAddGoalModalOpen(true); }}
-          onEditGoal={(goal) => { setGoalToEdit(goal); setIsAddGoalModalOpen(true); }}
-          onDeleteGoal={handleDeleteGoal}
-          onOpenConfirmModal={handleOpenConfirmModal}
-        />;
-      case 'Account':
-        return <AccountPage 
-          user={user!} 
-          onUpdateUser={handleUpdateUser} 
-          onChangePassword={handleChangePassword}
-          setActiveItem={setActiveItem}
-        />;
-      case 'Settings':
-        return <SettingsPage
-          user={user!}
-          onUpdateUser={handleUpdateUser}
-          onSignOut={handleSignOut}
-          onOpenConfirmModal={handleOpenConfirmModal}
-          onImportData={handleImportData}
-          onExportData={handleExportData}
-          setActiveItem={setActiveItem}
-          onOpenCropModal={handleOpenCropModal}
-          isProcessingImage={isProcessingImage}
-          processingType={processingType}
-          setProcessingType={setProcessingType}
-        />;
-      case 'Manage Categories':
-        return <ManageCategoriesPage user={user} onUpdateCategories={handleUpdateCategories} setActiveItem={setActiveItem} />;
-      default:
-        return <PlaceholderPage title={activeItem} />;
-    }
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        {(() => {
+          switch (activeItem) {
+            case 'Home':
+              return <Dashboard
+                transactions={sortedTransactions}
+                bills={bills}
+                onAddTransaction={handleOpenAddTransactionModal}
+                onEditTransaction={handleEditTransaction}
+                setActiveItem={setActiveItem}
+                onPayBill={handlePayBill}
+                onManageBills={handleManageBills}
+                user={user}
+              />;
+            case 'Transactions':
+              return <TransactionsPage
+                transactions={sortedTransactions}
+                onEditTransaction={handleEditTransaction}
+                onOpenManageRecurring={() => setIsManageRecurringModalOpen(true)}
+                scrollContainerRef={mainContentRef}
+                user={user}
+              />;
+            case 'Reports':
+                return <ReportsPage transactions={sortedTransactions} user={user!} />;
+            case 'Budgets':
+                return <BudgetsPage
+                  transactions={sortedTransactions}
+                  budgets={budgets}
+                  onManageBudgets={handleManageBudgets}
+                  onEditBudget={handleEditBudget}
+                 />;
+            case 'Goals':
+              return <GoalsPage
+                goals={goals}
+                goalContributions={goalContributions}
+                onAddNewGoal={handleAddNewGoal}
+                onEditGoal={handleEditGoal}
+                onDeleteGoal={handleDeleteGoal}
+                onOpenConfirmModal={handleOpenConfirmModal}
+              />;
+            case 'Account':
+              return <AccountPage
+                user={user!}
+                onUpdateUser={handleUpdateUser}
+                onChangePassword={handleChangePassword}
+                setActiveItem={setActiveItem}
+              />;
+            case 'Settings':
+              return <SettingsPage
+                user={user!}
+                onUpdateUser={handleUpdateUser}
+                onSignOut={handleSignOut}
+                onOpenConfirmModal={handleOpenConfirmModal}
+                onImportData={handleImportData}
+                onExportData={handleExportData}
+                setActiveItem={setActiveItem}
+                onOpenCropModal={handleOpenCropModal}
+                isProcessingImage={isProcessingImage}
+                processingType={processingType}
+                setProcessingType={setProcessingType}
+              />;
+            case 'Manage Categories':
+              return <ManageCategoriesPage user={user} onUpdateCategories={handleUpdateCategories} setActiveItem={setActiveItem} />;
+            default:
+              return <PlaceholderPage title={activeItem} />;
+          }
+        })()}
+      </Suspense>
+    );
   };
 
   // iOS Safari fallback - if service worker fails completely, show offline message
@@ -1279,16 +1309,8 @@ const App: React.FC = () => {
         <Header
           user={user}
           notifications={notifications}
-          onMarkAsRead={(id) => {
-            setNotifications(notifications.map(n => n.id === id ? {...n, read: true} : n));
-            const todayStr = new Date().toISOString().split('T')[0];
-            localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
-          }}
-          onClearAllNotifications={() => {
-            setNotifications([]);
-            const todayStr = new Date().toISOString().split('T')[0];
-            localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
-          }}
+          onMarkAsRead={handleMarkAsRead}
+          onClearAllNotifications={handleClearAllNotifications}
           pageTitle={activeItem}
           isOnline={isOnline}
           setActiveItem={setActiveItem}
@@ -1299,62 +1321,76 @@ const App: React.FC = () => {
       </div>
       <BottomNav activeItem={activeItem} setActiveItem={setActiveItem} onAddTransaction={handleOpenAddTransactionModal} />
 
-      <AddTransactionModal
-        isOpen={isAddTransactionModalOpen}
-        onClose={() => setIsAddTransactionModalOpen(false)}
-        onSaveTransaction={handleSaveTransaction}
-        user={user}
-        onDeleteTransaction={handleDeleteTransaction}
-        transactionToEdit={transactionToEdit}
-        initialType={addTransactionModalType}
-        smartSuggestionsEnabled={user?.smartFeatures?.categorySuggestions ?? true}
-      />
-      
-      <AddGoalModal
-        isOpen={isAddGoalModalOpen}
-        onClose={() => setIsAddGoalModalOpen(false)}
-        onSaveGoal={handleSaveGoal}
-        goalToEdit={goalToEdit}
-      />
-      
-      <ManageBillsModal
-        isOpen={isManageBillsModalOpen}
-        onClose={() => setIsManageBillsModalOpen(false)}
-        bills={bills}
-        onSaveBill={handleSaveBill}
-        onDeleteBill={handleDeleteBill}
-        onOpenConfirmModal={handleOpenConfirmModal}
-        user={user}
-      />
+      <Suspense fallback={null}>
+        {isAddTransactionModalOpen && (
+          <AddTransactionModal
+            isOpen={isAddTransactionModalOpen}
+            onClose={() => setIsAddTransactionModalOpen(false)}
+            onSaveTransaction={handleSaveTransaction}
+            user={user}
+            onDeleteTransaction={handleDeleteTransaction}
+            transactionToEdit={transactionToEdit}
+            initialType={addTransactionModalType}
+            smartSuggestionsEnabled={user?.smartFeatures?.categorySuggestions ?? true}
+          />
+        )}
+        
+        {isAddGoalModalOpen && (
+          <AddGoalModal
+            isOpen={isAddGoalModalOpen}
+            onClose={() => setIsAddGoalModalOpen(false)}
+            onSaveGoal={handleSaveGoal}
+            goalToEdit={goalToEdit}
+          />
+        )}
+        
+        {isManageBillsModalOpen && (
+          <ManageBillsModal
+            isOpen={isManageBillsModalOpen}
+            onClose={() => setIsManageBillsModalOpen(false)}
+            bills={bills}
+            onSaveBill={handleSaveBill}
+            onDeleteBill={handleDeleteBill}
+            onOpenConfirmModal={handleOpenConfirmModal}
+            user={user}
+          />
+        )}
 
-      <ManageBudgetsModal
-        isOpen={isManageBudgetsModalOpen}
-        onClose={() => setIsManageBudgetsModalOpen(false)}
-        budgets={budgets}
-        onSaveBudget={handleSaveBudget}
-        onDeleteBudget={handleDeleteBudget}
-        transactions={transactions}
-        budgetToEdit={budgetToEdit}
-        onOpenConfirmModal={handleOpenConfirmModal}
-       />
-      
-      <ManageRecurringModal
-        isOpen={isManageRecurringModalOpen}
-        onClose={() => setIsManageRecurringModalOpen(false)}
-        recurringTransactions={recurringTransactions}
-        onSaveRecurringTransaction={handleSaveRecurringTransaction}
-        onDeleteRecurringTransaction={handleDeleteRecurringTransaction}
-      />
+        {isManageBudgetsModalOpen && (
+          <ManageBudgetsModal
+            isOpen={isManageBudgetsModalOpen}
+            onClose={() => setIsManageBudgetsModalOpen(false)}
+            budgets={budgets}
+            onSaveBudget={handleSaveBudget}
+            onDeleteBudget={handleDeleteBudget}
+            transactions={transactions}
+            budgetToEdit={budgetToEdit}
+            onOpenConfirmModal={handleOpenConfirmModal}
+          />
+        )}
+        
+        {isManageRecurringModalOpen && (
+          <ManageRecurringModal
+            isOpen={isManageRecurringModalOpen}
+            onClose={() => setIsManageRecurringModalOpen(false)}
+            recurringTransactions={recurringTransactions}
+            onSaveRecurringTransaction={handleSaveRecurringTransaction}
+            onDeleteRecurringTransaction={handleDeleteRecurringTransaction}
+          />
+        )}
 
-      <ImageCropModal
-        isOpen={isCropModalOpen && !!imageToCrop}
-        onClose={() => {
-          setIsCropModalOpen(false);
-          setImageToCrop(null);
-        }}
-        imageSrc={imageToCrop || ''}
-        onCropComplete={handleCropComplete}
-      />
+        {isCropModalOpen && !!imageToCrop && (
+          <ImageCropModal
+            isOpen={isCropModalOpen && !!imageToCrop}
+            onClose={() => {
+              setIsCropModalOpen(false);
+              setImageToCrop(null);
+            }}
+            imageSrc={imageToCrop || ''}
+            onCropComplete={handleCropComplete}
+          />
+        )}
+      </Suspense>
       
       <ConfirmationModal
           isOpen={confirmationModalState.isOpen}

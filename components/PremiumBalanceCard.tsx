@@ -12,7 +12,7 @@ interface PremiumBalanceCardProps {
   className?: string;
 }
 
-const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = ({
+const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = React.memo(({
   transactions,
   onAddTransaction,
   setActiveItem,
@@ -204,6 +204,6 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default PremiumBalanceCard;
