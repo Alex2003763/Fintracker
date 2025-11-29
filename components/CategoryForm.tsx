@@ -22,11 +22,13 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onSave, onCancel, category 
   };
 
   return (
-    <div className="p-4 border rounded shadow-lg mb-4" style={{ backgroundColor: 'rgb(var(--color-card-rgb))', borderColor: 'rgb(var(--color-border-rgb))' }}>
-      <h2 className="text-xl font-bold mb-4">Add New Category</h2>
+    <div className="p-6 border rounded-xl shadow-lg mb-4" style={{ backgroundColor: 'rgb(var(--color-card-rgb))', borderColor: 'rgb(var(--color-border-rgb))' }}>
+      <h2 className="text-xl font-bold mb-6 flex items-center">
+        {category ? 'Edit Category' : 'Add New Category'}
+      </h2>
       <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label htmlFor="category-name" className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+        <div className="mb-5">
+          <label htmlFor="category-name" className="block text-sm font-medium mb-2" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
             Category Name
           </label>
           <input
@@ -34,16 +36,28 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onSave, onCancel, category 
             id="category-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full p-2 border rounded"
-            style={{ backgroundColor: 'rgb(var(--color-bg-rgb))', borderColor: 'rgb(var(--color-border-rgb))', color: 'rgb(var(--color-text-rgb))' }}
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all"
+            style={{
+              backgroundColor: 'rgb(var(--color-bg-rgb))',
+              borderColor: 'rgb(var(--color-border-rgb))',
+              color: 'rgb(var(--color-text-rgb))',
+              boxShadow: 'none'
+            }}
             placeholder="e.g., Groceries"
           />
         </div>
-        <div className="mb-4">
-          <IconPicker value={icon} onChange={setIcon} />
+        
+        <div className="mb-5">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+            Icon
+          </label>
+          <div className="p-3 border rounded-lg" style={{ borderColor: 'rgb(var(--color-border-rgb))', backgroundColor: 'rgb(var(--color-bg-rgb))' }}>
+            <IconPicker value={icon} onChange={setIcon} />
+          </div>
         </div>
-        <div className="mb-4">
-          <label htmlFor="category-description" className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+
+        <div className="mb-6">
+          <label htmlFor="category-description" className="block text-sm font-medium mb-2" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
             Description (Optional)
           </label>
           <textarea
@@ -51,16 +65,30 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onSave, onCancel, category 
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-2 border rounded"
-            style={{ backgroundColor: 'rgb(var(--color-bg-rgb))', borderColor: 'rgb(var(--color-border-rgb))', color: 'rgb(var(--color-text-rgb))' }}
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all"
+            style={{
+              backgroundColor: 'rgb(var(--color-bg-rgb))',
+              borderColor: 'rgb(var(--color-border-rgb))',
+              color: 'rgb(var(--color-text-rgb))'
+            }}
             placeholder="e.g., Weekly grocery shopping"
           ></textarea>
         </div>
-        <div className="flex justify-end">
-          <button type="button" onClick={onCancel} className="px-4 py-2 mr-2 rounded" style={{ backgroundColor: 'rgb(var(--color-card-muted-rgb))', color: 'rgb(var(--color-text-muted-rgb))' }}>
+        
+        <div className="flex justify-end gap-3 pt-2 border-t" style={{ borderColor: 'rgba(var(--color-border-rgb), 0.5)' }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-5 py-2.5 rounded-lg font-medium transition-colors hover:opacity-80"
+            style={{ backgroundColor: 'rgb(var(--color-card-muted-rgb))', color: 'rgb(var(--color-text-muted-rgb))' }}
+          >
             Cancel
           </button>
-          <button type="submit" className="px-4 py-2 rounded text-white" style={{ backgroundColor: 'rgb(var(--color-primary-rgb))' }}>
+          <button
+            type="submit"
+            className="px-5 py-2.5 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
+            style={{ backgroundColor: 'rgb(var(--color-primary-rgb))' }}
+          >
             Save Category
           </button>
         </div>

@@ -11,7 +11,7 @@ interface CategoryListProps {
 
 const CategoryList: React.FC<CategoryListProps> = ({ categories, onDelete, onEdit, onAddSubCategory }) => {
   return (
-    <div>
+    <div className="divide-y" style={{ borderColor: 'rgb(var(--color-border-rgb))' }}>
       {categories.map(category => (
         <CategoryItem key={category.id} category={category} onDelete={onDelete} onEdit={onEdit} onAddSubCategory={onAddSubCategory} />
       ))}

@@ -86,7 +86,7 @@ const TransactionsPage: React.FC<{
   );
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto px-4 pb-24">
+    <div className="space-y-8 max-w-5xl mx-auto px-4 pb-24 relative">
       <header className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))] tracking-tight">Transactions</h1>
@@ -104,7 +104,7 @@ const TransactionsPage: React.FC<{
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-            <div className="sticky top-0 z-20 bg-[rgb(var(--color-bg-rgb))] pt-4 pb-2 space-y-4">
+            <div className="space-y-4">
                 <div className="relative group">
                     <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[rgb(var(--color-text-muted-rgb))] group-focus-within:text-[rgb(var(--color-primary-rgb))] transition-colors" />
                     <input
@@ -167,15 +167,6 @@ const TransactionsPage: React.FC<{
 
       </div>
 
-      {showScrollTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed right-6 bottom-24 p-3 rounded-full bg-[rgb(var(--color-primary-rgb))] text-white shadow-lg hover:bg-opacity-90 transition-all transform hover:scale-110 z-30"
-          aria-label="Scroll to top"
-        >
-          <ChevronUpIcon className="h-6 w-6" />
-        </button>
-      )}
 
     </div>
   );
