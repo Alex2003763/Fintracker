@@ -1,4 +1,4 @@
-# 💰 Finance Flow
+# 💰 Fintrack
 
 A comprehensive **Personal Finance Management** Progressive Web App (PWA) built with React and TypeScript. Take control of your financial life with powerful budgeting, goal tracking, expense management, and intelligent insights - all running securely in your browser with offline support.
 
