@@ -1205,15 +1205,23 @@ const App: React.FC = () => {
                 scrollContainerRef={mainContentRef}
                 user={user}
               />;
-            case 'Reports':
-                return <ReportsPage transactions={sortedTransactions} user={user!} />;
+            case 'Reports': {
+              if (!user) {
+                return <PlaceholderPage title="Reports" />;
+              }
+              const allCategories = user.customCategories ? [
+                ...Object.values(user.customCategories.expense).flat(),
+                ...Object.values(user.customCategories.income).flat()
+              ].map((c) => ({ ...c })) : [];
+              return <ReportsPage transactions={sortedTransactions} user={user} categories={allCategories} />;
+            }
             case 'Budgets':
-                return <BudgetsPage
-                  transactions={sortedTransactions}
-                  budgets={budgets}
-                  onManageBudgets={handleManageBudgets}
-                  onEditBudget={handleEditBudget}
-                 />;
+              return <BudgetsPage
+                transactions={sortedTransactions}
+                budgets={budgets}
+                onManageBudgets={handleManageBudgets}
+                onEditBudget={handleEditBudget}
+               />;
             case 'Goals':
               return <GoalsPage
                 goals={goals}
