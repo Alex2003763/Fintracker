@@ -2,7 +2,7 @@ import React from 'react';
 import { Transaction, Bill, CategoryEmoji, User } from '../types';
 import PremiumBalanceCard from './PremiumBalanceCard';
 import TransactionsCard from './TransactionsCard';
-import SpendingBreakdownCard from './SpendingBreakdownCard';
+import GoalsCard from './GoalsCard';
 import UpcomingBillsCard from './UpcomingBillsCard';
 
 interface DashboardProps {
@@ -45,10 +45,6 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({
            user={user}
          />
          <UpcomingBillsCard bills={bills} onPayBill={onPayBill} onManageBills={onManageBills} />
-       </div>
-
-       <div className="md:col-span-1 xl:col-span-1">
-         <SpendingBreakdownCard transactions={transactions} />
        </div>
      </div>
    );

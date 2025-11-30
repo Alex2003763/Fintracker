@@ -136,6 +136,24 @@ const SpendingBreakdownCard: React.FC<SpendingBreakdownCardProps> = ({ transacti
                 <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
+            <div className="w-full px-4 mt-4 space-y-2">
+              {spendingByCategory.map((category, index) => (
+                <div key={category.name} className="flex items-center text-sm">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: colors[index % colors.length] }} />
+                  <div className="flex-1 text-[rgb(var(--color-text-muted-rgb))]">{category.name}</div>
+                  <div className="w-24 h-2 bg-[rgb(var(--color-card-muted-rgb))] rounded-full overflow-hidden mx-2">
+                    <div
+                      className="h-full"
+                      style={{
+                        width: `${totalSpending > 0 ? (category.amount / totalSpending) * 100 : 0}%`,
+                        backgroundColor: colors[index % colors.length],
+                      }}
+                    />
+                  </div>
+                  <div className="font-semibold text-[rgb(var(--color-text-rgb))] w-16 text-right">{formatCurrency(category.amount)}</div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="text-center py-8 text-[rgb(var(--color-text-muted-rgb))]">
