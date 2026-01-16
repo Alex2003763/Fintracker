@@ -234,7 +234,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               );
           } catch (error) {
               console.error('Error parsing backup file:', error);
-              alert('Failed to read or parse the backup file. Please ensure it\'s a valid Finance Flow backup.');
+              alert('Failed to read or parse the backup file. Please ensure it\'s a valid FinTrack backup.');
           } finally {
               setIsImporting(false);
               if (fileInputRef.current) {
@@ -663,7 +663,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
         {/* Footer */}
         <div className="text-center text-[rgb(var(--color-text-muted-rgb))] text-sm pt-6 sm:pt-8 border-t border-[rgb(var(--color-border-rgb))]">
-          <p>Finance Flow App v1.3.0</p>
+          <p>FinTrack App v1.3.0</p>
         </div>
       </div>
     </div>

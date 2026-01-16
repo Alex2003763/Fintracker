@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FinanceFlowIcon } from './icons';
+import { FinTrackIcon } from './icons';
 
 const messages = [
   "Loading Secure Session...",
@@ -44,7 +44,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ message }) => {
         `}
       </style>
       <div className="relative flex items-center justify-center">
-        <FinanceFlowIcon className="h-16 w-16 text-green-500 subtle-pulsing-icon" />
+        <FinTrackIcon className="h-16 w-16 text-green-500 subtle-pulsing-icon" />
       </div>
       <p className="mt-4 text-lg font-semibold text-[rgb(var(--color-text-muted-rgb))]">
         {message || messages[messageIndex]}

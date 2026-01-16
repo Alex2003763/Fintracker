@@ -22,8 +22,9 @@ export const parseQuickAddInput = (input: string): { description: string, amount
 // --- Crypto Utils ---
 
 // Helper to convert ArrayBuffer to Base64
-const bufferToBase64 = (buffer: ArrayBuffer) => {
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+const bufferToBase64 = (buffer: ArrayBuffer | Uint8Array) => {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  return btoa(String.fromCharCode(...bytes));
 };
 
 // Helper to convert Base64 to ArrayBuffer

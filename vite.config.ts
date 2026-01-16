@@ -113,8 +113,8 @@ export default defineConfig(({ mode }) => ({
         sourcemap: true
       },
       manifest: {
-        name: 'Finance Flow - Personal Finance Tracker',
-        short_name: 'Finance Flow',
+        name: 'FinTrack - Personal Finance Tracker',
+        short_name: 'FinTrack',
         description: 'A comprehensive personal finance management dashboard to track your balance, transactions, and spending. Features a local user account system to save and manage your financial data securely in your browser.',
         theme_color: '#f3f4f6',
         background_color: '#f3f4f6',
@@ -158,7 +158,7 @@ export default defineConfig(({ mode }) => ({
             sizes: '512x512',
             type: 'image/png',
             form_factor: 'wide',
-            label: 'Finance Flow Dashboard'
+            label: 'FinTrack Dashboard'
           }
         ]
       }

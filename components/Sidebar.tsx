@@ -1,6 +1,6 @@
 import React from 'react';
 import { NAV_ITEMS } from '../constants';
-import { FinanceFlowIcon } from './icons';
+import { FinTrackIcon } from './icons';
 
 interface SidebarProps {
   activeItem: string;
@@ -12,7 +12,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, setActiveItem }) => {
     <aside className="hidden md:block w-72 p-4">
       <div className="flex flex-col h-full bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-sm p-6 transition-colors">
         <div className="flex items-center space-x-3 mb-10">
-          <FinanceFlowIcon className="h-8 w-8 text-green-500" />
+          <FinTrackIcon className="h-8 w-8 text-green-500" />
           <h1 className="text-2xl font-bold text-[rgb(var(--color-text-rgb))]">FinTrack</h1>
         </div>
         <nav className="flex-1">

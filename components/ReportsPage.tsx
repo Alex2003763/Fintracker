@@ -66,7 +66,7 @@ const AIInsightsCard: React.FC<{
       return;
     }
 
-    const prompt = `You are Finance Flow, an expert financial assistant. Analyze the following transactions from the last 30 days and provide a structured JSON response. Requirements:
+    const prompt = `You are FinTrack, an expert financial assistant. Analyze the following transactions from the last 30 days and provide a structured JSON response. Requirements:
 - 'summary': 1 sentence only, maximum 15 words
 - 'positivePoints': exactly 2 items, each under 10 words
 - 'areasForImprovement': exactly 2 items, each under 10 words

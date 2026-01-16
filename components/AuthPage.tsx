@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FinanceFlowIcon } from './icons';
+import { FinTrackIcon } from './icons';
 import { User } from '../types';
 import { generateSalt, deriveKey, encryptData, decryptData } from '../utils/formatters';
 import LoadingScreen from './LoadingScreen';
@@ -33,7 +33,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
 
   useEffect(() => {
     try {
-      const userString = localStorage.getItem('financeFlowUser');
+      const userString = localStorage.getItem('fintrackUser');
       if (userString) {
         const parsedUser = JSON.parse(userString);
         if (parsedUser.salt && parsedUser.passwordCheck) {
@@ -81,10 +81,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
             avatar: '' 
         };
         
-        localStorage.removeItem('financeFlowTransactions');
-        localStorage.removeItem('financeFlowGoals');
-        localStorage.removeItem('financeFlowBills');
-        localStorage.removeItem('financeFlowNotifications');
+        localStorage.removeItem('fintrackTransactions');
+        localStorage.removeItem('fintrackGoals');
+        localStorage.removeItem('fintrackBills');
+        localStorage.removeItem('fintrackNotifications');
 
         onAuth(newUser, key);
     } catch (err) {
@@ -123,8 +123,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
     <div className="min-h-screen bg-[rgb(var(--color-bg-rgb))] flex items-center justify-center p-4 transition-colors">
       <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl w-full bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-2xl overflow-hidden">
         <div className="hidden md:flex flex-col justify-center p-12 bg-green-600 text-white bg-opacity-90">
-          <FinanceFlowIcon className="h-16 w-16 mb-4" />
-          <h2 className="text-3xl font-bold">FinanceFlow</h2>
+          <FinTrackIcon className="h-16 w-16 mb-4" />
+          <h2 className="text-3xl font-bold">FinTrack</h2>
           <p className="mt-2">Take control of your finances with a clear, simple, and secure overview of your financial life.</p>
         </div>
         

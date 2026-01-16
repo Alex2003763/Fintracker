@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Notification, Transaction } from '../types';
-import { BellIcon, UserIcon, FinanceFlowIcon } from './icons';
+import { BellIcon, UserIcon, FinTrackIcon } from './icons';
 import NotificationPanel from './NotificationPanel';
 
 
@@ -37,7 +37,7 @@ const Header: React.FC<HeaderProps> = React.memo(({ user, notifications, onMarkA
          <header className="sticky top-0 z-50 flex items-center justify-between h-20 px-4 md:px-6 transition-colors flex-shrink-0 bg-[rgb(var(--color-bg-rgb))] border-b border-[rgb(var(--color-border-rgb))] mobile-safe-area">
              {/* Unified Title */}
              <div className="flex items-center space-x-3 min-w-0 flex-1">
-               <FinanceFlowIcon className="h-7 w-7 text-green-500 flex-shrink-0" />
+               <FinTrackIcon className="h-7 w-7 text-green-500 flex-shrink-0" />
                <h1 className="text-xl md:text-2xl font-bold text-[rgb(var(--color-text-rgb))] truncate">{pageTitle}</h1>
              </div>
             

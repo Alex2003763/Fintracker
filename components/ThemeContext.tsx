@@ -19,7 +19,15 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<string>(() => {
     if (typeof window === 'undefined' || !window.localStorage) return 'theme-light';
-    const storedTheme = localStorage.getItem('financeFlowTheme');
+    // Migration: Check for old key first
+    const oldTheme = localStorage.getItem('financeFlowTheme');
+    if (oldTheme && THEMES.some(t => t.id === oldTheme)) {
+      // Migrate to new key
+      localStorage.setItem('fintrackTheme', oldTheme);
+      localStorage.removeItem('financeFlowTheme');
+      return oldTheme;
+    }
+    const storedTheme = localStorage.getItem('fintrackTheme');
     if (storedTheme && THEMES.some(t => t.id === storedTheme)) return storedTheme;
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'theme-dark-slate';
     return 'theme-light';
@@ -27,20 +35,28 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [customBackground, setCustomBackground] = useState<string | null>(() => {
     if (typeof window === 'undefined' || !window.localStorage) return null;
-    return localStorage.getItem('financeFlowCustomBackground') || null;
+    // Migration: Check for old key first
+    const oldBackground = localStorage.getItem('financeFlowCustomBackground');
+    if (oldBackground) {
+      // Migrate to new key
+      localStorage.setItem('fintrackCustomBackground', oldBackground);
+      localStorage.removeItem('financeFlowCustomBackground');
+      return oldBackground;
+    }
+    return localStorage.getItem('fintrackCustomBackground') || null;
   });
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.className = theme;
-    localStorage.setItem('financeFlowTheme', theme);
+    localStorage.setItem('fintrackTheme', theme);
   }, [theme]);
 
   useEffect(() => {
     if (customBackground) {
-      localStorage.setItem('financeFlowCustomBackground', customBackground);
+      localStorage.setItem('fintrackCustomBackground', customBackground);
     } else {
-      localStorage.removeItem('financeFlowCustomBackground');
+      localStorage.removeItem('fintrackCustomBackground');
     }
   }, [customBackground]);
 
