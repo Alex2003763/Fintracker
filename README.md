@@ -1,7 +1,7 @@
 # 💰 FinTrack
 
 <div align="center">
- <img width="1200" height="475" alt="FinTrack Banner" src="https://github.com/Alex2003763/Fintracker/blob/main/icon.png?raw=true" />
+ <img width="1200" height="475" alt="FinTrack Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
 A comprehensive **Personal Finance Management** Progressive Web App (PWA) built with React and TypeScript. Take control of your financial life with powerful budgeting, goal tracking, expense management, and intelligent insights - all running securely in your browser with offline support.
@@ -86,23 +86,23 @@ A comprehensive **Personal Finance Management** Progressive Web App (PWA) built 
 ### Installation
 
 1. **Clone the repository**
-  ```bash
-  git clone <repository-url>
-  cd fintrack
-  ```
+   ```bash
+   git clone <repository-url>
+   cd fintrack
+   ```
 
 2. **Install dependencies**
-  ```bash
-  npm install
-  ```
+   ```bash
+   npm install
+   ```
 
 3. **Start development server**
-  ```bash
-  npm run dev
-  ```
+   ```bash
+   npm run dev
+   ```
 
 4. **Open your browser**
-  Navigate to `http://localhost:5173`
+   Navigate to `http://localhost:5173`
 
 ### Production Build
 
