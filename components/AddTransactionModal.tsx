@@ -3,6 +3,7 @@ import { Transaction, User, SubCategory } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
 import { suggestCategory } from '../utils/categoryAI';
 import { parseReceiptWithGemini } from '../utils/ocr';
+import { compressImage } from '../utils/imageProcessing';
 import BaseModal from './BaseModal';
 import { FormField, Input, Select, Button, ToggleButton } from './ModalForm';
 import ConfirmationModal from './ConfirmationModal';
@@ -123,8 +124,16 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       if (!user?.aiSettings?.apiKey) {
         throw new Error("API key is not configured. Please set it in the settings.");
       }
+      
+      // Compress image before sending to OCR
+      const compressedFile = await compressImage(file, {
+          maxWidth: 1024,
+          maxHeight: 1024,
+          quality: 0.7
+      });
+      
       const extractedData = await parseReceiptWithGemini(
-        file,
+        compressedFile,
         user.aiSettings.apiKey,
         'gemini-2.5-flash-lite'
       );

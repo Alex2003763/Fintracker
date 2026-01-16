@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTheme } from './ThemeContext';
 import CategoryList from './CategoryList';
-import CategoryForm from './CategoryForm';
+import CategoryFormModal from './CategoryFormModal';
 import ConfirmationModal from './ConfirmationModal';
 import { Category } from '../types/category';
 import { User, SubCategory } from '../types';
@@ -136,7 +136,7 @@ const ManageCategoriesPage: React.FC<ManageCategoriesPageProps> = ({ user, onUpd
 
 
   return (
-    <div className="p-4 md:p-8" style={{ backgroundColor: 'rgb(var(--color-bg-rgb))', color: 'rgb(var(--color-text-rgb))' }}>
+    <div className="p-4 md:p-8 bg-[rgb(var(--color-bg-rgb))] text-[rgb(var(--color-text-rgb))] min-h-screen">
       {/* Success Toast */}
       <div className={`fixed top-6 right-6 z-50 transition-transform duration-300 ${showSuccessToast ? 'translate-x-0' : 'translate-x-[150%]'}`}>
         <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center">
@@ -147,83 +147,78 @@ const ManageCategoriesPage: React.FC<ManageCategoriesPageProps> = ({ user, onUpd
         </div>
       </div>
 
-      <div className="flex items-center mb-6">
-        <button onClick={() => setActiveItem('Settings')} className="p-2 rounded-full hover:bg-[rgba(var(--color-text-rgb),0.05)] transition-colors mr-3">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <h1 className="text-3xl font-bold">Manage Categories</h1>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+            <button
+                onClick={() => setActiveItem('Settings')}
+                className="p-2 -ml-2 rounded-full hover:bg-[rgba(var(--color-text-rgb),0.05)] transition-colors text-[rgb(var(--color-text-muted-rgb))]"
+                aria-label="Back to Settings"
+            >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            </button>
+            <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Categories</h1>
+                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] hidden sm:block">Organize your spending & income</p>
+            </div>
+        </div>
       </div>
       
-      <div className="md:grid md:grid-cols-12 md:gap-8">
-        <div className="md:col-span-7 lg:col-span-6">
-          <div className="flex border-b mb-5" style={{ borderColor: 'rgb(var(--color-border-rgb))' }}>
-            <button
-              className={`px-4 py-2.5 text-base font-medium transition-all duration-200 ${activeTab === 'expense' ? 'border-b-2' : 'opacity-60'}`}
-              onClick={() => setActiveTab('expense')}
-              style={{
-                color: activeTab === 'expense' ? 'rgb(var(--color-primary-subtle-text-rgb))' : 'rgb(var(--color-text-muted-rgb))',
-                borderColor: activeTab === 'expense' ? 'rgb(var(--color-primary-rgb))' : 'transparent',
-              }}
-            >
-              Expense
-            </button>
-            <button
-              className={`px-4 py-2.5 text-base font-medium transition-all duration-200 ${activeTab === 'income' ? 'border-b-2' : 'opacity-60'}`}
-              onClick={() => setActiveTab('income')}
-              style={{
-                color: activeTab === 'income' ? 'rgb(var(--color-primary-subtle-text-rgb))' : 'rgb(var(--color-text-muted-rgb))',
-                borderColor: activeTab === 'income' ? 'rgb(var(--color-primary-rgb))' : 'transparent',
-              }}
-            >
-              Income
-            </button>
-          </div>
-
-          <div className="mb-5 relative">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute top-1/2 left-4 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search categories..."
-              className="w-full p-3 pl-11 border rounded-full focus:ring-2 focus:ring-opacity-50 outline-none transition-all"
-              style={{
-                backgroundColor: 'rgb(var(--color-card-rgb))',
-                borderColor: 'rgb(var(--color-border-rgb))',
-                color: 'rgb(var(--color-text-rgb))'
-              }}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgb(var(--color-border-rgb))', backgroundColor: 'rgb(var(--color-card-rgb))' }}>
-            {activeTab === 'expense' && (
-              <CategoryList categories={expenseCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || (c.subcategories && c.subcategories.some(sub => sub.name.toLowerCase().includes(searchTerm.toLowerCase()))))} onDelete={handleDeleteRequest} onEdit={handleEditCategory} onAddSubCategory={handleAddSubCategory} />
-            )}
-            {activeTab === 'income' && (
-              <CategoryList categories={incomeCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || (c.subcategories && c.subcategories.some(sub => sub.name.toLowerCase().includes(searchTerm.toLowerCase()))))} onDelete={handleDeleteRequest} onEdit={handleEditCategory} onAddSubCategory={handleAddSubCategory} />
-            )}
-          </div>
+      <div className="max-w-3xl mx-auto">
+        <div className="flex p-1 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl mb-6">
+          <button
+            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all shadow-sm ${
+                activeTab === 'expense'
+                ? 'bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-primary-rgb))] shadow-sm'
+                : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'
+            }`}
+            onClick={() => setActiveTab('expense')}
+          >
+            Expense
+          </button>
+          <button
+            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                activeTab === 'income'
+                ? 'bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-primary-rgb))] shadow-sm'
+                : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'
+            }`}
+            onClick={() => setActiveTab('income')}
+          >
+            Income
+          </button>
         </div>
-        
-        <div className="hidden md:block md:col-span-5 lg:col-span-6 mt-16">
-          <CategoryForm onSave={handleSaveCategory} onCancel={() => { setShowForm(false); setCategoryToEdit(null); }} category={categoryToEdit} />
+
+        <div className="mb-5 relative">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute top-1/2 left-4 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search categories..."
+            className="w-full p-3 pl-11 bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl text-base focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent outline-none transition-all shadow-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        
-        {showForm && (
-          <div className="md:hidden fixed inset-0 bg-black bg-opacity-60 z-40 flex items-end justify-center animate-fade-in">
-            <div
-              className="w-full bg-[rgb(var(--color-card-rgb))] rounded-t-2xl shadow-lg overflow-y-auto max-h-[90vh] animate-slide-in-from-bottom"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <CategoryForm onSave={handleSaveCategory} onCancel={() => { setShowForm(false); setCategoryToEdit(null); }} category={categoryToEdit} />
-            </div>
-          </div>
-        )}
+
+        <div className="rounded-2xl border border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))] overflow-hidden shadow-sm">
+          {activeTab === 'expense' && (
+            <CategoryList categories={expenseCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || (c.subcategories && c.subcategories.some(sub => sub.name.toLowerCase().includes(searchTerm.toLowerCase()))))} onDelete={handleDeleteRequest} onEdit={handleEditCategory} onAddSubCategory={handleAddSubCategory} />
+          )}
+          {activeTab === 'income' && (
+            <CategoryList categories={incomeCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || (c.subcategories && c.subcategories.some(sub => sub.name.toLowerCase().includes(searchTerm.toLowerCase()))))} onDelete={handleDeleteRequest} onEdit={handleEditCategory} onAddSubCategory={handleAddSubCategory} />
+          )}
+        </div>
       </div>
+
+      <CategoryFormModal
+        isOpen={showForm}
+        onClose={() => { setShowForm(false); setCategoryToEdit(null); setParentCategory(null); }}
+        onSave={handleSaveCategory}
+        category={categoryToEdit}
+        parentCategory={parentCategory}
+      />
       <ConfirmationModal
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback, memo } from 'react';
+import { createPortal } from 'react-dom';
 
 interface BaseModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const hasOpenedRef = useRef(false);
 
   // Size configurations - mobile optimized
    const sizeClasses = {
@@ -135,14 +137,33 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   useEffect(() => {
     if (isOpen) {
       previousActiveElement.current = document.activeElement as HTMLElement;
+      // Lock body scroll
       document.body.style.overflow = 'hidden';
+      
+      // Also try to lock the main content container if it exists
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent instanceof HTMLElement) {
+          mainContent.style.overflow = 'hidden';
+      }
+
       document.addEventListener('keydown', handleKeyDown);
 
-      // Focus modal after animation
-      setTimeout(handleFocus, 150);
+      // Focus modal after animation - ONLY if not already opened to prevent stealing focus on re-renders
+      if (!hasOpenedRef.current) {
+         setTimeout(handleFocus, 150);
+         hasOpenedRef.current = true;
+      }
     } else {
       document.body.style.overflow = 'unset';
+      
+      // Unlock main content
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent instanceof HTMLElement) {
+          mainContent.style.overflow = ''; // Reset to default (usually handled by class)
+      }
+
       document.removeEventListener('keydown', handleKeyDown);
+      hasOpenedRef.current = false;
 
       // Return focus to previous element
       if (previousActiveElement.current) {
@@ -152,6 +173,10 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
 
     return () => {
       document.body.style.overflow = 'unset';
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent instanceof HTMLElement) {
+          mainContent.style.overflow = '';
+      }
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, handleKeyDown, handleFocus]);
@@ -164,10 +189,10 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
     }
   };
 
-  return (
+  return createPortal(
     <div
       className={`
-        fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4
+        fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-2 sm:p-4
         bg-black/60 backdrop-blur-sm
         ${currentAnimation.backdrop}
         ${className}
@@ -177,6 +202,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
       aria-modal="true"
       aria-label={ariaLabel || title}
       aria-describedby={ariaDescribedBy}
+      style={{ overscrollBehavior: 'contain' }}
     >
       <div
         ref={modalRef}
@@ -239,7 +265,8 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });
 

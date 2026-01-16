@@ -151,6 +151,8 @@ export interface User {
     salt: string; // Stored as base64
     passwordCheck: string; // Stored as stringified JSON {iv, ciphertext}
     avatar?: string; // base64 encoded image
+    biometricEnabled?: boolean;
+    biometricCredentialId?: string; // Base64URL string
     aiSettings?: {
         apiKey: string;
         model: string;

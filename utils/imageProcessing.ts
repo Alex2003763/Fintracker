@@ -76,6 +76,70 @@ export const processImageForBackground = (imageSrc: string, themeColors?: { isDa
 };
 
 /**
+ * Compresses an image file to reduce size for storage
+ * Resizes large images and converts to JPEG with quality adjustment
+ */
+export const compressImage = (file: File, options: { maxWidth?: number, maxHeight?: number, quality?: number } = {}): Promise<File> => {
+    return new Promise((resolve, reject) => {
+        const { maxWidth = 1024, maxHeight = 1024, quality = 0.7 } = options;
+        const reader = new FileReader();
+        
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+                
+                // Calculate new dimensions
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width = width * ratio;
+                    height = height * ratio;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Failed to get canvas context'));
+                    return;
+                }
+                
+                // Draw image on canvas
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Convert to blob and then new File
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        reject(new Error('Failed to compress image'));
+                        return;
+                    }
+                    
+                    const compressedFile = new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    resolve(compressedFile);
+                }, 'image/jpeg', quality);
+            };
+            
+            img.onerror = () => {
+                reject(new Error('Failed to load image for compression'));
+            };
+        };
+        
+        reader.onerror = () => {
+            reject(new Error('Failed to read image file'));
+        };
+    });
+};
+
+/**
  * Creates a pattern effect on the image for better card integration
  */
 export const createPatternBackground = (imageSrc: string, themeColors?: { isDark: boolean; primaryColor?: string }): Promise<string> => {

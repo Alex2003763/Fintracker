@@ -1,10 +1,12 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, CSSProperties } from 'react';
 import { Transaction, User } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { RecurringIcon, ChevronUpIcon, SearchIcon } from './icons';
 import Card, { CardContent } from './Card';
 import TransactionRow from './TransactionRow';
 import TransactionChart from './TransactionChart';
+
+// Removed virtual list row component in favor of standard mapping for reliability
 
 const groupTransactionsByDate = (transactions: Transaction[]): { [key: string]: Transaction[] } => {
     return transactions.reduce((groups: { [key: string]: Transaction[] }, transaction) => {
@@ -51,23 +53,46 @@ const TransactionsPage: React.FC<{
     });
   }, [searchQuery, filterType, transactions]);
 
-  const groupedTransactions = useMemo(() => groupTransactionsByDate(filteredTransactions), [filteredTransactions]);
+  // Flatten transactions for virtual scrolling
+  const flattenedItems = useMemo(() => {
+    const groups = groupTransactionsByDate(filteredTransactions);
+    const items: Array<{
+      type: 'header' | 'transaction';
+      data?: Transaction;
+      group?: string;
+      dailyTotal?: number;
+      isFirst?: boolean;
+      isLast?: boolean;
+    }> = [];
 
-  const handleScroll = useCallback(() => {
-    const container = scrollContainerRef?.current;
-    if (container) {
-      setShowScrollTop(container.scrollTop > 300);
-    }
-  }, [scrollContainerRef]);
+    Object.entries(groups).forEach(([group, txs]) => {
+      const dailyTotal = txs.reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+      
+      // Add Header
+      items.push({
+        type: 'header',
+        group,
+        dailyTotal
+      });
 
-  useEffect(() => {
-    const container = scrollContainerRef?.current;
-    container?.addEventListener('scroll', handleScroll);
-    return () => container?.removeEventListener('scroll', handleScroll);
-  }, [scrollContainerRef, handleScroll]);
+      // Add Transactions
+      txs.forEach((tx, index) => {
+        items.push({
+          type: 'transaction',
+          data: tx,
+          isFirst: index === 0,
+          isLast: index === txs.length - 1
+        });
+      });
+    });
+
+    return items;
+  }, [filteredTransactions]);
+
+  const listRef = React.useRef<HTMLDivElement>(null);
 
   const scrollToTop = () => {
-    scrollContainerRef?.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    listRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const FilterButton: React.FC<{type: 'all' | 'income' | 'expense', count: number}> = ({ type, count }) => (
@@ -86,7 +111,7 @@ const TransactionsPage: React.FC<{
   );
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto px-4 pb-24 relative">
+    <div className="space-y-8 max-w-5xl mx-auto px-4 pb-12 relative">
       <header className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))] tracking-tight">Transactions</h1>
@@ -123,8 +148,11 @@ const TransactionsPage: React.FC<{
                 </div>
             </div>
 
-            <div className="space-y-6">
-                {Object.keys(groupedTransactions).length === 0 ? (
+            <div
+              ref={listRef}
+              className="h-[65vh] min-h-[300px] w-full overflow-y-auto no-scrollbar scroll-smooth pb-4"
+            >
+                {flattenedItems.length === 0 ? (
                 <div className="text-center py-20 bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] border-dashed">
                     <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[rgba(var(--color-border-rgb),0.3)] flex items-center justify-center">
                         <SearchIcon className="h-10 w-10 text-[rgb(var(--color-text-muted-rgb))]" />
@@ -133,34 +161,43 @@ const TransactionsPage: React.FC<{
                     <p className="text-[rgb(var(--color-text-muted-rgb))] mt-2">Try adjusting your search or filters.</p>
                 </div>
                 ) : (
-                Object.entries(groupedTransactions).map(([group, txs]) => {
-                    const dailyTotal = txs.reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
-                    return (
-                    <section key={group} className="space-y-3">
-                        <div className="flex justify-between items-center px-1">
-                            <h2 className="text-sm font-bold text-[rgb(var(--color-text-muted-rgb))] uppercase tracking-wider">{group}</h2>
-                            <span className={`text-sm font-semibold ${dailyTotal >= 0 ? 'text-green-600 dark:text-green-400' : 'text-[rgb(var(--color-text-rgb))]'}`}>
-                                {dailyTotal > 0 ? '+' : ''}{formatCurrency(dailyTotal)}
+                  <div className="w-full">
+                    {flattenedItems.map((item, index) => {
+                      if (item.type === 'header') {
+                        return (
+                          <div key={`header-${item.group}-${index}`} className="px-1 pt-6 pb-2 flex justify-between items-end bg-[rgb(var(--color-bg-rgb))] sticky top-0 z-10">
+                            <h2 className="text-sm font-bold text-[rgb(var(--color-text-muted-rgb))] uppercase tracking-wider">{item.group}</h2>
+                            <span className={`text-sm font-semibold ${(item.dailyTotal || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-[rgb(var(--color-text-rgb))]'}`}>
+                                {(item.dailyTotal || 0) > 0 ? '+' : ''}{formatCurrency(item.dailyTotal || 0)}
                             </span>
-                        </div>
-                        <Card className="overflow-hidden border border-[rgb(var(--color-border-rgb))] shadow-sm hover:shadow-md transition-shadow">
-                            <CardContent className="p-0">
-                                <ul className="divide-y divide-[rgb(var(--color-border-rgb))]">
-                                {txs.map(t => (
-                                    <li key={t.id}>
-                                    <TransactionRow
-                                        transaction={t}
-                                        onEdit={onEditTransaction}
-                                        user={user}
-                                    />
-                                    </li>
-                                ))}
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    </section>
-                    );
-                })
+                          </div>
+                        );
+                      }
+
+                      if (item.type === 'transaction' && item.data) {
+                        return (
+                          <div key={item.data.id} className="px-0">
+                            <div className={`
+                              bg-[rgb(var(--color-card-rgb))]
+                              border-x border-[rgb(var(--color-border-rgb))]
+                              ${item.isFirst ? 'rounded-t-xl border-t' : ''}
+                              ${item.isLast ? 'rounded-b-xl border-b shadow-sm' : 'border-b'}
+                              hover:bg-[rgb(var(--color-card-muted-rgb))]
+                              transition-colors
+                            `}>
+                              <TransactionRow
+                                transaction={item.data}
+                                onEdit={onEditTransaction}
+                                user={user}
+                                style={{ borderRadius: item.isFirst || item.isLast ? undefined : '0' }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
                 )}
             </div>
         </div>

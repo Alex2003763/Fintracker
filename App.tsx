@@ -14,6 +14,7 @@ import PlaceholderPage from './components/PlaceholderPage';
 import LoadingScreen from './components/LoadingScreen';
 // FIX: Import `formatCurrency` to resolve `Cannot find name` errors.
 import { encryptData, decryptData, deriveKey, generateSalt, formatCurrency } from './utils/formatters';
+import { saveBiometricSession, clearBiometricSession } from './utils/webauthn';
 import { processTransactionForGoals, getGoalProgressStats } from './utils/goalUtils';
 import { sendNotification } from './utils/notifications';
 import { processImageForBackground, createPatternBackground } from './utils/imageProcessing';
@@ -114,6 +115,10 @@ const App: React.FC = () => {
   // Authentication State
   const [user, setUser] = useState<User | null>(null);
   const [sessionKey, setSessionKey] = useState<CryptoKey | null>(null);
+  
+  // Session Timeout State
+  const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+  const [lastActivity, setLastActivity] = useState(Date.now());
 
   // Main navigation state
   const [activeItem, setActiveItem] = useState('Home');
@@ -159,6 +164,51 @@ const App: React.FC = () => {
       confirmText: 'Confirm',
       variant: 'primary' as 'primary' | 'danger'
   });
+
+  // Listen for biometric session save requests
+  useEffect(() => {
+    const handleSaveBiometricSession = async () => {
+        if (sessionKey) {
+            await saveBiometricSession(sessionKey);
+        }
+    };
+    
+    window.addEventListener('saveBiometricSession', handleSaveBiometricSession);
+    return () => window.removeEventListener('saveBiometricSession', handleSaveBiometricSession);
+  }, [sessionKey]);
+
+  // Session Timeout Logic
+  useEffect(() => {
+    if (!sessionKey) return; // Only track timeout if logged in
+
+    const handleActivity = () => setLastActivity(Date.now());
+
+    // Events to track activity
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keypress', handleActivity);
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('touchstart', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+
+    // Check for timeout interval
+    const interval = setInterval(() => {
+        const now = Date.now();
+        if (now - lastActivity > SESSION_TIMEOUT_MS) {
+            console.log('Session timed out due to inactivity');
+            handleSignOut();
+            alert('Your session has expired due to inactivity. Please sign in again.');
+        }
+    }, 10000); // Check every 10 seconds
+
+    return () => {
+        window.removeEventListener('mousemove', handleActivity);
+        window.removeEventListener('keypress', handleActivity);
+        window.removeEventListener('click', handleActivity);
+        window.removeEventListener('touchstart', handleActivity);
+        window.removeEventListener('scroll', handleActivity);
+        clearInterval(interval);
+    };
+  }, [sessionKey, lastActivity]); // Re-bind if sessionKey changes (login/logout) or rarely needed otherwise
 
   // Migration effect: migrate old financeFlow keys to new fintrack keys
   useEffect(() => {
@@ -215,48 +265,28 @@ const App: React.FC = () => {
 
   // Check budget notifications when transactions or budgets change - with race condition fix
   useEffect(() => {
-    if (transactions.length > 0 && budgets.length > 0 && notifications.length >= 0) {
-      console.log('Budget notification check triggered...');
-      console.log('Current notifications count:', notifications.length);
-
-      // Check immediately if we haven't processed today
-      const todayStr = new Date().toISOString().split('T')[0];
-      const hasProcessedToday = localStorage.getItem(`budget-notifications-processed-${todayStr}`);
-
-      if (!hasProcessedToday) {
-        console.log('Processing budget notifications for today...');
-
-        // Small delay to ensure any pending state updates complete
-        setTimeout(() => {
-          checkBudgetNotifications();
-
-          // Mark as processed for today immediately after checking
-          localStorage.setItem(`budget-notifications-processed-${todayStr}`, 'true');
-          console.log('Marked budget notifications as processed for today');
-        }, 100);
-      } else {
-        console.log('Budget notifications already processed today, skipping...');
-      }
+    if (transactions.length > 0 && budgets.length > 0) {
+      // Debounce check to prevent multiple rapid firings
+      const timer = setTimeout(() => {
+         checkBudgetNotifications();
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
   }, [transactions, budgets, notifications.length]);
 
   // Clean up old notifications logic removed - we can handle this via DB query if needed,
   // or let the user manage their notifications manually.
 
-  // Debug function to reset notification processing (for testing)
-  const resetNotificationProcessing = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
-    console.log('Reset notification processing flag');
-    // Force recheck
-    setTimeout(() => {
-      checkBudgetNotifications();
-    }, 100);
+  // Debug function to force recheck (for testing)
+  const forceBudgetCheck = () => {
+    console.log('Forcing budget notification check...');
+    checkBudgetNotifications(undefined, undefined, true);
   };
 
   // Make the function available globally for debugging
   if (typeof window !== 'undefined') {
-    (window as any).resetNotificationProcessing = resetNotificationProcessing;
+    (window as any).forceBudgetCheck = forceBudgetCheck;
   }
 
   // Schedule bill reminders when bills or user settings change
@@ -594,13 +624,33 @@ const App: React.FC = () => {
     // Check if it's a new account to set initial data
     if (!localStorage.getItem('fintrackTransactions')) {
       const welcomeNotification: Notification = { id: uuidv4(), title: 'Welcome to FinTrack!', message: 'Start by adding your first transaction.', date: new Date().toISOString(), read: false, type: 'standard' };
-      setNotifications([welcomeNotification]);
+      // Use dbMutations instead of setNotifications which doesn't exist
+      dbMutations.addNotification(welcomeNotification);
     }
   };
 
   const handleSignOut = () => {
     setUser(null);
     setSessionKey(null);
+    // Clear biometric key - requires re-login with password next time?
+    // Actually, typically biometric login persists until explicitly disabled or maybe on logout?
+    // If we clear it here, user has to re-enter password to re-enable biometrics 'session'.
+    // That's more secure. Biometrics is a "shortcut" for the current long-lived session.
+    // But PWA context: if they logout, they want to secure the app.
+    // So yes, we should probably clear it to ensure next person needs password or re-auth + password.
+    
+    // HOWEVER, standard behavior for "FaceID Login" is that it persists across app restarts (and logouts sometimes).
+    // If we want "Log me in with FaceID" next time, we MUST keep the key.
+    
+    // BUT, if the user explicitly clicks "Sign Out", they usually expect to be fully signed out.
+    // The "Biometric Login" feature in banking apps usually STAYS enabled even after logout.
+    // So when you open the app again, it asks "Login with FaceID?".
+    // So we should NOT clear the key here. We only clear the IN-MEMORY session.
+    
+    // The previous implementation of `saveBiometricSession` saves the key to localStorage.
+    // AuthenticateWebAuthn gates access to it.
+    // So, we do NOT call clearBiometricSession() here.
+    
     // Note: IndexedDB data remains persistent.
     // If strict security is needed, we should clear specific tables or encrypt the DB.
     // For now, we follow standard PWA behavior where data lives in the browser.
@@ -1117,9 +1167,6 @@ const App: React.FC = () => {
     // Check budget notifications after budget changes
     setTimeout(() => {
       console.log('Checking budget notifications after budget modification...');
-      // Reset the processed flag so user gets fresh notifications for the new budget
-      const todayStr = new Date().toISOString().split('T')[0];
-      localStorage.removeItem(`budget-notifications-processed-${todayStr}`);
       checkBudgetNotifications();
     }, 100);
   };

@@ -6,6 +6,7 @@ import ServiceWorkerDebugPanel from './ServiceWorkerDebugPanel';
 import NotificationSettingsPage from './NotificationSettingsPage';
 import { TRANSACTION_CATEGORIES } from '../constants';
 import { processImageForBackground, createPatternBackground } from '../utils/imageProcessing';
+import { isWebAuthnSupported, registerWebAuthn, saveBiometricSession, getBiometricSession } from '../utils/webauthn';
 
 interface SettingsPageProps {
   user: User;
@@ -52,6 +53,108 @@ const ThemeOption: React.FC<{ id: string, name: string, active: boolean, onClick
         </button>
     )
 }
+
+// Biometric Settings Component
+const BiometricSettings: React.FC<{ user: User; onUpdateUser: (user: User) => void }> = ({ user, onUpdateUser }) => {
+    const [isAvailable] = useState(isWebAuthnSupported());
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [statusMsg, setStatusMsg] = useState('');
+
+    if (!isAvailable) return null;
+
+    const handleToggleBiometrics = async () => {
+        setStatusMsg('');
+        if (user.biometricEnabled) {
+            // Disable biometrics
+            onUpdateUser({
+                ...user,
+                biometricEnabled: false,
+                biometricCredentialId: undefined
+            });
+            setStatusMsg('Biometrics disabled.');
+            // Note: We don't remove the key from localStorage here typically, or we could.
+        } else {
+            // Enable biometrics
+            setIsRegistering(true);
+            try {
+                // 1. Register with WebAuthn
+                const credential = await registerWebAuthn(user);
+                if (credential) {
+                    // 2. Save current session key for future biometric retrieval
+                    // We need access to the session key here, but it's not passed to SettingsPage
+                    // So we effectively just mark it as enabled on User.
+                    // The App.tsx knows the session key. It should likely save it when user updates this.
+                    // Actually, we can't save the session key here because we don't have it.
+                    
+                    // REVISION: We need the session key to save it.
+                    // Passing sessionKey to SettingsPage is sensitive.
+                    // However, we are in the settings, so user is auth'd.
+                    // Let's assume for this "Gate" implementation, we need the App to handle the saving.
+                    // We'll dispatch an event or the onUpdateUser will trigger an effect in App?
+                    
+                    // Simpler: Trigger a custom event with the credential ID that App.tsx listens to
+                    // to save the current session key.
+                    
+                    const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+                        .replace(/\+/g, '-')
+                        .replace(/\//g, '_')
+                        .replace(/=+$/, '');
+                        
+                    onUpdateUser({
+                        ...user,
+                        biometricEnabled: true,
+                        biometricCredentialId: credentialId
+                    });
+                    
+                    // Signal App to save the session key
+                    window.dispatchEvent(new CustomEvent('saveBiometricSession'));
+                    
+                    setStatusMsg('Biometrics enabled successfully!');
+                }
+            } catch (error) {
+                console.error("Biometric registration failed", error);
+                setStatusMsg('Failed to enable biometrics. Please try again.');
+            } finally {
+                setIsRegistering(false);
+            }
+        }
+    };
+
+    return (
+        <div className="border-t border-[rgb(var(--color-border-rgb))] pt-4 sm:pt-6 mt-4">
+             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl space-y-3 sm:space-y-0">
+                <div className="flex-1">
+                  <p className="font-medium text-[rgb(var(--color-text-rgb))]">Biometric Login</p>
+                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] pr-2">
+                      Use Touch ID or Face ID to sign in
+                  </p>
+                </div>
+                <button
+                  onClick={handleToggleBiometrics}
+                  disabled={isRegistering}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 ${
+                    user.biometricEnabled
+                      ? 'bg-[rgb(var(--color-primary-rgb))]'
+                      : 'bg-[rgb(var(--color-border-rgb))]'
+                  } ${isRegistering ? 'opacity-50 cursor-wait' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                      user.biometricEnabled
+                        ? 'translate-x-6'
+                        : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+            </div>
+            {statusMsg && (
+                <p className={`text-sm mt-2 ${statusMsg.includes('success') ? 'text-green-600' : 'text-red-500'}`}>
+                    {statusMsg}
+                </p>
+            )}
+        </div>
+    );
+};
 
 const AISettings: React.FC<{ user: User; onUpdateUser: (user: User) => void }> = ({ user, onUpdateUser }) => {
     const [apiKey, setApiKey] = useState(user.aiSettings?.apiKey || '');
@@ -290,6 +393,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 Manage Account
               </button>
             </div>
+            
+            <BiometricSettings user={user} onUpdateUser={onUpdateUser} />
           </div>
         </div>
 

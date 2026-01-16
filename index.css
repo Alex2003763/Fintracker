@@ -123,6 +123,8 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* 3. Modal Styles */
@@ -304,6 +306,37 @@ body.modal-open {
   }
 }
 
+/* Toast Animation */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out forwards;
+}
+
+.animate-slide-out-right {
+  animation: slideOutRight 0.3s ease-in forwards;
+}
+
 /* AI Swiper Card Styles */
 .ai-insights-swiper {
     --swiper-pagination-color: rgb(var(--color-primary-rgb));
@@ -359,6 +392,7 @@ body.modal-open {
     .mobile-safe-area {
         padding-left: env(safe-area-inset-left);
         padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
     }
     
     .mobile-content-padding {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FinTrackIcon } from './icons';
 import { User } from '../types';
 import { generateSalt, deriveKey, encryptData, decryptData } from '../utils/formatters';
+import { authenticateWebAuthn, getBiometricSession, isWebAuthnSupported } from '../utils/webauthn';
 import LoadingScreen from './LoadingScreen';
 import PasswordStrengthMeter from './PasswordStrengthMeter';
 
@@ -20,6 +21,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
   const [error, setError] = useState('');
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const calculatePasswordStrength = (password: string) => {
     let strength = 0;
@@ -32,26 +35,62 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
   };
 
   useEffect(() => {
-    try {
-      const userString = localStorage.getItem('fintrackUser');
-      if (userString) {
-        const parsedUser = JSON.parse(userString);
-        if (parsedUser.salt && parsedUser.passwordCheck) {
-            setStoredUser(parsedUser);
-            setUsername(parsedUser.username);
-        } else {
+    const checkUserAndBiometrics = async () => {
+        try {
+            const userString = localStorage.getItem('fintrackUser');
+            if (userString) {
+                const parsedUser = JSON.parse(userString);
+                if (parsedUser.salt && parsedUser.passwordCheck) {
+                    setStoredUser(parsedUser);
+                    setUsername(parsedUser.username);
+
+                    // Check if biometrics are enabled and supported
+                    if (isWebAuthnSupported() && parsedUser.biometricEnabled) {
+                        setIsBiometricAvailable(true);
+                        // Trigger biometric prompt automatically on load if available
+                        handleBiometricAuth(parsedUser);
+                    }
+                } else {
+                    setIsSignUp(true);
+                }
+            } else {
+                setIsSignUp(true);
+            }
+        } catch (e) {
+            console.error("Failed to parse user from localStorage", e);
             setIsSignUp(true);
+        } finally {
+            setIsLoading(false);
         }
-      } else {
-        setIsSignUp(true);
-      }
-    } catch (e) {
-      console.error("Failed to parse user from localStorage", e);
-      setIsSignUp(true);
-    } finally {
-      setIsLoading(false);
-    }
+    };
+    
+    checkUserAndBiometrics();
   }, []);
+
+  const handleBiometricAuth = async (userToAuth: User) => {
+      if (isAuthenticating) return;
+      setIsAuthenticating(true);
+      setError('');
+      
+      try {
+          const isAuthenticated = await authenticateWebAuthn(userToAuth.biometricCredentialId);
+          if (isAuthenticated) {
+              const sessionKey = await getBiometricSession();
+              if (sessionKey) {
+                  onAuth(userToAuth, sessionKey);
+              } else {
+                  setError('Biometric session expired. Please log in with password.');
+                  setIsBiometricAvailable(false); // Force password fallback
+              }
+          }
+          // If simply cancelled/failed, we just remain on screen for password entry
+      } catch (e) {
+          console.error('Biometric auth error', e);
+          setError('Biometric authentication failed.');
+      } finally {
+          setIsAuthenticating(false);
+      }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,18 +197,33 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
               <form onSubmit={handleSignIn} className="space-y-4">
                 <input type="text" value={username} disabled className="w-full px-4 py-3 rounded-lg bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-muted-rgb))] cursor-not-allowed focus:outline-none" />
                 <div className="relative">
-                  <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required autoFocus className={inputClasses} />
+                  <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required autoFocus={!isBiometricAvailable} className={inputClasses} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-[rgb(var(--color-text-muted-rgb))]">
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
                 {error && <p className="text-sm text-red-500 text-left pt-1">{error}</p>}
-                <button
-                  type="submit"
-                  className="w-full mt-4 py-3 px-4 bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] font-semibold rounded-lg shadow-md hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 transition-colors"
-                >
-                  Sign In
-                </button>
+                
+                <div className="flex flex-col gap-3 mt-4">
+                    <button
+                    type="submit"
+                    disabled={isAuthenticating}
+                    className="w-full py-3 px-4 bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] font-semibold rounded-lg shadow-md hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 transition-colors disabled:opacity-70"
+                    >
+                    Sign In
+                    </button>
+
+                    {isBiometricAvailable && storedUser && (
+                        <button
+                            type="button"
+                            onClick={() => handleBiometricAuth(storedUser)}
+                            disabled={isAuthenticating}
+                            className="w-full py-3 px-4 bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))] font-semibold rounded-lg border border-[rgb(var(--color-border-rgb))] hover:bg-[rgb(var(--color-border-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] transition-colors flex justify-center items-center gap-2"
+                        >
+                            <span>👆</span> Authenticate with Biometrics
+                        </button>
+                    )}
+                </div>
               </form>
             </>
           )}
