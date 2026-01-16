@@ -1,4 +1,8 @@
-# 💰 Fintrack
+# 💰 FinTrack
+
+<div align="center">
+ <img width="1200" height="475" alt="FinTrack Banner" src="https://github.com/Alex2003763/Fintracker/blob/main/icon.png?raw=true" />
+</div>
 
 A comprehensive **Personal Finance Management** Progressive Web App (PWA) built with React and TypeScript. Take control of your financial life with powerful budgeting, goal tracking, expense management, and intelligent insights - all running securely in your browser with offline support.
 
@@ -84,7 +88,7 @@ A comprehensive **Personal Finance Management** Progressive Web App (PWA) built 
 1. **Clone the repository**
   ```bash
   git clone <repository-url>
-  cd finance-flow
+  cd fintrack
   ```
 
 2. **Install dependencies**
@@ -131,7 +135,7 @@ npm run preview
 
 ### Mobile Experience
 
-Finance Flow is optimized for mobile use:
+FinTrack is optimized for mobile use:
 - **Touch-friendly Interface**: Large buttons and intuitive gestures
 - **PWA Installation**: Add to home screen for app-like experience
 - **Offline Functionality**: Full feature set works without internet
@@ -140,7 +144,7 @@ Finance Flow is optimized for mobile use:
 ## 🏗️ Project Structure
 
 ```
-finance-flow/
+fintrack/
 ├── public/                 # Static assets and PWA files
 │   ├── offline.html       # Offline fallback page
 │   └── sw-custom.js       # Custom service worker logic
@@ -216,6 +220,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
- <p><strong>Take control of your financial future with Finance Flow</strong></p>
+ <p><strong>Take control of your financial future with FinTrack</strong></p>
  <p>💡 Track • 🎯 Plan • 📈 Achieve</p>
 </div>
