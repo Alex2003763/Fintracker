@@ -118,7 +118,7 @@ const App: React.FC = () => {
   
   // Session Timeout State
   const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-  const [lastActivity, setLastActivity] = useState(Date.now());
+  const lastActivity = useRef(Date.now());
 
   // Main navigation state
   const [activeItem, setActiveItem] = useState('Home');
@@ -181,19 +181,22 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!sessionKey) return; // Only track timeout if logged in
 
-    const handleActivity = () => setLastActivity(Date.now());
+    const handleActivity = () => {
+        lastActivity.current = Date.now();
+    };
 
     // Events to track activity
     window.addEventListener('mousemove', handleActivity);
     window.addEventListener('keypress', handleActivity);
     window.addEventListener('click', handleActivity);
-    window.addEventListener('touchstart', handleActivity);
+    // Removed touchstart to prevent potential conflict with mobile interactions
+    // window.addEventListener('touchstart', handleActivity);
     window.addEventListener('scroll', handleActivity);
 
     // Check for timeout interval
     const interval = setInterval(() => {
         const now = Date.now();
-        if (now - lastActivity > SESSION_TIMEOUT_MS) {
+        if (now - lastActivity.current > SESSION_TIMEOUT_MS) {
             console.log('Session timed out due to inactivity');
             handleSignOut();
             alert('Your session has expired due to inactivity. Please sign in again.');
@@ -204,11 +207,11 @@ const App: React.FC = () => {
         window.removeEventListener('mousemove', handleActivity);
         window.removeEventListener('keypress', handleActivity);
         window.removeEventListener('click', handleActivity);
-        window.removeEventListener('touchstart', handleActivity);
+        // window.removeEventListener('touchstart', handleActivity);
         window.removeEventListener('scroll', handleActivity);
         clearInterval(interval);
     };
-  }, [sessionKey, lastActivity]); // Re-bind if sessionKey changes (login/logout) or rarely needed otherwise
+  }, [sessionKey]); // Re-bind if sessionKey changes (login/logout)
 
   // Migration effect: migrate old financeFlow keys to new fintrack keys
   useEffect(() => {
