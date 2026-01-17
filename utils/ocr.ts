@@ -40,7 +40,7 @@ const fileToGenerativePart = (file: File): Promise<{ inlineData: { data: string;
 export const parseReceiptWithGemini = async (
   imageFile: File,
   apiKey: string,
-  model: string = 'gemini-2.5-flash'
+  model: string = 'gemini-2.5-flash-lite'
 ): Promise<Partial<Omit<Transaction, 'id' | 'date' | 'type'>>> => {
   
   if (!apiKey) {

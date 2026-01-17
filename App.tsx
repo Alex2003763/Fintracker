@@ -5,6 +5,7 @@ import UpdatePrompt from './components/UpdatePrompt';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
+import FloatingActionButton from './components/FloatingActionButton';
 import AuthPage from './components/AuthPage';
 import ConfirmationModal from './components/ConfirmationModal';
 import { Transaction, User, Goal, Bill, RecurringTransaction, Budget, NotificationSettings, GoalContribution, BillPayment, SubCategory } from './types';
@@ -32,7 +33,7 @@ const TransactionsPage = React.lazy(() => import('./components/TransactionsPage'
 const SettingsPage = React.lazy(() => import('./components/SettingsPage'));
 const GoalsPage = React.lazy(() => import('./components/GoalsPage'));
 const AccountPage = React.lazy(() => import('./components/AccountPage'));
-const ReportsPage = React.lazy(() => import('./components/ReportsPage'));
+const InsightsPage = React.lazy(() => import('./components/InsightsPage'));
 const BudgetsPage = React.lazy(() => import('./components/BudgetsPage'));
 const ManageCategoriesPage = React.lazy(() => import('./components/ManageCategoriesPage'));
 
@@ -1305,16 +1306,25 @@ const App: React.FC = () => {
                 scrollContainerRef={mainContentRef}
                 user={user}
               />;
-            case 'Reports': {
+            case 'Insights': {
               if (!user) {
-                return <PlaceholderPage title="Reports" />;
+                return <PlaceholderPage title="Insights" />;
               }
-              // Fix for ReportsPage categories prop type mismatch
               const allCategories = user.customCategories ? [
                 ...Object.values(user.customCategories.expense).flat(),
                 ...Object.values(user.customCategories.income).flat()
               ].map((c) => ({ ...c, id: c.name })) : [];
-              return <ReportsPage transactions={sortedTransactions} user={user} categories={allCategories as any} />;
+              
+              return (
+                <InsightsPage
+                  transactions={sortedTransactions}
+                  budgets={budgets}
+                  user={user}
+                  categories={allCategories as any}
+                  goals={goals}
+                  goalContributions={goalContributions}
+                />
+              );
             }
             case 'Budgets':
               return <BudgetsPage
@@ -1429,6 +1439,7 @@ const App: React.FC = () => {
         </main>
       </div>
       <BottomNav activeItem={activeItem} setActiveItem={setActiveItem} onAddTransaction={handleOpenAddTransactionModal} />
+      <FloatingActionButton onClick={() => handleOpenAddTransactionModal()} />
 
       <Suspense fallback={null}>
         {isAddTransactionModalOpen && (

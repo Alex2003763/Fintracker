@@ -1,12 +1,12 @@
 import React from 'react';
-import { HomeIcon, TransactionsIcon, ReportsIcon, GoalsIcon, SettingsIcon, SalaryIcon, CoffeeIcon, GroceriesIcon, BillIcon, CartIcon, PiggyBankIcon, TransferIcon, UserIcon, PlusIcon, BudgetIcon, HomeGoodsIcon, HobbiesIcon, PharmacyIcon, DoctorIcon, GymIcon, MoviesIcon, SubscriptionsIcon, MaintenanceIcon, GasIcon, BusIcon, CarIcon } from './components/icons';
+import { HomeIcon, TransactionsIcon, ReportsIcon, GoalsIcon, SettingsIcon, SalaryIcon, CoffeeIcon, GroceriesIcon, BillIcon, CartIcon, PiggyBankIcon, TransferIcon, UserIcon, PlusIcon, BudgetIcon, HomeGoodsIcon, HobbiesIcon, PharmacyIcon, DoctorIcon, GymIcon, MoviesIcon, SubscriptionsIcon, MaintenanceIcon, GasIcon, BusIcon, CarIcon, TrendingUpIcon } from './components/icons';
 
 export const NAV_ITEMS = [
   { name: 'Home', icon: HomeIcon },
   { name: 'Transactions', icon: TransactionsIcon },
-  { name: 'Reports', icon: ReportsIcon },
-  { name: 'Budgets', icon: BudgetIcon },
+  { name: 'Insights', icon: TrendingUpIcon },
   { name: 'Goals', icon: GoalsIcon },
+  { name: 'Budgets', icon: BudgetIcon },
   { name: 'Account', icon: UserIcon },
   { name: 'Settings', icon: SettingsIcon },
 ];

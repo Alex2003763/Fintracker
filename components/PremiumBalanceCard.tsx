@@ -145,18 +145,7 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = React.memo(({
               <CartIcon className="action-icon" />
               <span className="action-label">Expense</span>
             </button>
-            <button
-              className="action-button reports-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveItem('Reports');
-              }}
-              aria-label="View Reports"
-              title="View Reports"
-            >
-              <ReportsIcon className="action-icon" />
-              <span className="action-label">Reports</span>
-            </button>
+            {/* Removed Reports button as requested */}
           </div>
         </div>
         
