@@ -1,5 +1,4 @@
 import React from 'react';
-import { useTheme } from './ThemeContext';
 import { Category } from '../types/category';
 import { ChevronDownIcon } from './icons';
 
@@ -11,14 +10,13 @@ interface CategoryItemProps {
 }
 
 const CategoryItem: React.FC<CategoryItemProps> = ({ category, onDelete, onEdit, onAddSubCategory }) => {
-  const { theme } = useTheme();
   const [isOpen, setIsOpen] = React.useState(false);
   const hasSubcategories = category.subcategories && category.subcategories.length > 0;
 
   return (
-    <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl shadow-sm border border-[rgb(var(--color-border-rgb))] overflow-hidden">
+    <div className={`bg-[rgb(var(--color-card-rgb))] rounded-xl shadow-sm border border-[rgb(var(--color-border-rgb))] overflow-visible relative transition-all ${isOpen ? 'z-10' : 'z-0'}`}>
       <div
-        className="flex items-center justify-between p-4 cursor-pointer hover:bg-[rgba(var(--color-text-rgb),0.02)] transition-colors"
+        className="flex items-center justify-between p-4 cursor-pointer hover:bg-[rgba(var(--color-text-rgb),0.02)] transition-colors bg-[rgb(var(--color-card-rgb))] rounded-t-xl"
         onClick={() => hasSubcategories && setIsOpen(!isOpen)}
       >
         <div className="flex items-center gap-3">
@@ -51,7 +49,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, onDelete, onEdit,
       
       {/* Subcategories List */}
       {hasSubcategories && isOpen && (
-          <div className="bg-[rgba(var(--color-bg-rgb),0.3)] border-t border-[rgb(var(--color-border-rgb))]">
+          <div className="bg-[rgba(var(--color-bg-rgb),0.3)] border-t border-[rgb(var(--color-border-rgb))] rounded-b-xl shadow-lg">
             {category.subcategories?.map((subCategory) => (
                 <div
                     key={subCategory.id}

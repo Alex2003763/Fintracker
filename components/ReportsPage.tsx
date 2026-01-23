@@ -334,9 +334,9 @@ const CategoryListItem = React.memo(({
   }, [isExpanded, transactions, item.name]);
 
   return (
-    <div className="mb-2">
+    <div className="mb-2 relative" style={{ zIndex: isExpanded ? 50 : 1 }}>
       <button
-        className="w-full text-left cursor-pointer p-3 rounded-xl hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))]"
+        className="w-full text-left cursor-pointer p-3 rounded-xl hover:bg-[rgb(var(--color-card-muted-rgb))] transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] bg-[rgb(var(--color-card-rgb))] relative"
         onClick={() => setExpandedCategory(isExpanded ? null : item.name)}
         aria-expanded={isExpanded}
         aria-controls={`category-transactions-${item.name}`}
@@ -364,10 +364,11 @@ const CategoryListItem = React.memo(({
       
       <div
         id={`category-transactions-${item.name}`}
-        className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
+        className={`transition-all duration-300 ease-in-out relative ${isExpanded ? 'opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}
+        style={{ zIndex: isExpanded ? 100 : 1 }}
       >
         {isExpanded && (
-          <div className="mt-2 ml-4 pl-4 border-l-2 border-[rgb(var(--color-border-rgb))]">
+          <div className="mt-2 ml-4 pl-4 border-l-2 border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))] rounded-lg shadow-lg p-2 relative max-h-[300px] overflow-y-auto custom-scrollbar" style={{ zIndex: 100 }}>
             <ul className="divide-y divide-[rgb(var(--color-border-rgb))]" role="list">
               {categoryTransactions.length > 0 ? (
                 categoryTransactions.map((t: any) => (
@@ -670,7 +671,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
       </div>
 
       {/* Main Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-visible">
         
         {/* Bar Chart - Takes up 2 columns on large screens */}
         <Card className="lg:col-span-2 flex flex-col h-[400px]">
@@ -730,12 +731,12 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
         </Card>
 
         {/* Categories Breakdown - Takes up 1 column */}
-        <div className="lg:col-span-1 flex flex-col gap-6">
-          <Card className="flex-1 min-h-[400px]">
+        <div className="lg:col-span-1 flex flex-col gap-6 overflow-visible">
+          <Card className="flex-1 min-h-[400px] overflow-visible">
             <CardHeader>
               <CardTitle>Spending by Category</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center p-0">
+            <CardContent className="flex flex-col items-center justify-center p-0 overflow-visible">
               {pieData.length > 0 ? (
                 <>
                   <div className="h-[220px] w-full mt-2 relative">
@@ -780,9 +781,9 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
                   </div>
                   
                   {/* Category Legend/List */}
-                  <div className="w-full px-6 pb-6 mt-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                  <div className="w-full px-6 pb-6 mt-2 overflow-visible">
                      <p className="text-xs font-semibold text-[rgb(var(--color-text-muted-rgb))] mb-3 uppercase tracking-wider">Top Categories</p>
-                     <div className="space-y-1">
+                     <div className="space-y-1 overflow-visible">
                        {pieData.map((item, index) => (
                          <CategoryListItem 
                            key={item.name} 
