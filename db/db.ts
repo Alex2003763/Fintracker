@@ -1,5 +1,6 @@
 import Dexie, { Table } from 'dexie';
-import { Transaction, Goal, Bill, Budget, RecurringTransaction, Notification, GoalContribution, BillPayment } from '../types';
+import { Transaction, Goal, Bill, Budget, RecurringTransaction, Notification, GoalContribution, BillPayment, DebtEntry } from '../types';
+import { encryptObjectFields, decryptObjectFields } from '../utils/encryption';
 
 /**
  * FinTrack Database Schema
@@ -16,11 +17,38 @@ export class FinTrackDatabase extends Dexie {
   notifications!: Table<Notification>;
   goalContributions!: Table<GoalContribution>;
   billPayments!: Table<BillPayment>;
+  debts!: Table<DebtEntry>;
 
   constructor() {
     super('FinTrackDB');
-    
+
     // Define database schema with indexes for efficient querying
+    // Version 3: Added debts table for tracking personal IOUs
+    this.version(3).stores({
+      transactions: '++id, date, type, category, description, [type+date], [category+date]',
+      goals: '++id, isActive, category, priority',
+      bills: '++id, dayOfMonth, category, name',
+      budgets: '++id, category, month, [category+month]',
+      recurringTransactions: '++id, nextDueDate, frequency, type, category',
+      notifications: '++id, date, read, type, relatedId',
+      goalContributions: '++id, goalId, transactionId, date',
+      billPayments: '++id, billId, month, paidDate',
+      debts: '++id, personName, direction, date'
+    });
+
+    // Version 2: Added compound indexes for query optimization
+    this.version(2).stores({
+      transactions: '++id, date, type, category, description, [type+date], [category+date]',
+      goals: '++id, isActive, category, priority',
+      bills: '++id, dayOfMonth, category, name',
+      budgets: '++id, category, month, [category+month]',
+      recurringTransactions: '++id, nextDueDate, frequency, type, category',
+      notifications: '++id, date, read, type, relatedId',
+      goalContributions: '++id, goalId, transactionId, date',
+      billPayments: '++id, billId, month, paidDate'
+    });
+
+    // Fallback for version 1 to ensure backward compatibility during upgrade
     this.version(1).stores({
       transactions: '++id, date, type, category, description',
       goals: '++id, isActive, category, priority',
@@ -36,6 +64,82 @@ export class FinTrackDatabase extends Dexie {
 
 // Create a singleton instance of the database
 export const db = new FinTrackDatabase();
+
+// Encryption Middleware
+// We hook into the creating/updating/reading process to encrypt/decrypt sensitive data
+// This is a simplified approach using Dexie hooks for specific tables
+const SENSITIVE_FIELDS: Record<string, string[]> = {
+  transactions: ['description', 'receiptImage'],
+  goals: ['name'],
+  bills: ['name', 'payee'],
+  budgets: [], // Categories are usually generic
+  debts: ['personName', 'note'], // Encrypt personal debt info
+};
+
+// Apply hooks
+// Note: hooks are asynchronous but Dexie expects synchronous return or specific Promise handling
+// We use 'reading' hook for decryption and 'creating'/'updating' for encryption.
+
+// However, standard Dexie hooks for 'reading' only work for `get`. `toArray` bypasses it mostly in older versions?
+// In Dexie 4, we use middleware for robust handling.
+
+db.use({
+  stack: 'dbcore',
+  name: 'encryptionMiddleware',
+  create: (downlevelDatabase) => {
+    return {
+      ...downlevelDatabase,
+      table: (tableName) => {
+        const downlevelTable = downlevelDatabase.table(tableName);
+        const sensitiveFields = SENSITIVE_FIELDS[tableName];
+
+        if (!sensitiveFields || sensitiveFields.length === 0) {
+          return downlevelTable;
+        }
+
+        return {
+          ...downlevelTable,
+          mutate: async (req) => {
+            if (req.type === 'add' || req.type === 'put') {
+              const encryptedValues = await Promise.all(
+                req.values.map(val => encryptObjectFields(val, sensitiveFields as any))
+              );
+              return downlevelTable.mutate({
+                ...req,
+                values: encryptedValues
+              });
+            }
+            return downlevelTable.mutate(req);
+          },
+          query: async (req) => {
+            const res = await downlevelTable.query(req);
+            const { result } = res;
+            if (Array.isArray(result)) {
+               const decryptedResult = await Promise.all(
+                 result.map(item => decryptObjectFields(item, sensitiveFields as any))
+               );
+               return { ...res, result: decryptedResult };
+            }
+            return res;
+          },
+          get: async (req) => {
+            const item = await downlevelTable.get(req);
+            if (item) {
+              return decryptObjectFields(item, sensitiveFields as any);
+            }
+            return item;
+          },
+          getMany: async (req) => {
+             const items = await downlevelTable.getMany(req);
+             return Promise.all(items.map(item =>
+                item ? decryptObjectFields(item, sensitiveFields as any) : item
+             ));
+          }
+        };
+      }
+    };
+  }
+});
 
 /**
  * Database utility functions for common operations

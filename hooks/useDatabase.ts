@@ -1,6 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import Dexie from 'dexie';
 import { db } from '../db/db';
-import { Transaction, Goal, Bill, Budget, RecurringTransaction, Notification, GoalContribution, BillPayment } from '../types';
+import { Transaction, Goal, Bill, Budget, RecurringTransaction, Notification, GoalContribution, BillPayment, DebtEntry } from '../types';
+import { decryptObjectFields } from '../utils/encryption';
 
 /**
  * Hook to fetch and observe transactions from IndexedDB
@@ -22,7 +24,12 @@ export function useTransactionsByType(type: 'income' | 'expense' | 'all' = 'all'
       if (type === 'all') {
         return db.transactions.orderBy('date').reverse().toArray();
       }
-      return db.transactions.where('type').equals(type).reverse().sortBy('date');
+      // Use compound index [type+date] for efficient sorting and filtering
+      return db.transactions
+        .where('[type+date]')
+        .between([type, Dexie.minKey], [type, Dexie.maxKey])
+        .reverse()
+        .toArray();
     },
     [type],
     []
@@ -162,6 +169,49 @@ export function useBillPaymentsByBill(billId: string) {
 }
 
 /**
+ * Hook to fetch debts from IndexedDB
+ * Note: Manual decryption needed because orderBy uses cursors which bypass middleware
+ */
+export function useDebts() {
+  return useLiveQuery(
+    async () => {
+      const debts = await db.debts.orderBy('date').reverse().toArray();
+      // Manually decrypt sensitive fields
+      const decrypted = await Promise.all(
+        debts.map(debt => decryptObjectFields(debt, ['personName', 'note'] as (keyof DebtEntry)[]))
+      );
+      return decrypted;
+    },
+    [],
+    []
+  );
+}
+
+/**
+ * Hook to fetch debts filtered by direction
+ * Note: Manual decryption needed because orderBy uses cursors which bypass middleware
+ */
+export function useDebtsByDirection(direction: 'they_owe_me' | 'i_owe_them' | 'all' = 'all') {
+  return useLiveQuery(
+    async () => {
+      let debts: DebtEntry[];
+      if (direction === 'all') {
+        debts = await db.debts.orderBy('date').reverse().toArray();
+      } else {
+        debts = await db.debts.where('direction').equals(direction).reverse().sortBy('date');
+      }
+      // Manually decrypt sensitive fields
+      const decrypted = await Promise.all(
+        debts.map(debt => decryptObjectFields(debt, ['personName', 'note'] as (keyof DebtEntry)[]))
+      );
+      return decrypted;
+    },
+    [direction],
+    []
+  );
+}
+
+/**
  * Hook to fetch transactions for a specific date range
  */
 export function useTransactionsByDateRange(startDate: Date, endDate: Date) {
@@ -181,7 +231,12 @@ export function useTransactionsByDateRange(startDate: Date, endDate: Date) {
  */
 export function useTransactionsByCategory(category: string) {
   return useLiveQuery(
-    () => db.transactions.where('category').equals(category).reverse().sortBy('date'),
+    // Use compound index [category+date]
+    () => db.transactions
+      .where('[category+date]')
+      .between([category, Dexie.minKey], [category, Dexie.maxKey])
+      .reverse()
+      .toArray(),
     [category],
     []
   );
@@ -193,16 +248,26 @@ export function useTransactionsByCategory(category: string) {
 export function useSearchTransactions(query: string) {
   return useLiveQuery(
     () => {
-      if (!query.trim()) {
+      const q = query.toLowerCase().trim();
+      if (!q) {
         return db.transactions.orderBy('date').reverse().toArray();
       }
+      
+      // Optimization: If the query is short, sticking to filter+sort on date might be okay.
+      // But we can try to use anyStartsWith if the user is typing the beginning of a description.
+      // However, we need to search both description and category.
+      // Full text search in IndexedDB is limited.
+      // We stick to filter() but ensure we iterate over the sorted index 'date' so at least the result is naturally sorted
+      // without needing an in-memory sort of the whole set if possible.
+      
       return db.transactions
-        .filter(transaction => 
-          transaction.description.toLowerCase().includes(query.toLowerCase()) ||
-          transaction.category.toLowerCase().includes(query.toLowerCase())
-        )
+        .orderBy('date')
         .reverse()
-        .sortBy('date');
+        .filter(transaction =>
+          transaction.description.toLowerCase().includes(q) ||
+          transaction.category.toLowerCase().includes(q)
+        )
+        .toArray();
     },
     [query],
     []
@@ -404,5 +469,34 @@ export const dbMutations = {
    */
   async deleteBillPaymentsByBill(billId: string): Promise<void> {
     await db.billPayments.where('billId').equals(billId).delete();
+  },
+
+  /**
+   * Add a new debt entry
+   */
+  async addDebt(debt: DebtEntry | Omit<DebtEntry, 'id'>): Promise<string> {
+    const id = await db.debts.add(debt as DebtEntry);
+    return id.toString();
+  },
+
+  /**
+   * Update an existing debt entry
+   */
+  async updateDebt(id: string, updates: Partial<DebtEntry>): Promise<number> {
+    return await db.debts.update(id, updates);
+  },
+
+  /**
+   * Delete a debt entry
+   */
+  async deleteDebt(id: string): Promise<void> {
+    await db.debts.delete(id);
+  },
+
+  /**
+   * Clear all debts (optional: for settling all)
+   */
+  async clearAllDebts(): Promise<void> {
+    await db.debts.clear();
   }
 };

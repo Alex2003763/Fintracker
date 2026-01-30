@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
-import { Budget, Transaction } from '../types';
+import React, { useMemo, useState } from 'react';
+import { Budget, Transaction, DebtEntry } from '../types';
 import { PlusIcon, PencilIcon } from './icons';
 import { formatCurrency } from '../utils/formatters';
 import { CATEGORY_ICON_MAP } from '../constants';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
+import DebtsTab from './DebtsTab';
 
 interface BudgetItemProps {
   budget: Budget;
@@ -143,11 +144,15 @@ const BudgetItem: React.FC<BudgetItemProps> = ({ budget, spent, onEdit }) => {
 interface BudgetsPageProps {
   budgets: Budget[];
   transactions: Transaction[];
+  debts: DebtEntry[];
   onManageBudgets: () => void;
   onEditBudget: (budget: Budget) => void;
 }
 
-const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onManageBudgets, onEditBudget }) => {
+type TabType = 'budgets' | 'debts';
+
+const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, debts, onManageBudgets, onEditBudget }) => {
+  const [activeTab, setActiveTab] = useState<TabType>('budgets');
   const { currentMonthBudgets, totalBudget, totalSpent } = useMemo(() => {
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -181,8 +186,48 @@ const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, onMana
 
   const overallProgress = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
+  // If Debts tab is active, render DebtsTab component
+  if (activeTab === 'debts') {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto px-4 pb-20">
+        {/* Tab Navigation */}
+        <div className="flex gap-2 border-b border-[rgb(var(--color-border-rgb))]">
+          <button
+            onClick={() => setActiveTab('budgets')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'budgets' ? 'border-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-rgb))]' : 'border-transparent text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'}`}
+          >
+            Budgets
+          </button>
+          <button
+            onClick={() => setActiveTab('debts')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'debts' ? 'border-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-rgb))]' : 'border-transparent text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'}`}
+          >
+            Debts & IOUs
+          </button>
+        </div>
+        <DebtsTab debts={debts} />
+      </div>
+    );
+  }
+
   return (
      <div className="space-y-6 max-w-7xl mx-auto px-4 pb-20">
+       {/* Tab Navigation */}
+       <div className="flex gap-2 border-b border-[rgb(var(--color-border-rgb))]">
+         <button
+           onClick={() => setActiveTab('budgets')}
+           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'budgets' ? 'border-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-rgb))]' : 'border-transparent text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'}`}
+         >
+           Budgets
+         </button>
+         <button
+           onClick={() => setActiveTab('debts')}
+           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'debts' ? 'border-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-rgb))]' : 'border-transparent text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'}`}
+         >
+           Debts & IOUs
+         </button>
+       </div>
+
        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
          <div>
            <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">

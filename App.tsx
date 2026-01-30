@@ -22,7 +22,7 @@ import { processImageForBackground, createPatternBackground } from './utils/imag
 import { TRANSACTION_CATEGORIES } from './constants';
 import {
   useTransactions, useGoals, useGoalContributions, useBills, useBillPayments,
-  useBudgets, useRecurringTransactions, useNotifications, dbMutations
+  useBudgets, useRecurringTransactions, useNotifications, useDebts, dbMutations
 } from './hooks/useDatabase';
 import { migrateFromLocalStorage, hasMigratedToIndexedDB, getMigrationStatus } from './utils/migration';
 import { dbUtils } from './db/db';
@@ -134,6 +134,7 @@ const App: React.FC = () => {
   const budgets = useBudgets() || [];
   const recurringTransactions = useRecurringTransactions() || [];
   const notifications = useNotifications() || [];
+  const debts = useDebts() || [];
   const initialProcessingDone = useRef(false);
   const budgetNotificationCheckInProgress = useRef(false);
   const mainContentRef = useRef<HTMLElement>(null);
@@ -624,12 +625,16 @@ const App: React.FC = () => {
     setUser(authedUser);
     setSessionKey(key);
     initialProcessingDone.current = false; // Reset for new session
-    
-    // Check if it's a new account to set initial data
-    if (!localStorage.getItem('fintrackTransactions')) {
+
+    // Check if it's a new account - only show welcome notification once
+    // Use a dedicated flag to track if welcome notification was already shown
+    const welcomeShownKey = `fintrack_welcome_shown_${authedUser.username}`;
+    if (!localStorage.getItem(welcomeShownKey)) {
       const welcomeNotification: Notification = { id: uuidv4(), title: 'Welcome to FinTrack!', message: 'Start by adding your first transaction.', date: new Date().toISOString(), read: false, type: 'standard' };
       // Use dbMutations instead of setNotifications which doesn't exist
       dbMutations.addNotification(welcomeNotification);
+      // Mark welcome notification as shown for this user
+      localStorage.setItem(welcomeShownKey, 'true');
     }
   };
 
@@ -1330,6 +1335,7 @@ const App: React.FC = () => {
               return <BudgetsPage
                 transactions={sortedTransactions}
                 budgets={budgets}
+                debts={debts}
                 onManageBudgets={handleManageBudgets}
                 onEditBudget={handleEditBudget}
                />;

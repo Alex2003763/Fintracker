@@ -172,3 +172,12 @@ export interface SubCategory {
   name: string;
   icon?: string;
 }
+
+export interface DebtEntry {
+  id: string;
+  personName: string;
+  direction: 'they_owe_me' | 'i_owe_them';
+  amount: number;
+  date: string; // ISO date string
+  note?: string;
+}

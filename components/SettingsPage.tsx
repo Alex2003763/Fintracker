@@ -1,6 +1,6 @@
 import React, {useState, useEffect } from 'react';
 import { User } from '../types';
-import { useTheme, THEMES } from './ThemeContext';
+import { useTheme, THEMES, Theme } from './ThemeContext';
 import { SparklesIcon, BellIcon, SettingsIcon, UserIcon } from './icons';
 import ServiceWorkerDebugPanel from './ServiceWorkerDebugPanel';
 import NotificationSettingsPage from './NotificationSettingsPage';
@@ -27,31 +27,113 @@ interface SettingsPageProps {
   onExportData: () => void;
 }
 
-const ThemeOption: React.FC<{ id: string, name: string, active: boolean, onClick: () => void}> = ({ id, name, active, onClick }) => {
-    const isLight = id === 'theme-light';
-    return (
-        <button
-            onClick={onClick}
-            className={`text-left p-2 sm:p-3 rounded border-2 w-full transition-all ${
-              active
-                ? 'border-[rgb(var(--color-primary-rgb))] bg-[rgb(var(--color-primary-rgb))] bg-opacity-5'
-                : 'border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]'
-            }`}
-        >
-            <div className={`p-2 sm:p-3 rounded ${isLight ? 'bg-gray-100' : 'bg-slate-900'}`}>
-                <div className="flex items-center justify-between">
-                    <div className={`w-1/2 h-4 sm:h-6 rounded ${isLight ? 'bg-white' : 'bg-slate-800'}`}></div>
-                    <div className={`w-4 h-4 sm:w-6 sm:h-6 rounded-full ${
-                      id.includes('crimson') ? 'bg-rose-500' :
-                      id.includes('green') ? 'bg-emerald-500' :
-                      id.includes('slate') ? 'bg-blue-500' :
-                      'bg-blue-500'
-                    }`}></div>
-                </div>
+// Theme preview component showing a mini dashboard mockup
+const ThemePreview: React.FC<{ themeData: Theme | undefined }> = ({ themeData }) => {
+  if (!themeData) return null;
+
+  const isLight = themeData.category === 'light';
+  const isAmoled = themeData.id === 'theme-amoled';
+
+  // Get colors based on theme
+  const getBgStyle = () => {
+    if (isAmoled) return { backgroundColor: '#000000' };
+    if (isLight) {
+      if (themeData.id.includes('rose')) return { backgroundColor: '#fff1f2' };
+      if (themeData.id.includes('mint')) return { backgroundColor: '#ecfdf5' };
+      if (themeData.id.includes('amber')) return { backgroundColor: '#fffbeb' };
+      if (themeData.id.includes('violet')) return { backgroundColor: '#f5f3ff' };
+      if (themeData.id.includes('sky')) return { backgroundColor: '#f0f9ff' };
+      if (themeData.id.includes('coral')) return { backgroundColor: '#fff7ed' };
+      return { backgroundColor: '#f3f4f6' };
+    }
+    if (themeData.id.includes('purple')) return { backgroundColor: '#181223' };
+    if (themeData.id.includes('ocean')) return { backgroundColor: '#0c1c23' };
+    if (themeData.id.includes('green')) return { backgroundColor: '#0f1714' };
+    if (themeData.id.includes('crimson')) return { backgroundColor: '#1c1518' };
+    if (themeData.id.includes('amber')) return { backgroundColor: '#1c160c' };
+    if (themeData.id.includes('pink')) return { backgroundColor: '#1e0f19' };
+    if (themeData.id.includes('lime')) return { backgroundColor: '#12190c' };
+    return { backgroundColor: '#0f172a' };
+  };
+
+  const getCardStyle = () => {
+    if (isAmoled) return { backgroundColor: '#121212' };
+    if (isLight) return { backgroundColor: '#ffffff' };
+    if (themeData.id.includes('purple')) return { backgroundColor: '#261e37' };
+    if (themeData.id.includes('ocean')) return { backgroundColor: '#142d37' };
+    if (themeData.id.includes('green')) return { backgroundColor: '#19271e' };
+    if (themeData.id.includes('crimson')) return { backgroundColor: '#312126' };
+    if (themeData.id.includes('amber')) return { backgroundColor: '#2d2414' };
+    if (themeData.id.includes('pink')) return { backgroundColor: '#321928' };
+    if (themeData.id.includes('lime')) return { backgroundColor: '#1e2a14' };
+    return { backgroundColor: '#1e293b' };
+  };
+
+  const getTextColor = () => isLight ? '#1f2937' : '#ffffff';
+  const getMutedColor = () => isLight ? '#6b7280' : '#9ca3af';
+
+  return (
+    <div
+      className="rounded-xl p-4 border border-[rgb(var(--color-border-rgb))] transition-all duration-300"
+      style={getBgStyle()}
+    >
+      {/* Mini dashboard mockup */}
+      <div className="space-y-3">
+        {/* Header bar */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: themeData.accentColor }}
+            >
+              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+              </svg>
             </div>
-            <p className="font-semibold mt-1 sm:mt-2 text-xs sm:text-sm text-[rgb(var(--color-text-rgb))] truncate">{name}</p>
-        </button>
-    )
+            <div>
+              <p className="text-sm font-semibold" style={{ color: getTextColor() }}>{themeData.name}</p>
+              <p className="text-xs" style={{ color: getMutedColor() }}>{themeData.category === 'light' ? 'Light Theme' : 'Dark Theme'}</p>
+            </div>
+          </div>
+          <div
+            className="w-6 h-6 rounded-full border-2"
+            style={{ borderColor: themeData.accentColor, backgroundColor: `${themeData.accentColor}20` }}
+          ></div>
+        </div>
+
+        {/* Balance card mockup */}
+        <div className="rounded-lg p-3" style={getCardStyle()}>
+          <p className="text-xs mb-1" style={{ color: getMutedColor() }}>Balance</p>
+          <p className="text-lg font-bold" style={{ color: getTextColor() }}>$12,450.00</p>
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-xs" style={{ color: themeData.accentColor }}>+2.4%</span>
+            <span className="text-xs" style={{ color: getMutedColor() }}>this month</span>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2">
+          <button
+            className="flex-1 py-2 px-3 rounded-lg text-xs font-medium text-white"
+            style={{ backgroundColor: themeData.accentColor }}
+          >
+            Add Transaction
+          </button>
+          <button
+            className="py-2 px-3 rounded-lg text-xs font-medium border"
+            style={{
+              borderColor: isLight ? '#e5e7eb' : '#374151',
+              color: getTextColor(),
+              backgroundColor: 'transparent'
+            }}
+          >
+            View All
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Biometric Settings Component
@@ -124,21 +206,29 @@ const BiometricSettings: React.FC<{ user: User; onUpdateUser: (user: User) => vo
         <div className="border-t border-[rgb(var(--color-border-rgb))] pt-4 sm:pt-6 mt-4">
              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl space-y-3 sm:space-y-0">
                 <div className="flex-1">
-                  <p className="font-medium text-[rgb(var(--color-text-rgb))]">Biometric Login</p>
-                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] pr-2">
+                  <p id="biometric-label" className="font-medium text-[rgb(var(--color-text-rgb))]">Biometric Login</p>
+                  <p id="biometric-description" className="text-sm text-[rgb(var(--color-text-muted-rgb))] pr-2">
                       Use Touch ID or Face ID to sign in
                   </p>
                 </div>
                 <button
                   onClick={handleToggleBiometrics}
                   disabled={isRegistering}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 ${
+                  role="switch"
+                  aria-checked={user.biometricEnabled}
+                  aria-labelledby="biometric-label"
+                  aria-describedby="biometric-description biometric-status"
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-card-muted-rgb))] ${
                     user.biometricEnabled
                       ? 'bg-[rgb(var(--color-primary-rgb))]'
                       : 'bg-[rgb(var(--color-border-rgb))]'
                   } ${isRegistering ? 'opacity-50 cursor-wait' : ''}`}
                 >
+                  <span className="sr-only">
+                    {user.biometricEnabled ? 'Disable biometric login' : 'Enable biometric login'}
+                  </span>
                   <span
+                    aria-hidden="true"
                     className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
                       user.biometricEnabled
                         ? 'translate-x-6'
@@ -147,11 +237,18 @@ const BiometricSettings: React.FC<{ user: User; onUpdateUser: (user: User) => vo
                   />
                 </button>
             </div>
-            {statusMsg && (
-                <p className={`text-sm mt-2 ${statusMsg.includes('success') ? 'text-green-600' : 'text-red-500'}`}>
-                    {statusMsg}
-                </p>
-            )}
+            <div
+              id="biometric-status"
+              aria-live="polite"
+              aria-atomic="true"
+              className="min-h-[1.5rem]"
+            >
+              {statusMsg && (
+                  <p className={`text-sm mt-2 ${statusMsg.includes('success') ? 'text-green-600' : 'text-red-500'}`}>
+                      {statusMsg}
+                  </p>
+              )}
+            </div>
         </div>
     );
 };
@@ -174,27 +271,40 @@ const AISettings: React.FC<{ user: User; onUpdateUser: (user: User) => void }> =
     };
 
     return (
-        <div className="space-y-3 sm:space-y-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-[rgb(var(--color-text-rgb))]">AI Settings</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] leading-relaxed">
+        <div className="space-y-3 sm:space-y-4" role="group" aria-labelledby="ai-settings-title">
+            <h2 id="ai-settings-title" className="text-lg sm:text-xl font-semibold text-[rgb(var(--color-text-rgb))]">AI Settings</h2>
+            <form onSubmit={handleSubmit} className="space-y-4" aria-describedby="ai-settings-description">
+                <p id="ai-settings-description" className="text-sm text-[rgb(var(--color-text-muted-rgb))] leading-relaxed">
                     Enter your Gemini API key to enable AI-powered financial insights and smart categorization.
                 </p>
                 <div className="relative">
+                    <label htmlFor="gemini-api-key" className="sr-only">Gemini API Key</label>
                     <input
+                        id="gemini-api-key"
                         type="password"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
                         placeholder="Gemini API Key"
+                        autoComplete="off"
                         className="w-full px-4 py-3 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent transition-all duration-200 text-sm sm:text-base placeholder-[rgb(var(--color-text-muted-rgb))]"
-                        aria-label="Gemini API Key"
+                        aria-describedby="ai-settings-description ai-settings-status"
                     />
                 </div>
-                {message && (
-                    <div className={`p-3 rounded-lg text-sm font-medium animate-fade-in ${message.includes('success') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-                        {message}
-                    </div>
-                )}
+                <div
+                  id="ai-settings-status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="min-h-[1rem]"
+                >
+                  {message && (
+                      <div
+                        role="status"
+                        className={`p-3 rounded-lg text-sm font-medium animate-fade-in ${message.includes('success') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}
+                      >
+                          {message}
+                      </div>
+                  )}
+                </div>
                 <button
                     type="submit"
                     className="w-full sm:w-auto px-6 py-3 text-sm font-medium bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
@@ -228,17 +338,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
   // Helper function to get theme colors for image processing
   const getThemeColors = () => {
-    const isDark = theme !== 'theme-light';
-    let primaryColor = '#3b82f6'; // default blue
-    
-    if (theme.includes('green')) {
-      primaryColor = '#10b981'; // emerald
-    } else if (theme.includes('crimson')) {
-      primaryColor = '#ef4444'; // red
-    } else if (theme.includes('slate')) {
-      primaryColor = '#3b82f6'; // blue
-    }
-    
+    const currentTheme = THEMES.find(t => t.id === theme);
+    const isDark = currentTheme?.category === 'dark';
+    const primaryColor = currentTheme?.accentColor || '#3b82f6';
+
     return { isDark, primaryColor };
   };
 
@@ -358,84 +461,163 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     );
   }
 
- 
-   return (
-     <div className="bg-[rgb(var(--color-background-rgb))] px-4 sm:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8 max-w-4xl mx-auto min-h-screen">
-       {/* Enhanced Header */}
-      <div className="text-center pb-6 sm:pb-8 border-b border-[rgb(var(--color-border-rgb))]">
-        <div className="flex flex-col sm:flex-row items-center justify-center mb-4 space-y-3 sm:space-y-0 sm:space-x-3">
-          <div className="p-2 sm:p-3 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-xl sm:rounded-2xl">
-            <SettingsIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[rgb(var(--color-primary-rgb))]" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Settings</h1>
-        </div>
-      </div>
 
-      <div className="space-y-6 sm:space-y-8">
-        {/* Account & Profile Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <UserIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
-            </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Account & Profile</h2>
-          </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
-              <div className="flex-1">
-                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Logged in as</p>
-                <p className="font-semibold text-[rgb(var(--color-text-rgb))] text-base sm:text-lg break-all">{user.username}</p>
+   return (
+     <div
+       className="bg-[rgb(var(--color-background-rgb))] px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-6xl mx-auto min-h-screen"
+       role="main"
+       aria-label="Settings page"
+     >
+       {/* Enhanced Header with User Profile */}
+      <header className="mb-8">
+        <div className="bg-gradient-to-r from-[rgb(var(--color-primary-rgb))]/10 via-[rgb(var(--color-card-rgb))] to-[rgb(var(--color-primary-rgb))]/5 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-[rgb(var(--color-border-rgb))]">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+            {/* User Avatar */}
+            <div className="relative">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-[rgb(var(--color-primary-rgb))] to-[rgb(var(--color-primary-hover-rgb))] flex items-center justify-center shadow-lg">
+                <span className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-primary-text-rgb))]">
+                  {user.username.charAt(0).toUpperCase()}
+                </span>
               </div>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-[rgb(var(--color-card-rgb))] flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+
+            {/* User Info */}
+            <div className="flex-1 text-center sm:text-left">
+              <h1 id="settings-page-title" className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))] mb-1">
+                Settings
+              </h1>
+              <p className="text-[rgb(var(--color-text-muted-rgb))] text-sm sm:text-base">
+                Signed in as <span className="font-medium text-[rgb(var(--color-text-rgb))]">{user.username}</span>
+              </p>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => setActiveItem?.('Account')}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
+                className="px-4 py-2 text-sm bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))] rounded-xl border border-[rgb(var(--color-border-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 font-medium"
+                aria-label="Manage your account settings"
               >
-                Manage Account
+                Edit Profile
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm"
+              >
+                Sign Out
               </button>
             </div>
-            
-            <BiometricSettings user={user} onUpdateUser={onUpdateUser} />
           </div>
         </div>
+      </header>
 
-        {/* Appearance Section */}
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+
+        {/* Left Column */}
         <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <SparklesIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
+          {/* Account & Security Card */}
+          <section aria-labelledby="account-section-title" role="region">
+            <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="px-5 py-4 bg-gradient-to-r from-[rgb(var(--color-card-muted-rgb))] to-[rgb(var(--color-card-rgb))] border-b border-[rgb(var(--color-border-rgb))]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[rgb(var(--color-primary-rgb))]/10 rounded-lg" aria-hidden="true">
+                    <UserIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
+                  </div>
+                  <h2 id="account-section-title" className="text-lg font-semibold text-[rgb(var(--color-text-rgb))]">Account & Security</h2>
+                </div>
+              </div>
+              <div className="p-5">
+                <BiometricSettings user={user} onUpdateUser={onUpdateUser} />
+              </div>
             </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Appearance</h2>
-          </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
-            <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mb-4 sm:mb-6">Choose your preferred theme</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {THEMES.map(t => (
-                <ThemeOption
-                  key={t.id}
-                  id={t.id}
-                  name={t.name}
-                  active={theme === t.id}
-                  onClick={() => setTheme(t.id)}
-                />
-              ))}
+          </section>
+
+          {/* Appearance Card */}
+          <section aria-labelledby="appearance-section-title" role="region">
+            <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="px-5 py-4 bg-gradient-to-r from-[rgb(var(--color-card-muted-rgb))] to-[rgb(var(--color-card-rgb))] border-b border-[rgb(var(--color-border-rgb))]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/10 rounded-lg" aria-hidden="true">
+                    <SparklesIcon className="w-5 h-5 text-purple-500" />
+                  </div>
+                  <h2 id="appearance-section-title" className="text-lg font-semibold text-[rgb(var(--color-text-rgb))]">Appearance</h2>
+                </div>
+              </div>
+              <div className="p-5 space-y-4">
+                <p id="theme-description" className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Choose your preferred theme</p>
+
+                {/* Theme Dropdown Selector */}
+                <div>
+                  <label htmlFor="theme-select" className="block text-sm font-medium text-[rgb(var(--color-text-rgb))] mb-2">
+                    Select Theme
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="theme-select"
+                      value={theme}
+                      onChange={(e) => setTheme(e.target.value)}
+                      aria-describedby="theme-description"
+                      className="w-full appearance-none bg-[rgb(var(--color-bg-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl px-4 py-3 pr-10 text-[rgb(var(--color-text-rgb))] text-base focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent transition-all cursor-pointer touch-manipulation"
+                    >
+                      <optgroup label="Light Themes">
+                        {THEMES.filter(t => t.category === 'light').map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Dark Themes">
+                        {THEMES.filter(t => t.category === 'dark').map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </optgroup>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" aria-hidden="true">
+                      <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Theme Preview */}
+                <div>
+                  <p id="theme-preview-label" className="block text-sm font-medium text-[rgb(var(--color-text-rgb))] mb-2">
+                    Preview
+                  </p>
+                  <div aria-labelledby="theme-preview-label" aria-live="polite">
+                    <ThemePreview themeData={THEMES.find(t => t.id === theme)} />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </section>
         </div>
 
-        {/* Custom Background Section */}
+        {/* Right Column */}
         <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <svg className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Card Background</h2>
-          </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
-            <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mb-4 sm:mb-6">
-              Customize your balance card with a transparent background image
-            </p>
+
+          {/* Custom Background Card */}
+          <section aria-labelledby="background-section-title" role="region">
+            <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="px-5 py-4 bg-gradient-to-r from-[rgb(var(--color-card-muted-rgb))] to-[rgb(var(--color-card-rgb))] border-b border-[rgb(var(--color-border-rgb))]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-pink-500/10 rounded-lg" aria-hidden="true">
+                    <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h2 id="background-section-title" className="text-lg font-semibold text-[rgb(var(--color-text-rgb))]">Card Background</h2>
+                </div>
+              </div>
+              <div className="p-5">
+                <p id="background-description" className="text-sm text-[rgb(var(--color-text-muted-rgb))] mb-4">
+                  Customize your balance card with a background image
+                </p>
             
             {customBackground ? (
               <div className="space-y-4">
@@ -456,6 +638,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     </div>
                     <button
                       onClick={() => setCustomBackground(null)}
+                      aria-label="Remove custom background image"
                       className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                     >
                       Remove
@@ -557,124 +740,145 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 </div>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Smart Features Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <SparklesIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
-            </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Smart Features</h2>
-          </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
-            <AISettings user={user} onUpdateUser={onUpdateUser} />
-
-            <div className="border-t border-[rgb(var(--color-border-rgb))] pt-4 sm:pt-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl space-y-3 sm:space-y-0">
-                <div className="flex-1">
-                  <p className="font-medium text-[rgb(var(--color-text-rgb))]">Smart Category Suggestions</p>
-                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] pr-2">AI suggests categories based on transaction descriptions</p>
-                </div>
-                <button
-                  onClick={() => {
-                    const currentSetting = user.smartFeatures?.categorySuggestions ?? true;
-                    onUpdateUser({
-                      ...user,
-                      smartFeatures: {
-                        ...user.smartFeatures,
-                        categorySuggestions: !currentSetting
-                      }
-                    });
-                  }}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 ${
-                    user.smartFeatures?.categorySuggestions ?? true
-                      ? 'bg-[rgb(var(--color-primary-rgb))]'
-                      : 'bg-[rgb(var(--color-border-rgb))]'
-                  }`}
-                  aria-label={`Smart category suggestions are ${user.smartFeatures?.categorySuggestions ?? true ? 'enabled' : 'disabled'}`}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
-                      user.smartFeatures?.categorySuggestions ?? true
-                        ? 'translate-x-6'
-                        : 'translate-x-1'
-                    }`}
-                  />
-                </button>
               </div>
+            </div>
+          </section>
 
-              <div className="mt-3 sm:mt-4">
-                <button
-                  onClick={() => setActiveItem?.('Manage Categories')}
-                  className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 pr-2">
-                      <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">Manage Categories</p>
-                      <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Create and organize custom categories</p>
-                    </div>
-                    <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+          {/* Smart Features Card */}
+          <section aria-labelledby="smart-features-section-title" role="region">
+            <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="px-5 py-4 bg-gradient-to-r from-[rgb(var(--color-card-muted-rgb))] to-[rgb(var(--color-card-rgb))] border-b border-[rgb(var(--color-border-rgb))]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-500/10 rounded-lg" aria-hidden="true">
+                    <SparklesIcon className="w-5 h-5 text-amber-500" />
                   </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Notifications Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <BellIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
-            </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Notifications</h2>
-          </div>
-          <button
-            onClick={() => setShowNotificationSettings(true)}
-            className="w-full bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 hover:shadow-md hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg sm:rounded-xl flex-shrink-0">
-                  <BellIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[rgb(var(--color-primary-rgb))]" />
-                </div>
-                <div className="text-left flex-1 min-w-0">
-                  <p className="font-semibold text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors truncate">Notification Preferences</p>
-                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Customize alerts and reminders</p>
+                  <h2 id="smart-features-section-title" className="text-lg font-semibold text-[rgb(var(--color-text-rgb))]">Smart Features</h2>
                 </div>
               </div>
-              <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </button>
-        </div>
+              <div className="p-5 space-y-4">
+                <AISettings user={user} onUpdateUser={onUpdateUser} />
 
-        {/* Data & Privacy Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <svg className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
+                <div className="border-t border-[rgb(var(--color-border-rgb))] pt-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl space-y-3 sm:space-y-0">
+                    <div className="flex-1">
+                      <p id="category-suggestions-label" className="font-medium text-[rgb(var(--color-text-rgb))]">Smart Category Suggestions</p>
+                      <p id="category-suggestions-description" className="text-sm text-[rgb(var(--color-text-muted-rgb))] pr-2">AI suggests categories based on transaction descriptions</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const currentSetting = user.smartFeatures?.categorySuggestions ?? true;
+                        onUpdateUser({
+                          ...user,
+                          smartFeatures: {
+                            ...user.smartFeatures,
+                            categorySuggestions: !currentSetting
+                          }
+                        });
+                      }}
+                      role="switch"
+                      aria-checked={user.smartFeatures?.categorySuggestions ?? true}
+                      aria-labelledby="category-suggestions-label"
+                      aria-describedby="category-suggestions-description"
+                      className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-card-muted-rgb))] ${
+                        user.smartFeatures?.categorySuggestions ?? true
+                          ? 'bg-[rgb(var(--color-primary-rgb))]'
+                          : 'bg-[rgb(var(--color-border-rgb))]'
+                      }`}
+                    >
+                      <span className="sr-only">
+                        {user.smartFeatures?.categorySuggestions ?? true ? 'Disable smart category suggestions' : 'Enable smart category suggestions'}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                          user.smartFeatures?.categorySuggestions ?? true
+                            ? 'translate-x-6'
+                            : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="mt-3 sm:mt-4">
+                    <button
+                      onClick={() => setActiveItem?.('Manage Categories')}
+                      aria-label="Manage Categories - Create and organize custom categories"
+                      className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 pr-2">
+                          <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">Manage Categories</p>
+                          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Create and organize custom categories</p>
+                        </div>
+                        <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Data & Privacy</h2>
+          </section>
+        </div>
+      </div>
+
+      {/* Full-width sections below the grid */}
+      <div className="mt-8 space-y-6">
+        {/* Notifications Card */}
+        <section aria-labelledby="notifications-section-title" role="region">
+          <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+            <button
+              onClick={() => setShowNotificationSettings(true)}
+              aria-label="Open notification preferences to customize alerts and reminders"
+              className="w-full text-left"
+            >
+              <div className="px-5 py-4 bg-gradient-to-r from-[rgb(var(--color-card-muted-rgb))] to-[rgb(var(--color-card-rgb))] border-b border-[rgb(var(--color-border-rgb))] hover:from-[rgb(var(--color-card-rgb))] transition-all duration-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/10 rounded-lg" aria-hidden="true">
+                      <BellIcon className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <h2 id="notifications-section-title" className="text-lg font-semibold text-[rgb(var(--color-text-rgb))]">Notifications</h2>
+                      <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Customize alerts and reminders</p>
+                    </div>
+                  </div>
+                  <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </button>
           </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
+        </section>
+
+        {/* Data & Privacy Card */}
+        <section aria-labelledby="data-privacy-section-title" role="region">
+          <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="px-5 py-4 bg-gradient-to-r from-[rgb(var(--color-card-muted-rgb))] to-[rgb(var(--color-card-rgb))] border-b border-[rgb(var(--color-border-rgb))]">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500/10 rounded-lg" aria-hidden="true">
+                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h2 id="data-privacy-section-title" className="text-lg font-semibold text-[rgb(var(--color-text-rgb))]">Data & Privacy</h2>
+              </div>
+            </div>
+            <div className="p-5 space-y-3">
             <button
               onClick={handleExport}
               disabled={isExporting}
+              aria-label={isExporting ? 'Exporting data, please wait' : 'Export data - Save a backup of all your data'}
+              aria-busy={isExporting}
               className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
-                  <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+                  <div className="p-2 bg-green-100 rounded-lg flex-shrink-0" aria-hidden="true">
                     {isExporting ? (
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" role="status" aria-label="Loading"></div>
                     ) : (
                       <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l4-4m-4 4l-4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -688,7 +892,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Save a backup of all your data</p>
                   </div>
                 </div>
-                <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -697,13 +901,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             <button
               onClick={handleImportClick}
               disabled={isImporting}
+              aria-label={isImporting ? 'Importing data, please wait' : 'Import data - Restore from a backup file'}
+              aria-busy={isImporting}
               className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
-                  <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                  <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0" aria-hidden="true">
                     {isImporting ? (
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" role="status" aria-label="Loading"></div>
                     ) : (
                       <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
@@ -717,7 +923,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Restore from a backup file</p>
                   </div>
                 </div>
-                <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -729,48 +935,36 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               className="hidden"
               accept=".json"
               onChange={handleFileChange}
+              aria-label="Select JSON file to import"
             />
-          </div>
-        </div>
-
-        {/* Support Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <svg className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" />
-              </svg>
             </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Support & Info</h2>
           </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
-            <ServiceWorkerDebugPanel />
-          </div>
-        </div>
+        </section>
 
-        {/* Sign Out Section */}
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-[rgba(var(--color-primary-rgb),0.08)] to-[rgba(var(--color-primary-rgb),0.04)] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-primary-rgb))]/20 p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
-              <div className="flex-1">
-                <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-1">Sign Out</h3>
-                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">End your current session</p>
+        {/* Support Card */}
+        <section aria-labelledby="support-section-title" role="region">
+          <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="px-5 py-4 bg-gradient-to-r from-[rgb(var(--color-card-muted-rgb))] to-[rgb(var(--color-card-rgb))] border-b border-[rgb(var(--color-border-rgb))]">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-cyan-500/10 rounded-lg" aria-hidden="true">
+                  <svg className="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 id="support-section-title" className="text-lg font-semibold text-[rgb(var(--color-text-rgb))]">Support & Info</h2>
               </div>
-              <button
-                onClick={handleSignOut}
-                className="w-full sm:w-auto px-6 py-3 bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Sign Out
-              </button>
+            </div>
+            <div className="p-5">
+              <ServiceWorkerDebugPanel />
             </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center text-[rgb(var(--color-text-muted-rgb))] text-sm pt-6 sm:pt-8 border-t border-[rgb(var(--color-border-rgb))]">
-          <p>FinTrack App v1.3.0</p>
-        </div>
+        </section>
       </div>
+
+      {/* Footer */}
+      <footer className="mt-8 text-center py-6 border-t border-[rgb(var(--color-border-rgb))]" role="contentinfo">
+        <p className="text-[rgb(var(--color-text-muted-rgb))] text-sm">FinTrack App v1.3.0</p>
+      </footer>
     </div>
   );
 };
