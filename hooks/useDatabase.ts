@@ -6,10 +6,18 @@ import { decryptObjectFields } from '../utils/encryption';
 
 /**
  * Hook to fetch and observe transactions from IndexedDB
+ * Note: Manual decryption needed because orderBy uses cursors which bypass middleware
  */
 export function useTransactions() {
   return useLiveQuery(
-    () => db.transactions.orderBy('date').reverse().toArray(),
+    async () => {
+      const transactions = await db.transactions.orderBy('date').reverse().toArray();
+      // Manually decrypt sensitive fields
+      const decrypted = await Promise.all(
+        transactions.map(tx => decryptObjectFields(tx, ['description', 'receiptImage'] as (keyof Transaction)[]))
+      );
+      return decrypted;
+    },
     [],
     []
   );
@@ -17,19 +25,27 @@ export function useTransactions() {
 
 /**
  * Hook to fetch transactions filtered by type
+ * Note: Manual decryption needed because orderBy uses cursors which bypass middleware
  */
 export function useTransactionsByType(type: 'income' | 'expense' | 'all' = 'all') {
   return useLiveQuery(
-    () => {
+    async () => {
+      let transactions: Transaction[];
       if (type === 'all') {
-        return db.transactions.orderBy('date').reverse().toArray();
+        transactions = await db.transactions.orderBy('date').reverse().toArray();
+      } else {
+        // Use compound index [type+date] for efficient sorting and filtering
+        transactions = await db.transactions
+          .where('[type+date]')
+          .between([type, Dexie.minKey], [type, Dexie.maxKey])
+          .reverse()
+          .toArray();
       }
-      // Use compound index [type+date] for efficient sorting and filtering
-      return db.transactions
-        .where('[type+date]')
-        .between([type, Dexie.minKey], [type, Dexie.maxKey])
-        .reverse()
-        .toArray();
+      // Manually decrypt sensitive fields
+      const decrypted = await Promise.all(
+        transactions.map(tx => decryptObjectFields(tx, ['description', 'receiptImage'] as (keyof Transaction)[]))
+      );
+      return decrypted;
     },
     [type],
     []
@@ -38,10 +54,18 @@ export function useTransactionsByType(type: 'income' | 'expense' | 'all' = 'all'
 
 /**
  * Hook to fetch goals from IndexedDB
+ * Note: Manual decryption needed because toArray uses cursors which bypass middleware
  */
 export function useGoals() {
   return useLiveQuery(
-    () => db.goals.toArray(),
+    async () => {
+      const goals = await db.goals.toArray();
+      // Manually decrypt sensitive fields
+      const decrypted = await Promise.all(
+        goals.map(goal => decryptObjectFields(goal, ['name'] as (keyof Goal)[]))
+      );
+      return decrypted;
+    },
     [],
     []
   );
@@ -49,10 +73,18 @@ export function useGoals() {
 
 /**
  * Hook to fetch active goals only
+ * Note: Manual decryption needed because filter uses cursors which bypass middleware
  */
 export function useActiveGoals() {
   return useLiveQuery(
-    () => db.goals.filter(goal => goal.isActive).toArray(),
+    async () => {
+      const goals = await db.goals.filter(goal => goal.isActive).toArray();
+      // Manually decrypt sensitive fields
+      const decrypted = await Promise.all(
+        goals.map(goal => decryptObjectFields(goal, ['name'] as (keyof Goal)[]))
+      );
+      return decrypted;
+    },
     [],
     []
   );
@@ -60,10 +92,18 @@ export function useActiveGoals() {
 
 /**
  * Hook to fetch bills from IndexedDB
+ * Note: Manual decryption needed because toArray uses cursors which bypass middleware
  */
 export function useBills() {
   return useLiveQuery(
-    () => db.bills.toArray(),
+    async () => {
+      const bills = await db.bills.toArray();
+      // Manually decrypt sensitive fields
+      const decrypted = await Promise.all(
+        bills.map(bill => decryptObjectFields(bill, ['name', 'payee'] as (keyof Bill)[]))
+      );
+      return decrypted;
+    },
     [],
     []
   );
