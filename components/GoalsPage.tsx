@@ -186,7 +186,7 @@ const GoalItem: React.FC<{
 
 const GoalsPage: React.FC<GoalsPageProps> = ({ goals, goalContributions, onAddNewGoal, onEditGoal, onDeleteGoal, onOpenConfirmModal }) => {
   return (
-     <div className="space-y-6 mobile-content">
+     <div className="space-y-6 mobile-content pb-24 ">
        <div className="relative">
          <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Financial Goals</h1>
         <button
