@@ -18,8 +18,9 @@ const navItems = [
 const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] flex items-center justify-between z-10 transition-colors px-2"
+      className="md:hidden fixed left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] flex items-center justify-between z-10 transition-colors px-2"
       style={{
+        bottom: 'env(safe-area-inset-bottom)',
         paddingLeft: 'max(0.5rem, env(safe-area-inset-left))',
         paddingRight: 'max(0.5rem, env(safe-area-inset-right))'
       }}
