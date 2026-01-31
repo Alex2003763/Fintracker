@@ -309,7 +309,7 @@ html, body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   padding-top: env(safe-area-inset-top);
-  padding-bottom: calc(6rem + env(safe-area-inset-bottom)); /* Account for bottom nav (h-20 = 5rem) + safe area */
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom)); /* Account for bottom nav (h-20 = 5rem) + safe area */
 }
 
 /* Desktop: Remove extra padding for bottom nav */
