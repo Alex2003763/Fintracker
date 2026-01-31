@@ -1436,7 +1436,7 @@ const App: React.FC = () => {
           isOnline={isOnline}
           setActiveItem={setActiveItem}
         />
-        <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 md:p-6 pb-1 animate-fade-in-up main-content" style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))', paddingBottom: 'env(safe-area-inset-bottom)'}}>
+        <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 animate-fade-in-up main-content">
             {renderContent()}
         </main>
       </div>
@@ -1529,5 +1529,6 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 
 
