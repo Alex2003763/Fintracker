@@ -17,10 +17,8 @@ const navItems = [
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
   return (
-    <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] flex items-center justify-between z-10 transition-colors px-2"
-    >
-      <div className="flex flex-1 h-16 items-center">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] h-20 flex items-center justify-between z-10 transition-colors mobile-safe-area px-2">
+      <div className="flex flex-1">
         {navItems.map((item) => (
           <a
             key={item.name}
