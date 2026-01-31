@@ -443,14 +443,22 @@ body.modal-open {
     transform: translateX(-50%) !important;
 }
 
+/* Mobile safe area insets for notched devices */
+.mobile-safe-area {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+}
+
+.mobile-safe-area-top {
+    padding-top: env(safe-area-inset-top);
+}
+
+.mobile-safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Mobile responsive adjustments */
 @media (max-width: 479px) {
-    .mobile-safe-area {
-        padding-left: env(safe-area-inset-left);
-        padding-right: env(safe-area-inset-right);
-        padding-bottom: env(safe-area-inset-bottom);
-    }
-    
     .mobile-content-padding {
         padding-left: 1rem;
         padding-right: 1rem;
