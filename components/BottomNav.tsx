@@ -37,7 +37,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
           ))}
         </div>
       </div>
-
+      {/* Safe Area Spacer */}
+      <div className="h-[env(safe-area-inset-bottom)] w-full" />
     </nav>
   );
 };
