@@ -22,9 +22,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
       style={{
         paddingLeft: 'max(0.5rem, env(safe-area-inset-left))',
         paddingRight: 'max(0.5rem, env(safe-area-inset-right))',
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      <div className="flex flex-1 h-16 pb-[env(safe-area-inset-bottom)] items-center">
+      <div className="flex flex-1 h-16 items-center">
         {navItems.map((item) => (
           <a
             key={item.name}
