@@ -139,6 +139,49 @@ const App: React.FC = () => {
   const budgetNotificationCheckInProgress = useRef(false);
   const mainContentRef = useRef<HTMLElement>(null);
 
+  // Notification tracking to prevent duplicates
+  const sentNotifications = useRef<Map<string, number>>(new Map()); // key -> timestamp
+  const goalMilestoneNotifications = useRef<Map<string, number>>(new Map()); // goalId-milestone -> timestamp
+  const billReminderNotifications = useRef<Map<string, number>>(new Map()); // billId -> timestamp
+
+  // Helper function to check if notification was recently sent (with cooldown)
+  const isNotificationRecentlySent = (key: string, cooldownMs: number = 5 * 60 * 1000): boolean => {
+    const lastSent = sentNotifications.current.get(key);
+    if (!lastSent) return false;
+    return Date.now() - lastSent < cooldownMs;
+  };
+
+  // Helper function to mark notification as sent
+  const markNotificationAsSent = (key: string): void => {
+    sentNotifications.current.set(key, Date.now());
+  };
+
+  // Helper function to check if goal milestone was recently notified
+  const isGoalMilestoneRecentlyNotified = (goalId: string, milestone: number, cooldownMs: number = 60 * 60 * 1000): boolean => {
+    const key = `${goalId}-${milestone}`;
+    const lastSent = goalMilestoneNotifications.current.get(key);
+    if (!lastSent) return false;
+    return Date.now() - lastSent < cooldownMs;
+  };
+
+  // Helper function to mark goal milestone as notified
+  const markGoalMilestoneAsNotified = (goalId: string, milestone: number): void => {
+    const key = `${goalId}-${milestone}`;
+    goalMilestoneNotifications.current.set(key, Date.now());
+  };
+
+  // Helper function to check if bill reminder was recently sent
+  const isBillReminderRecentlySent = (billId: string, cooldownMs: number = 24 * 60 * 60 * 1000): boolean => {
+    const lastSent = billReminderNotifications.current.get(billId);
+    if (!lastSent) return false;
+    return Date.now() - lastSent < cooldownMs;
+  };
+
+  // Helper function to mark bill reminder as sent
+  const markBillReminderAsSent = (billId: string): void => {
+    billReminderNotifications.current.set(billId, Date.now());
+  };
+
   // Modal states
   const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
@@ -278,7 +321,7 @@ const App: React.FC = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [transactions, budgets, notifications.length]);
+  }, [transactions, budgets]); // Removed notifications.length to prevent infinite loop
 
   // Clean up old notifications logic removed - we can handle this via DB query if needed,
   // or let the user manage their notifications manually.
@@ -359,11 +402,20 @@ const App: React.FC = () => {
   }, [bills, billPayments, user]);
 
   const createBillReminderNotification = (bill: Bill) => {
-    const hasExistingReminder = notifications.some(
-      n => n.relatedId === bill.id && n.type === 'bill_reminder'
+    // Check if bill reminder was recently sent (24 hour cooldown)
+    const isRecentlySent = isBillReminderRecentlySent(bill.id, 24 * 60 * 60 * 1000);
+
+    // Check for existing reminder in the last 7 days (not just any reminder)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const hasRecentReminder = notifications.some(
+      n => n.relatedId === bill.id &&
+           n.type === 'bill_reminder' &&
+           new Date(n.date) >= sevenDaysAgo
     );
 
-    if (!hasExistingReminder) {
+    if (!hasRecentReminder && !isRecentlySent) {
       const notification: Notification = {
         id: uuidv4(),
         title: `💡 Bill Due Tomorrow: ${bill.name}`,
@@ -374,8 +426,9 @@ const App: React.FC = () => {
         relatedId: bill.id,
         urgent: true
       };
-      
+
       dbMutations.addNotification(notification);
+      markBillReminderAsSent(bill.id);
 
       // Send push notification if enabled
       sendPushNotification(notification);
@@ -936,12 +989,12 @@ const App: React.FC = () => {
 
       const spendingRatio = spentInMonth / budget.amount;
 
-      // Create unique notification keys for tracking
+      // Create unique notification keys for tracking with cooldown
       const exceededKey = `budget-exceeded-${budget.id}-${currentMonthStr}`;
       const approachingKey = `budget-approaching-${budget.id}-${currentMonthStr}`;
       const eightyKey = `budget-eighty-${budget.id}-${currentMonthStr}`;
 
-      // Check for exceeded budget (100% or more) - improved tracking
+      // Check for exceeded budget (100% or more) - improved tracking with cooldown
       const todayStr = today.toISOString().split('T')[0];
       const hasExceededNotification = notifications.some(n =>
         n.relatedId === budget.id &&
@@ -949,10 +1002,13 @@ const App: React.FC = () => {
         n.title.includes('Exceeded') &&
         n.date.startsWith(todayStr) &&
         n.message.includes(budget.category) &&
-        n.message.includes('budget') // Ensure it's a budget notification
+        n.message.includes('budget')
       );
 
-      if (spendingRatio >= 1 && !hasExceededNotification) {
+      // Check cooldown (5 minutes for exceeded notifications)
+      const isExceededOnCooldown = isNotificationRecentlySent(exceededKey, 5 * 60 * 1000);
+
+      if (spendingRatio >= 1 && !hasExceededNotification && !isExceededOnCooldown) {
           const notification: Notification = {
               id: uuidv4(),
               title: `🚨 Budget Exceeded: ${budget.category}`,
@@ -964,6 +1020,7 @@ const App: React.FC = () => {
               urgent: true
           };
           dbMutations.addNotification(notification);
+          markNotificationAsSent(exceededKey);
           console.log('Budget exceeded notification created:', notification.title);
 
           // Send push notification if enabled
@@ -971,7 +1028,7 @@ const App: React.FC = () => {
           return; // Don't send 'approaching' if 'exceeded' is sent
       }
 
-      // Check for approaching budget (90% or more) - improved tracking
+      // Check for approaching budget (90% or more) - improved tracking with cooldown
       const hasApproachingNotification = notifications.some(n =>
         n.relatedId === budget.id &&
         n.type === 'budget' &&
@@ -981,7 +1038,10 @@ const App: React.FC = () => {
         n.message.includes('budget')
       );
 
-      if (spendingRatio >= 0.9 && !hasApproachingNotification && spendingRatio < 1) {
+      // Check cooldown (5 minutes for approaching notifications)
+      const isApproachingOnCooldown = isNotificationRecentlySent(approachingKey, 5 * 60 * 1000);
+
+      if (spendingRatio >= 0.9 && !hasApproachingNotification && !isApproachingOnCooldown && spendingRatio < 1) {
           const notification: Notification = {
               id: uuidv4(),
               title: `⚠️ Budget Approaching: ${budget.category}`,
@@ -992,13 +1052,14 @@ const App: React.FC = () => {
               relatedId: budget.id,
           };
           dbMutations.addNotification(notification);
+          markNotificationAsSent(approachingKey);
           console.log('Budget approaching notification created:', notification.title);
 
           // Send push notification if enabled
           sendPushNotification(notification);
       }
 
-      // Check for 80% threshold (new lower threshold for better mobile UX)
+      // Check for 80% threshold (new lower threshold for better mobile UX) with cooldown
       const hasEightyNotification = notifications.some(n =>
         n.relatedId === budget.id &&
         n.type === 'budget' &&
@@ -1008,7 +1069,10 @@ const App: React.FC = () => {
         n.message.includes('budget')
       );
 
-      if (spendingRatio >= 0.8 && !hasEightyNotification && spendingRatio < 0.9) {
+      // Check cooldown (5 minutes for 80% notifications)
+      const isEightyOnCooldown = isNotificationRecentlySent(eightyKey, 5 * 60 * 1000);
+
+      if (spendingRatio >= 0.8 && !hasEightyNotification && !isEightyOnCooldown && spendingRatio < 0.9) {
           const notification: Notification = {
               id: uuidv4(),
               title: `📊 Budget Alert: ${budget.category}`,
@@ -1019,6 +1083,7 @@ const App: React.FC = () => {
               relatedId: budget.id,
           };
           dbMutations.addNotification(notification);
+          markNotificationAsSent(eightyKey);
           console.log('Budget 80% notification created:', notification.title);
 
           // Send push notification if enabled
@@ -1051,13 +1116,16 @@ const App: React.FC = () => {
 
       settings.goalProgress.milestones.forEach(milestone => {
         if (progressPercentage >= milestone) {
+          // Check if milestone was recently notified (1 hour cooldown)
+          const isRecentlyNotified = isGoalMilestoneRecentlyNotified(goal.id, milestone, 60 * 60 * 1000);
+
           const hasMilestoneNotification = notifications.some(
             n => n.relatedId === goal.id &&
                  n.type === 'goal_progress' &&
                  n.progress?.milestone === milestone
           );
 
-          if (!hasMilestoneNotification) {
+          if (!hasMilestoneNotification && !isRecentlyNotified) {
             const notification: Notification = {
               id: uuidv4(),
               title: `🎉 Goal Milestone: ${milestone}%`,
@@ -1074,10 +1142,10 @@ const App: React.FC = () => {
               }
             };
             dbMutations.addNotification(notification);
-            sendNotification(notification.title, { body: notification.message });
+            markGoalMilestoneAsNotified(goal.id, milestone);
             console.log('Goal milestone notification created:', notification.title);
 
-            // Send push notification if enabled
+            // Send push notification if enabled (removed duplicate sendNotification call)
             sendPushNotification(notification);
           }
         }
@@ -1436,7 +1504,7 @@ const App: React.FC = () => {
           isOnline={isOnline}
           setActiveItem={setActiveItem}
         />
-        <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 md:p-6 pb-16 animate-fade-in-up main-content">
+         <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 md:p-6 pb-16 animate-fade-in-up main-content">
             {renderContent()}
         </main>
       </div>
@@ -1529,7 +1597,4 @@ const App: React.FC = () => {
 };
 
 export default App;
-
-
-
 
