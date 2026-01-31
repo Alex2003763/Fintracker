@@ -180,7 +180,6 @@ html, body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* 3. Modal Styles */
@@ -735,3 +734,4 @@ body.modal-open {
     }
   }
 }
+
