@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Notification } from '../types';
+import { User, Notification, Transaction } from '../types';
 import { BellIcon, UserIcon, FinTrackIcon } from './icons';
 import NotificationPanel from './NotificationPanel';
 
@@ -18,9 +18,9 @@ const Header: React.FC<HeaderProps> = React.memo(({ user, notifications, onMarkA
      const [showNotifications, setShowNotifications] = useState(false);
     const unreadCount = notifications.filter(n => !n.read).length;
     
-    // Close notifications if clicking/touching outside
+    // Close notifications if clicking outside
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+        const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
             if (showNotifications && !target.closest('.notification-panel-wrapper')) {
                 setShowNotifications(false);
@@ -28,10 +28,8 @@ const Header: React.FC<HeaderProps> = React.memo(({ user, notifications, onMarkA
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        document.addEventListener('touchstart', handleClickOutside, { passive: true });
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('touchstart', handleClickOutside);
         };
     }, [showNotifications]);
 

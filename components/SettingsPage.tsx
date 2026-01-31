@@ -27,36 +27,56 @@ interface SettingsPageProps {
   onExportData: () => void;
 }
 
-// Theme preview component showing a simplified color swatch
+// Simplified theme preview component
 const ThemePreview: React.FC<{ themeData: Theme | undefined }> = ({ themeData }) => {
   if (!themeData) return null;
 
   const isLight = themeData.category === 'light';
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-muted-rgb))]">
-      {/* Color swatch */}
-      <div
-        className="w-12 h-12 rounded-lg flex-shrink-0"
-        style={{ backgroundColor: themeData.accentColor }}
-      />
-      {/* Theme info */}
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-[rgb(var(--color-text-rgb))] truncate">
-          {themeData.name}
-        </p>
-        <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
-          {isLight ? 'Light' : 'Dark'}
-        </p>
-      </div>
-      {/* Checkmark for active */}
-      <div
-        className="w-6 h-6 rounded-full flex items-center justify-center"
-        style={{ backgroundColor: themeData.accentColor }}
-      >
-        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-        </svg>
+    <div
+      className="rounded-xl p-4 border-2 transition-all duration-300"
+      style={{
+        backgroundColor: isLight ? '#f8fafc' : '#1e293b',
+        borderColor: themeData.accentColor + '40'
+      }}
+    >
+      <div className="flex items-center gap-3">
+        {/* Accent color circle */}
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center shadow-md"
+          style={{ backgroundColor: themeData.accentColor }}
+        >
+          <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        </div>
+
+        {/* Theme info */}
+        <div className="flex-1">
+          <p className="font-semibold text-sm" style={{ color: isLight ? '#1f2937' : '#f1f5f9' }}>
+            {themeData.name}
+          </p>
+          <p className="text-xs" style={{ color: isLight ? '#64748b' : '#94a3b8' }}>
+            {isLight ? 'Light Theme' : 'Dark Theme'}
+          </p>
+        </div>
+
+        {/* Color indicator */}
+        <div className="flex gap-1">
+          <div
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: themeData.accentColor }}
+          />
+          <div
+            className="w-3 h-3 rounded-full opacity-60"
+            style={{ backgroundColor: themeData.accentColor }}
+          />
+          <div
+            className="w-3 h-3 rounded-full opacity-30"
+            style={{ backgroundColor: themeData.accentColor }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -144,21 +164,21 @@ const BiometricSettings: React.FC<{ user: User; onUpdateUser: (user: User) => vo
                   aria-checked={user.biometricEnabled}
                   aria-labelledby="biometric-label"
                   aria-describedby="biometric-description biometric-status"
-                  className={`relative inline-flex h-10 w-16 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-card-muted-rgb))] min-h-[44px] touch-manipulation ${
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-card-muted-rgb))] ${
                     user.biometricEnabled
                       ? 'bg-[rgb(var(--color-primary-rgb))]'
                       : 'bg-[rgb(var(--color-border-rgb))]'
-                  } ${isRegistering ? 'opacity-50 cursor-wait' : ''}`}
+                  } ${isRegistering ? 'opacity-50 cursor-wait' : 'hover:opacity-90 active:scale-95'}`}
                 >
                   <span className="sr-only">
                     {user.biometricEnabled ? 'Disable biometric login' : 'Enable biometric login'}
                   </span>
                   <span
                     aria-hidden="true"
-                    className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-all duration-200 ease-out ${
                       user.biometricEnabled
-                        ? 'translate-x-8'
-                        : 'translate-x-1.5'
+                        ? 'translate-x-7'
+                        : 'translate-x-1'
                     }`}
                   />
                 </button>
@@ -423,17 +443,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
 
             {/* Quick Actions */}
-            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-end">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => setActiveItem?.('Account')}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))] rounded-xl border border-[rgb(var(--color-border-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 font-medium min-h-[44px] touch-manipulation"
+                className="px-4 py-2 text-sm bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))] rounded-xl border border-[rgb(var(--color-border-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 font-medium"
                 aria-label="Manage your account settings"
               >
                 Edit Profile
               </button>
               <button
                 onClick={handleSignOut}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm min-h-[44px] touch-manipulation"
+                className="px-4 py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm"
               >
                 Sign Out
               </button>
@@ -586,7 +606,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     <div className="flex gap-2 mb-4">
                       <button
                         onClick={() => handleSetProcessingType('transparent')}
-                        className={`px-4 py-3 text-sm rounded-xl transition-colors min-h-[44px] touch-manipulation ${
+                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                           currentProcessingType === 'transparent'
                             ? 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))]'
                             : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))]'
@@ -596,7 +616,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       </button>
                       <button
                         onClick={() => handleSetProcessingType('pattern')}
-                        className={`px-4 py-3 text-sm rounded-xl transition-colors min-h-[44px] touch-manipulation ${
+                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                           currentProcessingType === 'pattern'
                             ? 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))]'
                             : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))]'
@@ -606,12 +626,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       </button>
                     </div>
                     
-                    {/* Hidden file input for mobile accessibility */}
                     <input
                       type="file"
                       accept="image/*"
                       disabled={isProcessingImage}
-                      id="background-image-upload"
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
@@ -630,25 +648,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                           reader.readAsDataURL(file);
                         }
                       }}
-                      className="hidden"
-                      aria-hidden="true"
-                    />
-                    {/* Custom button for mobile-friendly file selection */}
-                    <label
-                      htmlFor="background-image-upload"
                       className="block w-full text-sm text-[rgb(var(--color-text-rgb))]
-                        file:mr-2 sm:file:mr-4 file:py-3 file:px-4
-                        file:rounded-xl file:border-0
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-lg file:border-0
                         file:text-sm file:font-medium
                         file:bg-[rgb(var(--color-primary-rgb))] file:text-[rgb(var(--color-primary-text-rgb))]
                         hover:file:bg-[rgb(var(--color-primary-hover-rgb))]
                         file:cursor-pointer cursor-pointer
-                        file:min-h-[44px] file:touch-manipulation
                         disabled:opacity-50 disabled:cursor-not-allowed"
-                      aria-label="Upload background image"
-                    >
-                      Upload Background Image
-                    </label>
+                    />
                     
                     {isProcessingImage && (
                       <div className="flex items-center justify-center py-4">
@@ -717,7 +725,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       aria-checked={user.smartFeatures?.categorySuggestions ?? true}
                       aria-labelledby="category-suggestions-label"
                       aria-describedby="category-suggestions-description"
-                      className={`relative inline-flex h-10 w-16 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-card-muted-rgb))] min-h-[44px] touch-manipulation ${
+                      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-card-muted-rgb))] hover:opacity-90 active:scale-95 ${
                         user.smartFeatures?.categorySuggestions ?? true
                           ? 'bg-[rgb(var(--color-primary-rgb))]'
                           : 'bg-[rgb(var(--color-border-rgb))]'
@@ -728,10 +736,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       </span>
                       <span
                         aria-hidden="true"
-                        className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                        className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-all duration-200 ease-out ${
                           user.smartFeatures?.categorySuggestions ?? true
-                            ? 'translate-x-8'
-                            : 'translate-x-1.5'
+                            ? 'translate-x-7'
+                            : 'translate-x-1'
                         }`}
                       />
                     </button>
@@ -810,7 +818,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               disabled={isExporting}
               aria-label={isExporting ? 'Exporting data, please wait' : 'Export data - Save a backup of all your data'}
               aria-busy={isExporting}
-              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-manipulation"
+              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
@@ -841,7 +849,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               disabled={isImporting}
               aria-label={isImporting ? 'Importing data, please wait' : 'Import data - Restore from a backup file'}
               aria-busy={isImporting}
-              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-manipulation"
+              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1">

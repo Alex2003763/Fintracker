@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, CSSProperties } from 'react';
 import { Transaction, User } from '../types';
 import { formatCurrency } from '../utils/formatters';
-import { RecurringIcon, SearchIcon } from './icons';
+import { RecurringIcon, ChevronUpIcon, SearchIcon } from './icons';
+import Card, { CardContent } from './Card';
 import TransactionRow from './TransactionRow';
+import TransactionChart from './TransactionChart';
 
 // Removed virtual list row component in favor of standard mapping for reliability
 
@@ -36,9 +38,10 @@ const TransactionsPage: React.FC<{
     onOpenManageRecurring: () => void,
     scrollContainerRef?: React.RefObject<HTMLElement>,
     user: User | null
-}> = ({ transactions, onEditTransaction, onOpenManageRecurring, user }) => {
+}> = ({ transactions, onEditTransaction, onOpenManageRecurring, scrollContainerRef, user }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
@@ -88,6 +91,10 @@ const TransactionsPage: React.FC<{
 
   const listRef = React.useRef<HTMLDivElement>(null);
 
+  const scrollToTop = () => {
+    listRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const FilterButton: React.FC<{type: 'all' | 'income' | 'expense', count: number}> = ({ type, count }) => (
     <button
       onClick={() => setFilterType(type)}
@@ -120,8 +127,8 @@ const TransactionsPage: React.FC<{
         </button>
       </header>
 
-      <div className="w-full">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
             <div className="space-y-4">
                 <div className="relative group">
                     <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[rgb(var(--color-text-muted-rgb))] group-focus-within:text-[rgb(var(--color-primary-rgb))] transition-colors" />
