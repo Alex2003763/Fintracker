@@ -34,7 +34,16 @@ const Header: React.FC<HeaderProps> = React.memo(({ user, notifications, onMarkA
     }, [showNotifications]);
 
     return (
-         <header className="sticky top-0 z-50 flex items-center justify-between h-20 px-4 md:px-6 pt-[env(safe-area-inset-top)] transition-colors flex-shrink-0 bg-[rgb(var(--color-bg-rgb))] border-b border-[rgb(var(--color-border-rgb))]" style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>
+         <header 
+           className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 transition-colors flex-shrink-0 bg-[rgb(var(--color-bg-rgb))] border-b border-[rgb(var(--color-border-rgb))]" 
+           style={{ 
+             paddingLeft: 'max(1rem, env(safe-area-inset-left))', 
+             paddingRight: 'max(1rem, env(safe-area-inset-right))',
+             paddingTop: 'env(safe-area-inset-top)',
+             height: 'calc(5rem + env(safe-area-inset-top))'
+           }}
+         >
+           <div className="flex items-center justify-between w-full h-20">
              {/* Unified Title */}
              <div className="flex items-center space-x-3 min-w-0 flex-1">
                <FinTrackIcon className="h-7 w-7 text-green-500 flex-shrink-0" />
@@ -91,8 +100,9 @@ const Header: React.FC<HeaderProps> = React.memo(({ user, notifications, onMarkA
                         <UserIcon className="h-6 w-6 text-[rgb(var(--color-text-muted-rgb))]" />
                     )}
                 </div>
-            </div>
-        </header>
+             </div>
+           </div>
+         </header>
     );
 });
 
