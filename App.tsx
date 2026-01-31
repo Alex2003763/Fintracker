@@ -680,7 +680,7 @@ const App: React.FC = () => {
     initialProcessingDone.current = false; // Reset for new session
     
     // Check if it's a new account to set initial data
-    if (!localStorage.getItem('fintrackTransactions')) {
+    if (transactions.length === 0) {
       const welcomeNotification: Notification = { id: uuidv4(), title: 'Welcome to FinTrack!', message: 'Start by adding your first transaction.', date: new Date().toISOString(), read: false, type: 'standard' };
       // Use dbMutations instead of setNotifications which doesn't exist
       dbMutations.addNotification(welcomeNotification);
