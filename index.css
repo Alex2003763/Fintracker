@@ -850,9 +850,84 @@ body.modal-open {
     .transaction-item-mobile {
       border: 1px solid rgba(var(--color-border-rgb), 0.3);
     }
-    
+
     .transaction-item-mobile:hover {
       border-color: rgba(var(--color-border-rgb), 0.6);
     }
+  }
+}
+
+/* ===================== MOBILE TOUCH IMPROVEMENTS ===================== */
+
+/* Better touch scrolling behavior */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+
+/* Prevent accidental zoom on form inputs on iOS */
+@media (max-width: 767px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Touch manipulation for interactive elements */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Mobile-specific improvements for scrollable containers */
+@media (hover: none) and (pointer: coarse) {
+  /* Scrollable containers */
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Better tap highlighting */
+  button,
+  a,
+  [role="button"] {
+    -webkit-tap-highlight-color: rgba(var(--color-primary-rgb), 0.1);
+  }
+
+  /* Ensure proper touch targets */
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent text selection on buttons during touch */
+  button {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* Fix for iOS safe area on bottom nav and floating elements */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-safe-area-bottom {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Modal scrolling fix for mobile */
+@media (max-width: 767px) {
+  .modal-scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
   }
 }

@@ -27,110 +27,36 @@ interface SettingsPageProps {
   onExportData: () => void;
 }
 
-// Theme preview component showing a mini dashboard mockup
+// Theme preview component showing a simplified color swatch
 const ThemePreview: React.FC<{ themeData: Theme | undefined }> = ({ themeData }) => {
   if (!themeData) return null;
 
   const isLight = themeData.category === 'light';
-  const isAmoled = themeData.id === 'theme-amoled';
-
-  // Get colors based on theme
-  const getBgStyle = () => {
-    if (isAmoled) return { backgroundColor: '#000000' };
-    if (isLight) {
-      if (themeData.id.includes('rose')) return { backgroundColor: '#fff1f2' };
-      if (themeData.id.includes('mint')) return { backgroundColor: '#ecfdf5' };
-      if (themeData.id.includes('amber')) return { backgroundColor: '#fffbeb' };
-      if (themeData.id.includes('violet')) return { backgroundColor: '#f5f3ff' };
-      if (themeData.id.includes('sky')) return { backgroundColor: '#f0f9ff' };
-      if (themeData.id.includes('coral')) return { backgroundColor: '#fff7ed' };
-      return { backgroundColor: '#f3f4f6' };
-    }
-    if (themeData.id.includes('purple')) return { backgroundColor: '#181223' };
-    if (themeData.id.includes('ocean')) return { backgroundColor: '#0c1c23' };
-    if (themeData.id.includes('green')) return { backgroundColor: '#0f1714' };
-    if (themeData.id.includes('crimson')) return { backgroundColor: '#1c1518' };
-    if (themeData.id.includes('amber')) return { backgroundColor: '#1c160c' };
-    if (themeData.id.includes('pink')) return { backgroundColor: '#1e0f19' };
-    if (themeData.id.includes('lime')) return { backgroundColor: '#12190c' };
-    return { backgroundColor: '#0f172a' };
-  };
-
-  const getCardStyle = () => {
-    if (isAmoled) return { backgroundColor: '#121212' };
-    if (isLight) return { backgroundColor: '#ffffff' };
-    if (themeData.id.includes('purple')) return { backgroundColor: '#261e37' };
-    if (themeData.id.includes('ocean')) return { backgroundColor: '#142d37' };
-    if (themeData.id.includes('green')) return { backgroundColor: '#19271e' };
-    if (themeData.id.includes('crimson')) return { backgroundColor: '#312126' };
-    if (themeData.id.includes('amber')) return { backgroundColor: '#2d2414' };
-    if (themeData.id.includes('pink')) return { backgroundColor: '#321928' };
-    if (themeData.id.includes('lime')) return { backgroundColor: '#1e2a14' };
-    return { backgroundColor: '#1e293b' };
-  };
-
-  const getTextColor = () => isLight ? '#1f2937' : '#ffffff';
-  const getMutedColor = () => isLight ? '#6b7280' : '#9ca3af';
 
   return (
-    <div
-      className="rounded-xl p-4 border border-[rgb(var(--color-border-rgb))] transition-all duration-300"
-      style={getBgStyle()}
-    >
-      {/* Mini dashboard mockup */}
-      <div className="space-y-3">
-        {/* Header bar */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: themeData.accentColor }}
-            >
-              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: getTextColor() }}>{themeData.name}</p>
-              <p className="text-xs" style={{ color: getMutedColor() }}>{themeData.category === 'light' ? 'Light Theme' : 'Dark Theme'}</p>
-            </div>
-          </div>
-          <div
-            className="w-6 h-6 rounded-full border-2"
-            style={{ borderColor: themeData.accentColor, backgroundColor: `${themeData.accentColor}20` }}
-          ></div>
-        </div>
-
-        {/* Balance card mockup */}
-        <div className="rounded-lg p-3" style={getCardStyle()}>
-          <p className="text-xs mb-1" style={{ color: getMutedColor() }}>Balance</p>
-          <p className="text-lg font-bold" style={{ color: getTextColor() }}>$12,450.00</p>
-          <div className="flex items-center gap-1 mt-1">
-            <span className="text-xs" style={{ color: themeData.accentColor }}>+2.4%</span>
-            <span className="text-xs" style={{ color: getMutedColor() }}>this month</span>
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex gap-2">
-          <button
-            className="flex-1 py-2 px-3 rounded-lg text-xs font-medium text-white"
-            style={{ backgroundColor: themeData.accentColor }}
-          >
-            Add Transaction
-          </button>
-          <button
-            className="py-2 px-3 rounded-lg text-xs font-medium border"
-            style={{
-              borderColor: isLight ? '#e5e7eb' : '#374151',
-              color: getTextColor(),
-              backgroundColor: 'transparent'
-            }}
-          >
-            View All
-          </button>
-        </div>
+    <div className="flex items-center gap-3 p-3 rounded-xl border border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-muted-rgb))]">
+      {/* Color swatch */}
+      <div
+        className="w-12 h-12 rounded-lg flex-shrink-0"
+        style={{ backgroundColor: themeData.accentColor }}
+      />
+      {/* Theme info */}
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-[rgb(var(--color-text-rgb))] truncate">
+          {themeData.name}
+        </p>
+        <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+          {isLight ? 'Light' : 'Dark'}
+        </p>
+      </div>
+      {/* Checkmark for active */}
+      <div
+        className="w-6 h-6 rounded-full flex items-center justify-center"
+        style={{ backgroundColor: themeData.accentColor }}
+      >
+        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
       </div>
     </div>
   );
@@ -218,7 +144,7 @@ const BiometricSettings: React.FC<{ user: User; onUpdateUser: (user: User) => vo
                   aria-checked={user.biometricEnabled}
                   aria-labelledby="biometric-label"
                   aria-describedby="biometric-description biometric-status"
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-card-muted-rgb))] ${
+                  className={`relative inline-flex h-10 w-16 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-card-muted-rgb))] min-h-[44px] touch-manipulation ${
                     user.biometricEnabled
                       ? 'bg-[rgb(var(--color-primary-rgb))]'
                       : 'bg-[rgb(var(--color-border-rgb))]'
@@ -229,10 +155,10 @@ const BiometricSettings: React.FC<{ user: User; onUpdateUser: (user: User) => vo
                   </span>
                   <span
                     aria-hidden="true"
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                    className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
                       user.biometricEnabled
-                        ? 'translate-x-6'
-                        : 'translate-x-1'
+                        ? 'translate-x-8'
+                        : 'translate-x-1.5'
                     }`}
                   />
                 </button>
@@ -497,17 +423,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
 
             {/* Quick Actions */}
-            <div className="flex gap-2 sm:gap-3">
+            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-end">
               <button
                 onClick={() => setActiveItem?.('Account')}
-                className="px-4 py-2 text-sm bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))] rounded-xl border border-[rgb(var(--color-border-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 font-medium"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))] rounded-xl border border-[rgb(var(--color-border-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 font-medium min-h-[44px] touch-manipulation"
                 aria-label="Manage your account settings"
               >
                 Edit Profile
               </button>
               <button
                 onClick={handleSignOut}
-                className="px-4 py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm min-h-[44px] touch-manipulation"
               >
                 Sign Out
               </button>
@@ -660,7 +586,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     <div className="flex gap-2 mb-4">
                       <button
                         onClick={() => handleSetProcessingType('transparent')}
-                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                        className={`px-4 py-3 text-sm rounded-xl transition-colors min-h-[44px] touch-manipulation ${
                           currentProcessingType === 'transparent'
                             ? 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))]'
                             : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))]'
@@ -670,7 +596,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       </button>
                       <button
                         onClick={() => handleSetProcessingType('pattern')}
-                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                        className={`px-4 py-3 text-sm rounded-xl transition-colors min-h-[44px] touch-manipulation ${
                           currentProcessingType === 'pattern'
                             ? 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))]'
                             : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))]'
@@ -680,10 +606,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       </button>
                     </div>
                     
+                    {/* Hidden file input for mobile accessibility */}
                     <input
                       type="file"
                       accept="image/*"
                       disabled={isProcessingImage}
+                      id="background-image-upload"
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
@@ -702,15 +630,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                           reader.readAsDataURL(file);
                         }
                       }}
+                      className="hidden"
+                      aria-hidden="true"
+                    />
+                    {/* Custom button for mobile-friendly file selection */}
+                    <label
+                      htmlFor="background-image-upload"
                       className="block w-full text-sm text-[rgb(var(--color-text-rgb))]
-                        file:mr-4 file:py-2 file:px-4
-                        file:rounded-lg file:border-0
+                        file:mr-2 sm:file:mr-4 file:py-3 file:px-4
+                        file:rounded-xl file:border-0
                         file:text-sm file:font-medium
                         file:bg-[rgb(var(--color-primary-rgb))] file:text-[rgb(var(--color-primary-text-rgb))]
                         hover:file:bg-[rgb(var(--color-primary-hover-rgb))]
                         file:cursor-pointer cursor-pointer
+                        file:min-h-[44px] file:touch-manipulation
                         disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
+                      aria-label="Upload background image"
+                    >
+                      Upload Background Image
+                    </label>
                     
                     {isProcessingImage && (
                       <div className="flex items-center justify-center py-4">
@@ -779,7 +717,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       aria-checked={user.smartFeatures?.categorySuggestions ?? true}
                       aria-labelledby="category-suggestions-label"
                       aria-describedby="category-suggestions-description"
-                      className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-card-muted-rgb))] ${
+                      className={`relative inline-flex h-10 w-16 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-card-muted-rgb))] min-h-[44px] touch-manipulation ${
                         user.smartFeatures?.categorySuggestions ?? true
                           ? 'bg-[rgb(var(--color-primary-rgb))]'
                           : 'bg-[rgb(var(--color-border-rgb))]'
@@ -790,10 +728,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       </span>
                       <span
                         aria-hidden="true"
-                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                        className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
                           user.smartFeatures?.categorySuggestions ?? true
-                            ? 'translate-x-6'
-                            : 'translate-x-1'
+                            ? 'translate-x-8'
+                            : 'translate-x-1.5'
                         }`}
                       />
                     </button>
@@ -872,7 +810,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               disabled={isExporting}
               aria-label={isExporting ? 'Exporting data, please wait' : 'Export data - Save a backup of all your data'}
               aria-busy={isExporting}
-              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-manipulation"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
@@ -903,7 +841,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               disabled={isImporting}
               aria-label={isImporting ? 'Importing data, please wait' : 'Import data - Restore from a backup file'}
               aria-busy={isImporting}
-              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-manipulation"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
