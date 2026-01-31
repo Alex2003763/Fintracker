@@ -17,16 +17,14 @@ const navItems = [
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
   return (
-    <nav 
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] flex items-start justify-between z-10 transition-colors px-2" 
-      style={{ 
-        paddingBottom: 'env(safe-area-inset-bottom)', 
-        paddingLeft: 'max(0.5rem, env(safe-area-inset-left))', 
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] flex items-center justify-between z-10 transition-colors px-2"
+      style={{
+        paddingLeft: 'max(0.5rem, env(safe-area-inset-left))',
         paddingRight: 'max(0.5rem, env(safe-area-inset-right))',
-        height: 'calc(5rem + env(safe-area-inset-bottom))',
       }}
     >
-      <div className="flex flex-1 h-20 items-center">
+      <div className="flex flex-1 h-16 pb-[env(safe-area-inset-bottom)] items-center">
         {navItems.map((item) => (
           <a
             key={item.name}
