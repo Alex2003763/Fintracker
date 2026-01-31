@@ -8,7 +8,7 @@ import BottomNav from './components/BottomNav';
 import FloatingActionButton from './components/FloatingActionButton';
 import AuthPage from './components/AuthPage';
 import ConfirmationModal from './components/ConfirmationModal';
-import { Transaction, User, Goal, Bill, RecurringTransaction, Budget, NotificationSettings, GoalContribution, BillPayment, SubCategory } from './types';
+import { Transaction, User, Goal, Bill, RecurringTransaction, Budget, NotificationSettings, GoalContribution, BillPayment, SubCategory, DebtEntry } from './types';
 import type { Notification } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import PlaceholderPage from './components/PlaceholderPage';
@@ -625,16 +625,12 @@ const App: React.FC = () => {
     setUser(authedUser);
     setSessionKey(key);
     initialProcessingDone.current = false; // Reset for new session
-
-    // Check if it's a new account - only show welcome notification once
-    // Use a dedicated flag to track if welcome notification was already shown
-    const welcomeShownKey = `fintrack_welcome_shown_${authedUser.username}`;
-    if (!localStorage.getItem(welcomeShownKey)) {
+    
+    // Check if it's a new account to set initial data
+    if (!localStorage.getItem('fintrackTransactions')) {
       const welcomeNotification: Notification = { id: uuidv4(), title: 'Welcome to FinTrack!', message: 'Start by adding your first transaction.', date: new Date().toISOString(), read: false, type: 'standard' };
       // Use dbMutations instead of setNotifications which doesn't exist
       dbMutations.addNotification(welcomeNotification);
-      // Mark welcome notification as shown for this user
-      localStorage.setItem(welcomeShownKey, 'true');
     }
   };
 

@@ -192,7 +192,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   return createPortal(
     <div
       className={`
-        fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-2 sm:p-4
+        fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-2 sm:p-4
         bg-black/60 backdrop-blur-sm
         ${currentAnimation.backdrop}
         ${className}

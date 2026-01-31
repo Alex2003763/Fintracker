@@ -149,10 +149,8 @@ interface BudgetsPageProps {
   onEditBudget: (budget: Budget) => void;
 }
 
-type TabType = 'budgets' | 'debts';
-
 const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, debts, onManageBudgets, onEditBudget }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('budgets');
+  const [activeTab, setActiveTab] = useState<'budgets' | 'debts'>('budgets');
   const { currentMonthBudgets, totalBudget, totalSpent } = useMemo(() => {
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -186,66 +184,66 @@ const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, debts,
 
   const overallProgress = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
-  // If Debts tab is active, render DebtsTab component
-  if (activeTab === 'debts') {
-    return (
-      <div className="space-y-6 max-w-7xl mx-auto px-4 pb-20">
-        {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-[rgb(var(--color-border-rgb))]">
-          <button
-            onClick={() => setActiveTab('budgets')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'budgets' ? 'border-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-rgb))]' : 'border-transparent text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'}`}
-          >
-            Budgets
-          </button>
-          <button
-            onClick={() => setActiveTab('debts')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'debts' ? 'border-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-rgb))]' : 'border-transparent text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'}`}
-          >
-            Debts & IOUs
-          </button>
-        </div>
-        <DebtsTab debts={debts} />
-      </div>
-    );
-  }
-
   return (
      <div className="space-y-6 max-w-7xl mx-auto px-4 pb-20">
-       {/* Tab Navigation */}
-       <div className="flex gap-2 border-b border-[rgb(var(--color-border-rgb))]">
-         <button
-           onClick={() => setActiveTab('budgets')}
-           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'budgets' ? 'border-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-rgb))]' : 'border-transparent text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'}`}
-         >
-           Budgets
-         </button>
-         <button
-           onClick={() => setActiveTab('debts')}
-           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'debts' ? 'border-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-rgb))]' : 'border-transparent text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'}`}
-         >
-           Debts & IOUs
-         </button>
+               {/* Tab Navigation - Improved Styling */}
+         <div className="flex gap-2 p-1.5 bg-[rgb(var(--color-bg-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] w-fit shadow-sm">
+           <button
+             onClick={() => setActiveTab('budgets')}
+             className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+               activeTab === 'budgets'
+                 ? 'bg-[rgb(var(--color-primary-rgb))] text-white shadow-md scale-[1.02]'
+                 : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-card-rgb))]'
+             }`}
+           >
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+             </svg>
+             Budgets
+           </button>
+           <button
+             onClick={() => setActiveTab('debts')}
+             className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+               activeTab === 'debts'
+                 ? 'bg-[rgb(var(--color-primary-rgb))] text-white shadow-md scale-[1.02]'
+                 : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-card-rgb))]'
+             }`}
+           >
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+               <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z" />
+             </svg>
+             Debts
+           </button>
+         </div>
+       {/* Header with Title and Tabs */}
+       <div className="flex flex-col gap-4">
+         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+           <div>
+             <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">
+               {activeTab === 'budgets' ? 'Monthly Budgets' : 'Debts & IOUs'}
+             </h1>
+             <p className="text-[rgb(var(--color-text-muted-rgb))] mt-1">
+               {activeTab === 'budgets' ? 'Track your spending against planned budgets' : 'Track your personal loans and debts'}
+             </p>
+           </div>
+           {activeTab === 'budgets' && (
+             <button
+               onClick={onManageBudgets}
+               className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[rgb(var(--color-primary-rgb))] rounded-lg shadow-sm hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--color-primary-rgb))] transition-all"
+             >
+               <PlusIcon className="h-5 w-5 mr-2" />
+               Manage Budgets
+             </button>
+           )}
+         </div>
+
+
        </div>
 
-       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-         <div>
-           <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">
-             Monthly Budgets
-           </h1>
-           <p className="text-[rgb(var(--color-text-muted-rgb))] mt-1">
-             Track your spending against planned budgets
-           </p>
-         </div>
-        <button
-          onClick={onManageBudgets}
-          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[rgb(var(--color-primary-rgb))] rounded-lg shadow-sm hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[rgb(var(--color-primary-rgb))] transition-all"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Manage Budgets
-        </button>
-      </div>
-
+      {activeTab === 'debts' ? (
+        <DebtsTab debts={debts} />
+      ) : (
+      <>
       <Card className="bg-gradient-to-br from-[rgb(var(--color-card-rgb))] to-[rgb(var(--color-card-muted-rgb))] border-[rgb(var(--color-border-rgb))]">
         <CardContent className="p-6 sm:p-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
@@ -368,6 +366,8 @@ const BudgetsPage: React.FC<BudgetsPageProps> = ({ budgets, transactions, debts,
             Create First Budget
           </button>
         </div>
+      )}
+      </>
       )}
     </div>
   );

@@ -31,24 +31,10 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 }
 
 /**
- * Check if the Web Crypto API is available
- * Note: On mobile browsers, crypto.subtle may not be available in insecure contexts (non-HTTPS)
- * or in some WebView scenarios
- */
-export function isCryptoSupported(): boolean {
-  return !!(window.crypto && window.crypto.subtle);
-}
-
-/**
  * Get or create the encryption key
  */
 export async function getEncryptionKey(): Promise<CryptoKey> {
   if (cachedKey) return cachedKey;
-
-  // Check if crypto is supported (may fail on mobile in insecure contexts)
-  if (!isCryptoSupported()) {
-    throw new Error('Web Crypto API not supported. Ensure you are using HTTPS or a secure context.');
-  }
 
   // Try to load existing key from storage
   // Note: Storing key in localStorage is not perfect security (XSS vulnerable),
@@ -56,20 +42,15 @@ export async function getEncryptionKey(): Promise<CryptoKey> {
   const storedKeyJson = localStorage.getItem(KEY_STORAGE_KEY);
 
   if (storedKeyJson) {
-    try {
-      const keyData = JSON.parse(storedKeyJson);
-      cachedKey = await window.crypto.subtle.importKey(
-        'jwk',
-        keyData,
-        { name: 'AES-GCM', length: 256 },
-        true, // extractable
-        ['encrypt', 'decrypt']
-      );
-      return cachedKey;
-    } catch (e) {
-      console.warn('Failed to import stored encryption key, generating new one:', e);
-      localStorage.removeItem(KEY_STORAGE_KEY);
-    }
+    const keyData = JSON.parse(storedKeyJson);
+    cachedKey = await window.crypto.subtle.importKey(
+      'jwk',
+      keyData,
+      { name: 'AES-GCM', length: 256 },
+      true, // extractable
+      ['encrypt', 'decrypt']
+    );
+    return cachedKey;
   }
 
   // Generate new key
@@ -92,17 +73,8 @@ export async function getEncryptionKey(): Promise<CryptoKey> {
 
 /**
  * Encrypt string data
- * Returns plaintext if crypto is not supported (mobile fallback)
  */
 export async function encryptData(data: string): Promise<{ cipherText: string; iv: string }> {
-  // If crypto not supported, return data as-is with a marker
-  if (!isCryptoSupported()) {
-    return {
-      cipherText: data,
-      iv: '__NOCRYPTO__',
-    };
-  }
-
   const key = await getEncryptionKey();
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
   const encodedData = new TextEncoder().encode(data);
@@ -124,14 +96,8 @@ export async function encryptData(data: string): Promise<{ cipherText: string; i
 
 /**
  * Decrypt string data
- * Returns plaintext if crypto is not supported or if data was stored without encryption
  */
 export async function decryptData(cipherText: string, iv: string): Promise<string> {
-  // If crypto not supported or data was stored without encryption, return as-is
-  if (!isCryptoSupported() || iv === '__NOCRYPTO__') {
-    return cipherText;
-  }
-
   try {
     const key = await getEncryptionKey();
     const ivBuffer = base64ToArrayBuffer(iv);
@@ -149,14 +115,13 @@ export async function decryptData(cipherText: string, iv: string): Promise<strin
     return new TextDecoder().decode(decryptedBuffer);
   } catch (error) {
     console.error('Decryption failed:', error);
-    return cipherText; // Return original data instead of '[Encrypted Data]' to prevent data loss
+    return '[Encrypted Data]';
   }
 }
 
 /**
  * Helper to encrypt specific object fields
  * Returns a new object with encrypted fields
- * If crypto is not supported, returns the object unchanged
  */
 export async function encryptObjectFields<T extends object>(
   obj: T,
@@ -164,18 +129,15 @@ export async function encryptObjectFields<T extends object>(
 ): Promise<T> {
   const newObj = { ...obj };
   
-  // If crypto not supported, return object unchanged
-  if (!isCryptoSupported()) {
-    return newObj;
-  }
-  
   for (const field of fields) {
     const value = newObj[field];
     if (typeof value === 'string' && value.length > 0) {
-      // Skip if already encrypted
-      if (value.startsWith('__ENC__:')) {
-        continue;
-      }
+      // We prepend a marker to identify encrypted data easily? 
+      // Or we just store it as a specific structure?
+      // For simplicity in this existing schema, we'll store JSON string: { c: cipher, i: iv }
+      // This changes the type of the field effectively to string, but it was likely string already.
+      // Ideally we should have separate columns, but schema is fixed.
+      // We'll wrap it in a special format: "__ENC__:<iv>:<ciphertext>"
       
       const { cipherText, iv } = await encryptData(value);
       // @ts-ignore
@@ -188,18 +150,12 @@ export async function encryptObjectFields<T extends object>(
 
 /**
  * Helper to decrypt specific object fields
- * If crypto is not supported, returns the object unchanged
  */
 export async function decryptObjectFields<T extends object>(
   obj: T,
   fields: (keyof T)[]
 ): Promise<T> {
   const newObj = { ...obj };
-  
-  // If crypto not supported, return object unchanged
-  if (!isCryptoSupported()) {
-    return newObj;
-  }
   
   for (const field of fields) {
     const value = newObj[field];
@@ -213,7 +169,6 @@ export async function decryptObjectFields<T extends object>(
           newObj[field] = await decryptData(cipherText, iv);
         } catch (e) {
           console.warn(`Failed to decrypt field ${String(field)}`);
-          // Keep original value if decryption fails
         }
       }
     }

@@ -1,23 +1,13 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import Dexie from 'dexie';
 import { db } from '../db/db';
 import { Transaction, Goal, Bill, Budget, RecurringTransaction, Notification, GoalContribution, BillPayment, DebtEntry } from '../types';
-import { decryptObjectFields } from '../utils/encryption';
 
 /**
  * Hook to fetch and observe transactions from IndexedDB
- * Note: Manual decryption needed because orderBy uses cursors which bypass middleware
  */
 export function useTransactions() {
   return useLiveQuery(
-    async () => {
-      const transactions = await db.transactions.orderBy('date').reverse().toArray();
-      // Manually decrypt sensitive fields
-      const decrypted = await Promise.all(
-        transactions.map(tx => decryptObjectFields(tx, ['description', 'receiptImage'] as (keyof Transaction)[]))
-      );
-      return decrypted;
-    },
+    () => db.transactions.orderBy('date').reverse().toArray(),
     [],
     []
   );
@@ -25,27 +15,14 @@ export function useTransactions() {
 
 /**
  * Hook to fetch transactions filtered by type
- * Note: Manual decryption needed because orderBy uses cursors which bypass middleware
  */
 export function useTransactionsByType(type: 'income' | 'expense' | 'all' = 'all') {
   return useLiveQuery(
-    async () => {
-      let transactions: Transaction[];
+    () => {
       if (type === 'all') {
-        transactions = await db.transactions.orderBy('date').reverse().toArray();
-      } else {
-        // Use compound index [type+date] for efficient sorting and filtering
-        transactions = await db.transactions
-          .where('[type+date]')
-          .between([type, Dexie.minKey], [type, Dexie.maxKey])
-          .reverse()
-          .toArray();
+        return db.transactions.orderBy('date').reverse().toArray();
       }
-      // Manually decrypt sensitive fields
-      const decrypted = await Promise.all(
-        transactions.map(tx => decryptObjectFields(tx, ['description', 'receiptImage'] as (keyof Transaction)[]))
-      );
-      return decrypted;
+      return db.transactions.where('type').equals(type).reverse().sortBy('date');
     },
     [type],
     []
@@ -54,18 +31,10 @@ export function useTransactionsByType(type: 'income' | 'expense' | 'all' = 'all'
 
 /**
  * Hook to fetch goals from IndexedDB
- * Note: Manual decryption needed because toArray uses cursors which bypass middleware
  */
 export function useGoals() {
   return useLiveQuery(
-    async () => {
-      const goals = await db.goals.toArray();
-      // Manually decrypt sensitive fields
-      const decrypted = await Promise.all(
-        goals.map(goal => decryptObjectFields(goal, ['name'] as (keyof Goal)[]))
-      );
-      return decrypted;
-    },
+    () => db.goals.toArray(),
     [],
     []
   );
@@ -73,18 +42,10 @@ export function useGoals() {
 
 /**
  * Hook to fetch active goals only
- * Note: Manual decryption needed because filter uses cursors which bypass middleware
  */
 export function useActiveGoals() {
   return useLiveQuery(
-    async () => {
-      const goals = await db.goals.filter(goal => goal.isActive).toArray();
-      // Manually decrypt sensitive fields
-      const decrypted = await Promise.all(
-        goals.map(goal => decryptObjectFields(goal, ['name'] as (keyof Goal)[]))
-      );
-      return decrypted;
-    },
+    () => db.goals.filter(goal => goal.isActive).toArray(),
     [],
     []
   );
@@ -92,18 +53,10 @@ export function useActiveGoals() {
 
 /**
  * Hook to fetch bills from IndexedDB
- * Note: Manual decryption needed because toArray uses cursors which bypass middleware
  */
 export function useBills() {
   return useLiveQuery(
-    async () => {
-      const bills = await db.bills.toArray();
-      // Manually decrypt sensitive fields
-      const decrypted = await Promise.all(
-        bills.map(bill => decryptObjectFields(bill, ['name', 'payee'] as (keyof Bill)[]))
-      );
-      return decrypted;
-    },
+    () => db.bills.toArray(),
     [],
     []
   );
@@ -198,55 +151,23 @@ export function useBillPayments() {
 }
 
 /**
- * Hook to fetch payments for a specific bill
- */
-export function useBillPaymentsByBill(billId: string) {
-  return useLiveQuery(
-    () => db.billPayments.where('billId').equals(billId).reverse().sortBy('paidDate'),
-    [billId],
-    []
-  );
-}
-
-/**
  * Hook to fetch debts from IndexedDB
- * Note: Manual decryption needed because orderBy uses cursors which bypass middleware
  */
 export function useDebts() {
   return useLiveQuery(
-    async () => {
-      const debts = await db.debts.orderBy('date').reverse().toArray();
-      // Manually decrypt sensitive fields
-      const decrypted = await Promise.all(
-        debts.map(debt => decryptObjectFields(debt, ['personName', 'note'] as (keyof DebtEntry)[]))
-      );
-      return decrypted;
-    },
+    () => db.debts.orderBy('date').reverse().toArray(),
     [],
     []
   );
 }
 
 /**
- * Hook to fetch debts filtered by direction
- * Note: Manual decryption needed because orderBy uses cursors which bypass middleware
+ * Hook to fetch payments for a specific bill
  */
-export function useDebtsByDirection(direction: 'they_owe_me' | 'i_owe_them' | 'all' = 'all') {
+export function useBillPaymentsByBill(billId: string) {
   return useLiveQuery(
-    async () => {
-      let debts: DebtEntry[];
-      if (direction === 'all') {
-        debts = await db.debts.orderBy('date').reverse().toArray();
-      } else {
-        debts = await db.debts.where('direction').equals(direction).reverse().sortBy('date');
-      }
-      // Manually decrypt sensitive fields
-      const decrypted = await Promise.all(
-        debts.map(debt => decryptObjectFields(debt, ['personName', 'note'] as (keyof DebtEntry)[]))
-      );
-      return decrypted;
-    },
-    [direction],
+    () => db.billPayments.where('billId').equals(billId).reverse().sortBy('paidDate'),
+    [billId],
     []
   );
 }
@@ -271,12 +192,7 @@ export function useTransactionsByDateRange(startDate: Date, endDate: Date) {
  */
 export function useTransactionsByCategory(category: string) {
   return useLiveQuery(
-    // Use compound index [category+date]
-    () => db.transactions
-      .where('[category+date]')
-      .between([category, Dexie.minKey], [category, Dexie.maxKey])
-      .reverse()
-      .toArray(),
+    () => db.transactions.where('category').equals(category).reverse().sortBy('date'),
     [category],
     []
   );
@@ -288,26 +204,16 @@ export function useTransactionsByCategory(category: string) {
 export function useSearchTransactions(query: string) {
   return useLiveQuery(
     () => {
-      const q = query.toLowerCase().trim();
-      if (!q) {
+      if (!query.trim()) {
         return db.transactions.orderBy('date').reverse().toArray();
       }
-      
-      // Optimization: If the query is short, sticking to filter+sort on date might be okay.
-      // But we can try to use anyStartsWith if the user is typing the beginning of a description.
-      // However, we need to search both description and category.
-      // Full text search in IndexedDB is limited.
-      // We stick to filter() but ensure we iterate over the sorted index 'date' so at least the result is naturally sorted
-      // without needing an in-memory sort of the whole set if possible.
-      
       return db.transactions
-        .orderBy('date')
-        .reverse()
-        .filter(transaction =>
-          transaction.description.toLowerCase().includes(q) ||
-          transaction.category.toLowerCase().includes(q)
+        .filter(transaction => 
+          transaction.description.toLowerCase().includes(query.toLowerCase()) ||
+          transaction.category.toLowerCase().includes(query.toLowerCase())
         )
-        .toArray();
+        .reverse()
+        .sortBy('date');
     },
     [query],
     []
@@ -531,12 +437,5 @@ export const dbMutations = {
    */
   async deleteDebt(id: string): Promise<void> {
     await db.debts.delete(id);
-  },
-
-  /**
-   * Clear all debts (optional: for settling all)
-   */
-  async clearAllDebts(): Promise<void> {
-    await db.debts.clear();
   }
 };

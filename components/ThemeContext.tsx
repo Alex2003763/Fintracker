@@ -1,33 +1,14 @@
 import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
 
-export type ThemeCategory = 'light' | 'dark';
-
-export interface Theme {
-  id: string;
-  name: string;
-  category: ThemeCategory;
-  accentColor: string;
-}
-
-export const THEMES: Theme[] = [
-  // Light themes
-  { id: 'theme-light', name: 'Light', category: 'light', accentColor: '#3b82f6' },
-  { id: 'theme-light-rose', name: 'Rose', category: 'light', accentColor: '#f43f5e' },
-  { id: 'theme-light-mint', name: 'Mint', category: 'light', accentColor: '#10b981' },
-  { id: 'theme-light-amber', name: 'Amber', category: 'light', accentColor: '#f59e0b' },
-  { id: 'theme-light-violet', name: 'Violet', category: 'light', accentColor: '#8b5cf6' },
-  { id: 'theme-light-sky', name: 'Sky', category: 'light', accentColor: '#0ea5e9' },
-  { id: 'theme-light-coral', name: 'Coral', category: 'light', accentColor: '#f97316' },
-  // Dark themes
-  { id: 'theme-dark-slate', name: 'Slate', category: 'dark', accentColor: '#3b82f6' },
-  { id: 'theme-dark-green', name: 'Forest', category: 'dark', accentColor: '#10b981' },
-  { id: 'theme-dark-crimson', name: 'Crimson', category: 'dark', accentColor: '#f43f5e' },
-  { id: 'theme-dark-purple', name: 'Purple', category: 'dark', accentColor: '#a855f7' },
-  { id: 'theme-dark-ocean', name: 'Ocean', category: 'dark', accentColor: '#06b6d4' },
-  { id: 'theme-dark-amber', name: 'Gold', category: 'dark', accentColor: '#f59e0b' },
-  { id: 'theme-dark-pink', name: 'Pink', category: 'dark', accentColor: '#ec4899' },
-  { id: 'theme-dark-lime', name: 'Lime', category: 'dark', accentColor: '#84cc16' },
-  { id: 'theme-amoled', name: 'AMOLED Black', category: 'dark', accentColor: '#3b82f6' },
+export const THEMES = [
+  { id: 'theme-light', name: 'Light' },
+  { id: 'theme-dark-slate', name: 'Dark Slate' },
+  { id: 'theme-dark-green', name: 'Dark Green' },
+  { id: 'theme-dark-crimson', name: 'Dark Crimson' },
+  { id: 'theme-ocean-blue', name: 'Ocean Blue' },
+  { id: 'theme-sunset-orange', name: 'Sunset Orange' },
+  { id: 'theme-purple', name: 'Purple' },
+  { id: 'theme-midnight-black', name: 'Midnight Black' },
 ];
 
 interface ThemeContextType {
