@@ -445,16 +445,6 @@ body.modal-open {
     padding-top: env(safe-area-inset-top);
 }
 
-.mobile-safe-area-bottom::after {
-    content: "Safe Area Bottom";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    font-size: 8px;
-    color: red;
-    background: white;
-    z-index: 100;
-}
 
 /* Mobile responsive adjustments */
 @media (max-width: 479px) {
@@ -734,6 +724,7 @@ body.modal-open {
     }
   }
 }
+
 
 
 
