@@ -1473,7 +1473,7 @@ const App: React.FC = () => {
   }
   
   return (
-    <div className="flex h-full overflow-hidden bg-[rgb(var(--color-bg-rgb))] text-[rgb(var(--color-text-rgb))] transition-colors">
+    <div className="flex min-h-screen-ios overflow-hidden bg-[rgb(var(--color-bg-rgb))] text-[rgb(var(--color-text-rgb))] transition-colors">
       {/* Offline Warning Banner */}
       {showOfflineWarning && (
         <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-yellow-900 px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] text-center text-sm font-medium z-50" style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>

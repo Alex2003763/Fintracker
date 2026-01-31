@@ -17,24 +17,28 @@ const navItems = [
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] h-20 flex items-center justify-between z-10 transition-colors mobile-safe-area px-2">
-      <div className="flex flex-1">
-        {navItems.map((item) => (
-          <a
-            key={item.name}
-            href="#"
-            onClick={(e) => { e.preventDefault(); setActiveItem(item.name); }}
-            className={`flex flex-col items-center justify-center w-full h-full transition-colors duration-200 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[rgb(var(--color-primary-rgb))] ${
-              activeItem === item.name ? 'text-[rgb(var(--color-primary-subtle-text-rgb))]' : 'text-[rgb(var(--color-text-muted-rgb))]'
-            }`}
-            aria-label={item.name}
-            aria-current={activeItem === item.name ? 'page' : undefined}
-          >
-            <item.icon className="h-6 w-6" />
-            <span className={`text-xs mt-1 ${activeItem === item.name ? 'font-semibold' : 'font-normal'}`}>{item.name}</span>
-          </a>
-        ))}
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] flex flex-col z-10 transition-colors">
+      <div className="h-16 flex items-center justify-between px-2">
+        <div className="flex flex-1 h-full">
+          {navItems.map((item) => (
+            <a
+              key={item.name}
+              href="#"
+              onClick={(e) => { e.preventDefault(); setActiveItem(item.name); }}
+              className={`flex flex-col items-center justify-center w-full h-full transition-colors duration-200 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[rgb(var(--color-primary-rgb))] ${
+                activeItem === item.name ? 'text-[rgb(var(--color-primary-subtle-text-rgb))]' : 'text-[rgb(var(--color-text-muted-rgb))]'
+              }`}
+              aria-label={item.name}
+              aria-current={activeItem === item.name ? 'page' : undefined}
+            >
+              <item.icon className="h-6 w-6" />
+              <span className={`text-xs mt-1 ${activeItem === item.name ? 'font-semibold' : 'font-normal'}`}>{item.name}</span>
+            </a>
+          ))}
+        </div>
       </div>
+      {/* Safe Area Spacer */}
+      <div className="h-[env(safe-area-inset-bottom)] w-full" />
     </nav>
   );
 };

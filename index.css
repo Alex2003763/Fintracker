@@ -226,6 +226,7 @@ body.modal-open {
 
 /* 4. Responsive and Accessibility */
 @media (min-width: 768px) {
+
   .modal-overlay {
     align-items: center;
   }
@@ -444,6 +445,16 @@ body.modal-open {
 .mobile-safe-area-top {
     padding-top: env(safe-area-inset-top);
 }
+
+.mobile-safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.min-h-screen-ios {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
 
 
 /* Mobile responsive adjustments */
@@ -724,7 +735,3 @@ body.modal-open {
     }
   }
 }
-
-
-
-
