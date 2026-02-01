@@ -82,7 +82,8 @@ const GoalItem: React.FC<{
 
 const GoalsPage: React.FC<GoalsPageProps> = ({ goals, goalContributions, onAddNewGoal, onEditGoal, onDeleteGoal, onOpenConfirmModal }) => {
   return (
-   <div className="flex flex-col gap-6 p-0 sm:p-0 pb-20 md:pb-6 max-w-7xl mx-auto animate-fade-in-up">
+   <div className="flex flex-col min-h-screen w-full max-w-4xl mx-auto animate-fade-in-up bg-transparent pb-20">
+
        <div className="flex justify-between items-center mb-10 mt-2">
          <h1 className="text-3xl font-black tracking-tight text-[rgb(var(--color-text-rgb))]">Goals</h1>
         <button
