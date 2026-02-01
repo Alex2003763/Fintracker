@@ -23,162 +23,58 @@ const GoalItem: React.FC<{
   contributions: GoalContribution[];
   onEdit: () => void;
   onDelete: () => void;
-}> = ({ goal, contributions, onEdit, onDelete }) => {
-  // Ensure goal has all required properties with defaults
-  const safeGoal: Goal = {
-    category: 'savings',
-    priority: 'medium',
-    isActive: true,
-    allocationRules: [],
-    progressHistory: [],
-    autoAllocate: false,
-    ...goal
-  };
-
-  const progress = safeGoal.targetAmount > 0 ? (safeGoal.currentAmount / safeGoal.targetAmount) * 100 : 0;
+}> = ({ goal, onEdit, onDelete }) => {
+  const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
   const progressClamped = Math.min(Math.max(progress, 0), 100);
-  const stats = getGoalProgressStats(safeGoal);
-  const monthlyTarget = calculateMonthlyTarget(safeGoal);
 
-  // Get contributions for this goal
-  const goalContributions = contributions.filter(c => c.goalId === goal.id);
-  const totalContributions = goalContributions.reduce((sum, c) => sum + c.amount, 0);
-
-  // Priority color
   const priorityColors = {
-    low: 'text-gray-600 bg-gray-100',
-    medium: 'text-blue-600 bg-blue-100',
-    high: 'text-orange-600 bg-orange-100'
-  };
-
-  // Category emoji
-  const categoryEmojis = {
-    emergency: '🚨',
-    savings: '💰',
-    investment: '📈',
-    debt: '💳',
-    purchase: '🛒',
-    custom: '🎯'
+    low: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400',
+    medium: 'bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400',
+    high: 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400'
   };
 
   return (
-    <div className="bg-[rgb(var(--color-card-rgb))] p-4 rounded-lg shadow-sm space-y-3 flex flex-col transition-colors hover:shadow-md">
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{categoryEmojis[safeGoal.category]}</span>
-          <div>
-            <h3 className="font-bold text-lg text-[rgb(var(--color-text-rgb))]">{safeGoal.name}</h3>
-            {safeGoal.description && (
-              <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">{safeGoal.description}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span className={`text-xs px-2 py-1 rounded-full font-medium ${priorityColors[safeGoal.priority]}`}>
-            {safeGoal.priority.toUpperCase()}
+    <div className="bg-[rgb(var(--color-card-rgb))] rounded-3xl p-6 border border-[rgb(var(--color-border-rgb))] shadow-sm transition-all hover:shadow-md hover:border-[rgb(var(--color-primary-rgb),0.3)]">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h3 className="font-bold text-xl text-[rgb(var(--color-text-rgb))] leading-tight mb-1">{goal.name}</h3>
+          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${priorityColors[goal.priority as keyof typeof priorityColors] || priorityColors.medium}`}>
+            {goal.priority || 'medium'}
           </span>
-          <div className="flex space-x-2">
-            <button
-              onClick={onEdit}
-              className="text-sm text-[rgb(var(--color-primary-subtle-text-rgb))] hover:underline focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] rounded px-1"
-              aria-label={`Edit goal: ${safeGoal.name}`}
-            >
-              Edit
-            </button>
-            <button
-              onClick={onDelete}
-              className="text-sm text-red-500 hover:underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1"
-              aria-label={`Delete goal: ${safeGoal.name}`}
-            >
-              Delete
-            </button>
-          </div>
+        </div>
+        <div className="flex gap-1">
+          <button onClick={onEdit} className="p-2 text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-primary-rgb))] hover:bg-[rgb(var(--color-primary-subtle-rgb))] rounded-xl transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+          </button>
+          <button onClick={onDelete} className="p-2 text-[rgb(var(--color-text-muted-rgb))] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          </button>
         </div>
       </div>
 
-      <div className="flex-grow flex flex-col justify-end space-y-3">
-        {/* Progress Section */}
+      <div className="space-y-4">
         <div>
-          <div className="flex justify-between text-sm font-medium text-[rgb(var(--color-text-muted-rgb))] mb-1">
-            <span>Progress</span>
-            <span>{progressClamped.toFixed(0)}%</span>
-          </div>
-          <div
-            className="w-full bg-[rgb(var(--color-border-rgb))] rounded-full h-2.5"
-            role="progressbar"
-            aria-valuenow={Math.round(progressClamped)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`${safeGoal.name} progress`}
-          >
-            <div className="bg-[rgb(var(--color-primary-rgb))] h-2.5 rounded-full transition-all duration-300" style={{ width: `${progressClamped}%` }}></div>
-          </div>
-          <div className="text-right text-sm text-[rgb(var(--color-text-muted-rgb))] mt-1">
-            {formatCurrency(goal.currentAmount)} / {formatCurrency(goal.targetAmount)}
-          </div>
-        </div>
-
-        {/* Insights Section */}
-        <div className="grid grid-cols-2 gap-3 text-xs">
-          <div>
-            <span className="text-[rgb(var(--color-text-muted-rgb))]">Monthly Target:</span>
-            <div className="font-medium text-[rgb(var(--color-text-rgb))]">
-              {formatCurrency(monthlyTarget)}
-            </div>
-          </div>
-          <div>
-            <span className="text-[rgb(var(--color-text-muted-rgb))]">Avg Monthly:</span>
-            <div className="font-medium text-[rgb(var(--color-text-rgb))]">
-              {formatCurrency(stats.avgMonthly)}
-            </div>
-          </div>
-        </div>
-
-        {/* Target Date */}
-        {safeGoal.targetDate && (
-          <div className="text-xs">
-            <span className="text-[rgb(var(--color-text-muted-rgb))]">Target Date:</span>
-            <div className="font-medium text-[rgb(var(--color-text-rgb))]">
-              {new Date(safeGoal.targetDate).toLocaleDateString()}
-              {stats.projectedDate && stats.projectedDate.getTime() !== new Date(safeGoal.targetDate).getTime() && (
-                <span className={`ml-2 ${stats.projectedDate > new Date(safeGoal.targetDate) ? 'text-orange-500' : 'text-green-500'}`}>
-                  ({stats.projectedDate > new Date(safeGoal.targetDate) ? 'Behind' : 'On Track'})
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Contribution Summary */}
-        {totalContributions > 0 && (
-          <div className="text-xs">
-            <span className="text-[rgb(var(--color-text-muted-rgb))]">Auto Contributions:</span>
-            <div className="font-medium text-[rgb(var(--color-text-rgb))]">
-              {formatCurrency(totalContributions)} from {goalContributions.length} transactions
-            </div>
-          </div>
-        )}
-
-        {/* Status Badge */}
-        <div className="flex justify-between items-center pt-2 border-t border-[rgb(var(--color-border-rgb))]">
-          <span className={`text-xs px-2 py-1 rounded-full ${
-            progress >= 100 ? 'bg-green-100 text-green-800' :
-            progress >= 75 ? 'bg-blue-100 text-blue-800' :
-            progress >= 50 ? 'bg-yellow-100 text-yellow-800' :
-            'bg-gray-100 text-gray-800'
-          }`}>
-            {progress >= 100 ? 'Completed' :
-             progress >= 75 ? 'Almost There' :
-             progress >= 50 ? 'Halfway' :
-             'Getting Started'}
-          </span>
-
-          {!safeGoal.isActive && (
-            <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
-              Inactive
+          <div className="flex justify-between items-end mb-2">
+            <span className="text-3xl font-black text-[rgb(var(--color-text-rgb))] tracking-tighter">
+              {progressClamped.toFixed(0)}<span className="text-sm font-medium text-[rgb(var(--color-text-muted-rgb))] ml-1">%</span>
             </span>
-          )}
+            <span className="text-xs font-bold text-[rgb(var(--color-text-muted-rgb))] uppercase tracking-tight">
+              {formatCurrency(goal.currentAmount)} / {formatCurrency(goal.targetAmount)}
+            </span>
+          </div>
+          <div className="h-3 w-full bg-[rgb(var(--color-bg-rgb))] rounded-full overflow-hidden border border-[rgb(var(--color-border-rgb))]">
+            <div 
+              className="h-full bg-gradient-to-r from-[rgb(var(--color-primary-rgb))] to-[rgb(var(--color-primary-hover-rgb))] rounded-full transition-all duration-1000 ease-out"
+              style={{ width: `${progressClamped}%` }}
+            ></div>
+          </div>
         </div>
+
+        {goal.targetDate && (
+          <div className="text-xs font-bold text-[rgb(var(--color-text-muted-rgb))] pt-2 border-t border-[rgb(var(--color-border-rgb))] border-dashed uppercase tracking-widest">
+            Target: {new Date(goal.targetDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -186,21 +82,19 @@ const GoalItem: React.FC<{
 
 const GoalsPage: React.FC<GoalsPageProps> = ({ goals, goalContributions, onAddNewGoal, onEditGoal, onDeleteGoal, onOpenConfirmModal }) => {
   return (
-    <div className="flex flex-col h-auto min-h-screen max-w-3xl mx-auto animate-fade-in-up bg-[rgb(var(--color-background-rgb))]">
-       <div className="relative">
-         <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Financial Goals</h1>
+    <div className="flex flex-col h-full w-full max-w-4xl mx-auto animate-fade-in-up bg-transparent pb-10">
+       <div className="flex justify-between items-center mb-10 mt-2">
+         <h1 className="text-3xl font-black tracking-tight text-[rgb(var(--color-text-rgb))]">Goals</h1>
         <button
           onClick={onAddNewGoal}
-          className="absolute top-0 right-0 flex items-center px-3 py-2 text-xs sm:text-sm sm:px-4 sm:py-2 font-semibold text-[rgb(var(--color-primary-text-rgb))] bg-[rgb(var(--color-primary-rgb))] rounded-lg shadow-md hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 transition-colors"
+          className="flex items-center justify-center p-4 sm:px-10 sm:py-4 text-[rgb(var(--color-primary-rgb))] bg-[rgb(var(--color-primary-subtle-rgb))] hover:bg-[rgb(var(--color-primary-rgb))] hover:text-white rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
+          aria-label="Add new goal"
         >
-          <PlusIcon className="h-3 w-3 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-          <span className="hidden xs:inline">Add New Goal</span>
-          <span className="xs:hidden">New Goal</span>
+          <span className="font-black text-2xl leading-none">+</span>
         </button>
       </div>
-
       {goals.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2 sm:px-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {goals.map(goal => (
             <GoalItem
               key={goal.id}
@@ -219,9 +113,20 @@ const GoalsPage: React.FC<GoalsPageProps> = ({ goals, goalContributions, onAddNe
           ))}
         </div>
       ) : (
-        <div className="text-center bg-[rgb(var(--color-card-rgb))] rounded-lg shadow p-8 mt-6 transition-colors">
-          <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">No goals set yet!</h2>
-          <p className="mt-2 text-[rgb(var(--color-text-muted-rgb))]">Click "Add New Goal" to start tracking your financial goals.</p>
+        <div className="flex flex-col items-center justify-center text-center bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-sm border border-[rgb(var(--color-border-rgb))] p-12 mt-4 space-y-4">
+          <div className="bg-[rgb(var(--color-primary-subtle-rgb))] p-4 rounded-full">
+            <PlusIcon className="h-10 w-10 text-[rgb(var(--color-primary-rgb))]" />
+          </div>
+          <div className="max-w-xs">
+            <h2 className="text-xl font-bold text-[rgb(var(--color-text-rgb))]">No goals set yet!</h2>
+            <p className="mt-2 text-[rgb(var(--color-text-muted-rgb))]">Start tracking your financial future by adding your first goal.</p>
+          </div>
+          <button
+            onClick={onAddNewGoal}
+            className="mt-4 px-6 py-2 font-bold text-white bg-[rgb(var(--color-primary-rgb))] rounded-lg shadow-md hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors"
+          >
+            Create My First Goal
+          </button>
         </div>
       )}
     </div>

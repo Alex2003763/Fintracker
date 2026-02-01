@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import ErrorBoundary from './components/ErrorBoundary';
 import UpdatePrompt from './components/UpdatePrompt';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -32,7 +33,6 @@ const Dashboard = React.lazy(() => import('./components/Dashboard'));
 const TransactionsPage = React.lazy(() => import('./components/TransactionsPage'));
 const SettingsPage = React.lazy(() => import('./components/SettingsPage'));
 const GoalsPage = React.lazy(() => import('./components/GoalsPage'));
-const AccountPage = React.lazy(() => import('./components/AccountPage'));
 const InsightsPage = React.lazy(() => import('./components/InsightsPage'));
 const BudgetsPage = React.lazy(() => import('./components/BudgetsPage'));
 const ManageCategoriesPage = React.lazy(() => import('./components/ManageCategoriesPage'));
@@ -679,12 +679,6 @@ const App: React.FC = () => {
     setSessionKey(key);
     initialProcessingDone.current = false; // Reset for new session
     
-    // Check if it's a new account to set initial data
-    if (transactions.length === 0) {
-      const welcomeNotification: Notification = { id: uuidv4(), title: 'Welcome to FinTrack!', message: 'Start by adding your first transaction.', date: new Date().toISOString(), read: false, type: 'standard' };
-      // Use dbMutations instead of setNotifications which doesn't exist
-      dbMutations.addNotification(welcomeNotification);
-    }
   };
 
   const handleSignOut = () => {
@@ -1412,27 +1406,25 @@ const App: React.FC = () => {
                 onDeleteGoal={handleDeleteGoal}
                 onOpenConfirmModal={handleOpenConfirmModal}
               />;
-            case 'Account':
-              return <AccountPage
-                user={user!}
-                onUpdateUser={handleUpdateUser}
-                onChangePassword={handleChangePassword}
-                setActiveItem={setActiveItem}
-              />;
             case 'Settings':
-              return <SettingsPage
-                user={user!}
-                onUpdateUser={handleUpdateUser}
-                onSignOut={handleSignOut}
-                onOpenConfirmModal={handleOpenConfirmModal}
-                onImportData={handleImportData}
-                onExportData={handleExportData}
-                setActiveItem={setActiveItem}
-                onOpenCropModal={handleOpenCropModal}
-                isProcessingImage={isProcessingImage}
-                processingType={processingType}
-                setProcessingType={setProcessingType}
-              />;
+              return (
+                <ErrorBoundary>
+                  <SettingsPage
+                    user={user!}
+                    onUpdateUser={handleUpdateUser}
+                    onSignOut={handleSignOut}
+                    onOpenConfirmModal={handleOpenConfirmModal}
+                    onImportData={handleImportData}
+                    onExportData={handleExportData}
+                    setActiveItem={setActiveItem}
+                    onOpenCropModal={handleOpenCropModal}
+                    isProcessingImage={isProcessingImage}
+                    processingType={processingType}
+                    setProcessingType={setProcessingType}
+                    onChangePassword={handleChangePassword}
+                  />
+                </ErrorBoundary>
+              );
             case 'Manage Categories':
               return <ManageCategoriesPage user={user} onUpdateCategories={handleUpdateCategories} setActiveItem={setActiveItem} />;
             default:

@@ -83,16 +83,16 @@ const Header: React.FC<HeaderProps> = React.memo(({ user, notifications, onMarkA
                 </div>
                 <div
                     className="h-12 w-12 rounded-full bg-[rgb(var(--color-card-muted-rgb))] flex items-center justify-center overflow-hidden cursor-pointer hover:bg-[rgb(var(--color-card-hover-rgb))] transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-bg-rgb))]"
-                    onClick={() => setActiveItem?.('Account')}
+                    onClick={() => setActiveItem?.('Settings')}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            setActiveItem?.('Account');
+                            setActiveItem?.('Settings');
                         }
                     }}
-                    aria-label="Open Account Settings"
+                    aria-label="Open Settings Hub"
                 >
                     {user.avatar ? (
                         <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />

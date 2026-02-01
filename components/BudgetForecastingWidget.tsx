@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Transaction, Budget } from '../types';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
 import { PieChartIcon, ExclamationTriangleIcon, CheckCircleIcon } from './icons';
@@ -11,7 +11,16 @@ interface BudgetForecastingWidgetProps {
 }
 
 const BudgetForecastingWidget: React.FC<BudgetForecastingWidgetProps> = React.memo(({ transactions, budgets }) => {
-  
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Calculate projections based on current month's spending pace
   const forecastData = useMemo(() => {
     if (!budgets.length) return [];
@@ -84,76 +93,101 @@ const BudgetForecastingWidget: React.FC<BudgetForecastingWidgetProps> = React.me
 
   if (budgets.length === 0) {
       return (
-        <Card className="h-full">
+        <Card className="overflow-hidden">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <PieChartIcon className="h-5 w-5 text-purple-500" />
-                    Budget Forecasting
+                    <span>End-of-Month Forecast</span>
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center h-[300px] text-center">
-                <p className="text-[rgb(var(--color-text-muted-rgb))] mb-4">No budgets set for this month.</p>
-                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Set up budgets to see predictive insights here.</p>
+            <CardContent className="flex flex-col items-center justify-center min-h-[300px] text-center p-6">
+                <div className="bg-[rgba(var(--color-primary-rgb),0.1)] p-4 rounded-full mb-4">
+                  <PieChartIcon className="h-8 w-8 text-[rgb(var(--color-primary-rgb))]" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2 text-[rgb(var(--color-text-rgb))]">No budgets set for this month</h3>
+                <p className="text-[rgb(var(--color-text-muted-rgb))] max-w-xs mb-6">
+                  Set up budgets for your spending categories to see predictive insights and forecasting here.
+                </p>
             </CardContent>
         </Card>
       );
   }
 
+  const barSize = isMobile ? 12 : 16;
+  const projectedBarSize = isMobile ? 8 : 10;
+
   return (
-    <Card className="h-full">
+    <Card className="overflow-hidden flex flex-col">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-           <div className="flex items-center gap-2">
-             <PieChartIcon className="h-5 w-5 text-purple-500" />
-             <span>End-of-Month Forecast</span>
-           </div>
+        <CardTitle className="flex items-center gap-2">
+          <PieChartIcon className="h-5 w-5 text-purple-500" />
+          <span>End-of-Month Forecast</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-[300px] w-full">
-           <ResponsiveContainer width="100%" height="100%">
-             <BarChart data={forecastData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-               <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="rgba(var(--color-border-rgb), 0.3)" />
-               <XAxis type="number" hide />
-               <YAxis 
-                 dataKey="category" 
-                 type="category" 
-                 width={100}
-                 tick={{ fill: 'rgb(var(--color-text-rgb))', fontSize: 12 }} 
-               />
-               <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
-               {/* Background bar for budget limit */}
-               <Bar dataKey="budget" barSize={20} fill="rgba(var(--color-border-rgb), 0.3)" radius={[0, 4, 4, 0]} />
-               
-               {/* Projected spending bar */}
-               <Bar dataKey="projected" barSize={12} radius={[0, 4, 4, 0]}>
-                 {forecastData.map((entry, index) => (
-                   <Cell key={`cell-${index}`} fill={entry.projected > entry.budget ? '#EF4444' : '#10B981'} />
-                 ))}
-               </Bar>
-             </BarChart>
-           </ResponsiveContainer>
+      <CardContent className="flex-1 flex flex-col min-h-0">
+        {/* Responsive chart container */}
+        <div className="w-full flex-1 min-h-[250px] md:min-h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={forecastData}
+              layout="vertical"
+              margin={{
+                top: 5,
+                right: 30,
+                left: isMobile ? 0 : 30,
+                bottom: 5
+              }}
+            >
+              <defs>
+                <linearGradient id="safeGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#10B981" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#059669" stopOpacity={1} />
+                </linearGradient>
+                <linearGradient id="dangerGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#EF4444" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#B91C1C" stopOpacity={1} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="rgba(var(--color-border-rgb), 0.1)" />
+              <XAxis type="number" hide />
+              <YAxis
+                dataKey="category"
+                type="category"
+                width={isMobile ? 85 : 100}
+                tick={{ fill: 'rgb(var(--color-text-rgb))', fontSize: isMobile ? 11 : 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(var(--color-border-rgb), 0.1)'}} />
+              {/* Background bar for budget limit */}
+              <Bar dataKey="budget" barSize={barSize} fill="rgba(var(--color-border-rgb), 0.2)" radius={[0, 4, 4, 0]} />
+              {/* Projected spending bar */}
+              <Bar dataKey="projected" barSize={projectedBarSize} radius={[0, 4, 4, 0]}>
+                {forecastData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={`url(#${entry.projected > entry.budget ? 'dangerGradient' : 'safeGradient'})`}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        <div className="mt-4 space-y-3">
-          {forecastData.slice(0, 3).map((item) => (
-            <div key={item.category} className="flex items-center justify-between text-sm p-2 rounded-lg bg-[rgb(var(--color-card-muted-rgb))]">
-               <div className="flex items-center gap-2">
-                 {item.projected > item.budget ? (
-                    <ExclamationTriangleIcon className="h-4 w-4 text-red-500" />
-                 ) : (
-                    <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                 )}
-                 <span className="font-medium text-[rgb(var(--color-text-rgb))]">{item.category}</span>
-               </div>
-               <div className="text-right">
-                 {item.projected > item.budget ? (
-                   <span className="text-red-500 font-bold">+{formatCurrency(item.projected - item.budget)}</span>
-                 ) : (
-                   <span className="text-green-500 font-bold">-{formatCurrency(item.budget - item.projected)}</span>
-                 )}
-                 <span className="text-xs text-[rgb(var(--color-text-muted-rgb))] ml-1">expected</span>
-               </div>
+        {/* Compact horizontal summary badges */}
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          {forecastData.map((item) => (
+            <div
+              key={item.category}
+              className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] ${item.projected > item.budget ? 'text-red-600 border-red-200' : 'text-green-600 border-green-200'}`}
+              title={item.category}
+            >
+              {item.projected > item.budget ? (
+                <ExclamationTriangleIcon className="h-3.5 w-3.5 flex-shrink-0" />
+              ) : (
+                <CheckCircleIcon className="h-3.5 w-3.5 flex-shrink-0" />
+              )}
+              <span className="truncate max-w-[100px]">{item.category}</span>
             </div>
           ))}
         </div>

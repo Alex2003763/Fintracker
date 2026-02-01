@@ -1,12 +1,12 @@
-import React, {useState, useEffect } from 'react';
-import { User } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, NotificationSettings } from '../types';
 import { useTheme, THEMES } from './ThemeContext';
-import { SparklesIcon, BellIcon, SettingsIcon, UserIcon } from './icons';
+import { SparklesIcon, BellIcon, SettingsIcon, UserIcon, ChevronUpIcon, HomeIcon, TrendingUpIcon, BackupIcon, RestoreIcon } from './icons';
 import ServiceWorkerDebugPanel from './ServiceWorkerDebugPanel';
 import NotificationSettingsPage from './NotificationSettingsPage';
-import { TRANSACTION_CATEGORIES } from '../constants';
 import { processImageForBackground, createPatternBackground } from '../utils/imageProcessing';
-import { isWebAuthnSupported, registerWebAuthn, saveBiometricSession, getBiometricSession } from '../utils/webauthn';
+import { isWebAuthnSupported, registerWebAuthn } from '../utils/webauthn';
+import Card, { CardHeader, CardTitle, CardContent } from './Card';
 
 interface SettingsPageProps {
   user: User;
@@ -25,6 +25,7 @@ interface SettingsPageProps {
   processingType?: 'transparent' | 'pattern';
   setProcessingType?: (type: 'transparent' | 'pattern') => void;
   onExportData: () => void;
+  onChangePassword: (oldPw: string, newPw: string) => Promise<boolean>;
 }
 
 const THEME_COLORS: Record<string, { bg: string; card: string; primary: string; isLight: boolean }> = {
@@ -38,190 +39,327 @@ const THEME_COLORS: Record<string, { bg: string; card: string; primary: string; 
   'theme-midnight-black': { bg: '#121214', card: '#1c1c20', primary: '#788ca0', isLight: false },
 };
 
-const ThemePreview: React.FC<{ themeId: string; name: string; isActive: boolean; onClick: () => void }> = ({ themeId, name, isActive, onClick }) => {
+const ThemePreview: React.FC<{ themeId: string }> = ({ themeId }) => {
   const colors = THEME_COLORS[themeId] || THEME_COLORS['theme-light'];
+  
   return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center p-2 rounded-lg transition-all ${
-        isActive ? 'ring-2 ring-[rgb(var(--color-primary-rgb))]' : 'hover:opacity-80'
-      }`}
-    >
-      <div
-        className="w-20 h-12 rounded-lg border-2 mb-2 flex items-end justify-center p-1"
-        style={{
-          backgroundColor: colors.bg,
-          borderColor: isActive ? colors.primary : colors.card
-        }}
-      >
-        <div
-          className="w-full h-6 rounded"
-          style={{ backgroundColor: colors.card }}
-        />
-      </div>
-      <div className="flex items-center gap-1">
-        <div
-          className="w-3 h-3 rounded-full"
-          style={{ backgroundColor: colors.primary }}
-        />
-        <span className={`text-xs truncate ${isActive ? 'font-semibold text-[rgb(var(--color-text-rgb))]' : 'text-[rgb(var(--color-text-muted-rgb))]'}`}>
-          {name}
-        </span>
-      </div>
-    </button>
+    <div className="w-full aspect-video rounded-xl shadow-lg border border-[rgb(var(--color-border-rgb))] overflow-hidden flex flex-col transition-all duration-300 relative group"
+         style={{ backgroundColor: colors.bg }}>
+        {/* Mock Header */}
+        <div className="h-10 border-b flex items-center px-3 justify-between"
+              style={{ backgroundColor: colors.card, borderColor: 'rgba(0,0,0,0.1)' }}>
+             <div className="w-20 h-3 rounded-full bg-gray-200/50"></div>
+             <div className="w-6 h-6 rounded-full" style={{ backgroundColor: colors.primary }}></div>
+        </div>
+
+        {/* Mock Content */}
+        <div className="flex-1 p-3 space-y-2">
+            <div className="w-full h-16 rounded-lg shadow-sm" style={{ backgroundColor: colors.card }}></div>
+             <div className="flex gap-2">
+                <div className="w-1/2 h-12 rounded-lg shadow-sm" style={{ backgroundColor: colors.card }}></div>
+                <div className="w-1/2 h-12 rounded-lg shadow-sm" style={{ backgroundColor: colors.card }}></div>
+             </div>
+        </div>
+        
+        {/* Active Badge for currently selected theme only shown if used in list, but here we just show plain preview */}
+         <div className="absolute inset-0 ring-4 ring-inset pointer-events-none rounded-xl" style={{
+            boxShadow: `inset 0 0 0 2px ${colors.primary}`,
+            opacity: 0.1
+          }} />
+    </div>
   );
 };
 
-// Biometric Settings Component
-const BiometricSettings: React.FC<{ user: User; onUpdateUser: (user: User) => void }> = ({ user, onUpdateUser }) => {
-    const [isAvailable] = useState(isWebAuthnSupported());
-    const [isRegistering, setIsRegistering] = useState(false);
-    const [statusMsg, setStatusMsg] = useState('');
+const ProfileSection: React.FC<{ user: User; onUpdateUser: (updatedUser: User) => void }> = ({ user, onUpdateUser }) => {
+  const [username, setUsername] = useState(user.username);
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState({ text: '', type: '' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-    if (!isAvailable) return null;
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setMessage({ text: 'File size must be less than 10MB.', type: 'error' });
+        return;
+      }
 
-    const handleToggleBiometrics = async () => {
-        setStatusMsg('');
-        if (user.biometricEnabled) {
-            // Disable biometrics
-            onUpdateUser({
-                ...user,
-                biometricEnabled: false,
-                biometricCredentialId: undefined
-            });
-            setStatusMsg('Biometrics disabled.');
-            // Note: We don't remove the key from localStorage here typically, or we could.
-        } else {
-            // Enable biometrics
-            setIsRegistering(true);
-            try {
-                // 1. Register with WebAuthn
-                const credential = await registerWebAuthn(user);
-                if (credential) {
-                    // 2. Save current session key for future biometric retrieval
-                    // We need access to the session key here, but it's not passed to SettingsPage
-                    // So we effectively just mark it as enabled on User.
-                    // The App.tsx knows the session key. It should likely save it when user updates this.
-                    // Actually, we can't save the session key here because we don't have it.
-                    
-                    // REVISION: We need the session key to save it.
-                    // Passing sessionKey to SettingsPage is sensitive.
-                    // However, we are in the settings, so user is auth'd.
-                    // Let's assume for this "Gate" implementation, we need the App to handle the saving.
-                    // We'll dispatch an event or the onUpdateUser will trigger an effect in App?
-                    
-                    // Simpler: Trigger a custom event with the credential ID that App.tsx listens to
-                    // to save the current session key.
-                    
-                    const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
-                        .replace(/\+/g, '-')
-                        .replace(/\//g, '_')
-                        .replace(/=+$/, '');
-                        
-                    onUpdateUser({
-                        ...user,
-                        biometricEnabled: true,
-                        biometricCredentialId: credentialId
-                    });
-                    
-                    // Signal App to save the session key
-                    window.dispatchEvent(new CustomEvent('saveBiometricSession'));
-                    
-                    setStatusMsg('Biometrics enabled successfully!');
-                }
-            } catch (error) {
-                console.error("Biometric registration failed", error);
-                setStatusMsg('Failed to enable biometrics. Please try again.');
-            } finally {
-                setIsRegistering(false);
-            }
-        }
-    };
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        onUpdateUser({ ...user, avatar: base64String });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-    return (
-        <div className="border-t border-[rgb(var(--color-border-rgb))] pt-4 sm:pt-6 mt-4">
-             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl space-y-3 sm:space-y-0">
-                <div className="flex-1">
-                  <p className="font-medium text-[rgb(var(--color-text-rgb))]">Biometric Login</p>
-                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] pr-2">
-                      Use Touch ID or Face ID to sign in
-                  </p>
+  const handleUpdateUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username.length < 3) {
+      setMessage({ text: 'Username must be at least 3 characters.', type: 'error' });
+      return;
+    }
+    if (username === user.username) return;
+
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      onUpdateUser({ ...user, username });
+      setMessage({ text: 'Username updated successfully!', type: 'success' });
+      setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Profile</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="relative group">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-[rgb(var(--color-card-rgb))] shadow-lg bg-[rgb(var(--color-card-muted-rgb))]">
+              {user.avatar ? (
+                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <UserIcon className="w-12 h-12 text-[rgb(var(--color-text-muted-rgb))]" />
                 </div>
-                <button
-                  onClick={handleToggleBiometrics}
-                  disabled={isRegistering}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 ${
-                    user.biometricEnabled
-                      ? 'bg-[rgb(var(--color-primary-rgb))]'
-                      : 'bg-[rgb(var(--color-border-rgb))]'
-                  } ${isRegistering ? 'opacity-50 cursor-wait' : ''}`}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
-                      user.biometricEnabled
-                        ? 'translate-x-6'
-                        : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+              )}
             </div>
-            {statusMsg && (
-                <p className={`text-sm mt-2 ${statusMsg.includes('success') ? 'text-green-600' : 'text-red-500'}`}>
-                    {statusMsg}
-                </p>
-            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute bottom-0 right-0 p-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-full shadow-md hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors"
+            >
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleAvatarUpload} className="hidden" />
+          </div>
         </div>
-    );
+
+        <form onSubmit={handleUpdateUsername} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
+            />
+          </div>
+          {message.text && (
+            <p className={`text-sm ${message.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>{message.text}</p>
+          )}
+          <button
+            type="submit"
+            disabled={isLoading || username === user.username}
+            className="w-full py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] disabled:opacity-50 transition-colors font-medium"
+          >
+            {isLoading ? 'Updating...' : 'Update Username'}
+          </button>
+        </form>
+      </CardContent>
+    </Card>
+  );
 };
 
-const AISettings: React.FC<{ user: User; onUpdateUser: (user: User) => void }> = ({ user, onUpdateUser }) => {
-    const [apiKey, setApiKey] = useState(user.aiSettings?.apiKey || '');
-    const [message, setMessage] = useState('');
+const SecuritySection: React.FC<{
+  user: User;
+  onUpdateUser: (user: User) => void;
+  onChangePassword: (oldPw: string, newPw: string) => Promise<boolean>;
+}> = ({ user, onUpdateUser, onChangePassword }) => {
+  const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
+  const [msg, setMsg] = useState({ text: '', type: '' });
+  const [loading, setLoading] = useState(false);
+  const [isBiometricAvailable] = useState(isWebAuthnSupported());
+  const [isRegistering, setIsRegistering] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onUpdateUser({
-            ...user,
-            aiSettings: {
-                apiKey,
-                model: 'gemini-2.5-flash',
-            }
-        });
-        setMessage('API Key saved successfully!');
-        setTimeout(() => setMessage(''), 3000);
-    };
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwords.new.length < 6) {
+      setMsg({ text: 'New password must be at least 6 characters.', type: 'error' });
+      return;
+    }
+    if (passwords.new !== passwords.confirm) {
+      setMsg({ text: 'Passwords do not match.', type: 'error' });
+      return;
+    }
 
-    return (
-        <div className="space-y-3 sm:space-y-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-[rgb(var(--color-text-rgb))]">AI Settings</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] leading-relaxed">
-                    Enter your Gemini API key to enable AI-powered financial insights and smart categorization.
-                </p>
-                <div className="relative">
-                    <input
-                        type="password"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="Gemini API Key"
-                        className="w-full px-4 py-3 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl text-[rgb(var(--color-text-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent transition-all duration-200 text-sm sm:text-base placeholder-[rgb(var(--color-text-muted-rgb))]"
-                        aria-label="Gemini API Key"
-                    />
-                </div>
-                {message && (
-                    <div className={`p-3 rounded-lg text-sm font-medium animate-fade-in ${message.includes('success') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-                        {message}
-                    </div>
-                )}
-                <button
-                    type="submit"
-                    className="w-full sm:w-auto px-6 py-3 text-sm font-medium bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
-                >
-                    Save API Key
-                </button>
-            </form>
-        </div>
-    );
+    setLoading(true);
+    try {
+      const success = await onChangePassword(passwords.current, passwords.new);
+      if (success) {
+        setMsg({ text: 'Password updated successfully!', type: 'success' });
+        setPasswords({ current: '', new: '', confirm: '' });
+      } else {
+        setMsg({ text: 'Incorrect current password.', type: 'error' });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleBiometrics = async () => {
+    if (user.biometricEnabled) {
+      onUpdateUser({ ...user, biometricEnabled: false, biometricCredentialId: undefined });
+    } else {
+      setIsRegistering(true);
+      try {
+        const credential = await registerWebAuthn(user);
+        if (credential) {
+          const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+          onUpdateUser({ ...user, biometricEnabled: true, biometricCredentialId: credentialId });
+          window.dispatchEvent(new CustomEvent('saveBiometricSession'));
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsRegistering(false);
+      }
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Security</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-8">
+        <form onSubmit={handlePasswordChange} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Current Password</label>
+            <input
+              type="password"
+              value={passwords.current}
+              onChange={e => setPasswords({ ...passwords, current: e.target.value })}
+              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">New Password</label>
+            <input
+              type="password"
+              value={passwords.new}
+              onChange={e => setPasswords({ ...passwords, new: e.target.value })}
+              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Confirm New Password</label>
+            <input
+              type="password"
+              value={passwords.confirm}
+              onChange={e => setPasswords({ ...passwords, confirm: e.target.value })}
+              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
+            />
+          </div>
+          {msg.text && <p className={`text-sm ${msg.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>{msg.text}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] disabled:opacity-50 transition-colors font-medium"
+          >
+            Update Password
+          </button>
+        </form>
+
+        {isBiometricAvailable && (
+          <div className="pt-6 border-t border-[rgb(var(--color-border-rgb))]">
+            <div className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl">
+              <div>
+                <p className="font-medium">Biometric Login</p>
+                <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">Use Touch ID or Face ID</p>
+              </div>
+              <button
+                onClick={handleToggleBiometrics}
+                disabled={isRegistering}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  user.biometricEnabled ? 'bg-[rgb(var(--color-primary-rgb))]' : 'bg-[rgb(var(--color-border-rgb))]'
+                }`}
+              >
+                <span className={`h-4 w-4 bg-white rounded-full transition-transform ${user.biometricEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+const SmartFeaturesSection: React.FC<{ user: User; onUpdateUser: (user: User) => void; setActiveItem?: (item: string) => void }> = ({ user, onUpdateUser, setActiveItem }) => {
+  const [apiKey, setApiKey] = useState(user.aiSettings?.apiKey || '');
+  const [msg, setMsg] = useState('');
+
+  const saveApiKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    onUpdateUser({ ...user, aiSettings: { apiKey, model: 'gemini-2.0-flash' } });
+    setMsg('API Key saved!');
+    setTimeout(() => setMsg(''), 3000);
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>AI Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+            Enter your Gemini API key to enable AI-powered financial insights and smart categorization.
+          </p>
+          <form onSubmit={saveApiKey} className="space-y-4">
+            <input
+              type="password"
+              placeholder="Gemini API Key"
+              value={apiKey}
+              onChange={e => setApiKey(e.target.value)}
+              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
+            />
+            {msg && <p className="text-sm text-green-600">{msg}</p>}
+            <button type="submit" className="w-full py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
+              Save API Key
+            </button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Categorization</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl">
+            <div>
+              <p className="font-medium">Smart Suggestions</p>
+              <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">AI suggests categories for transactions</p>
+            </div>
+            <button
+               onClick={() => onUpdateUser({ ...user, smartFeatures: { ...user.smartFeatures, categorySuggestions: !(user.smartFeatures?.categorySuggestions ?? true) } })}
+               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                (user.smartFeatures?.categorySuggestions ?? true) ? 'bg-[rgb(var(--color-primary-rgb))]' : 'bg-[rgb(var(--color-border-rgb))]'
+              }`}
+            >
+              <span className={`h-4 w-4 bg-white rounded-full transition-transform ${(user.smartFeatures?.categorySuggestions ?? true) ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+          <button
+            onClick={() => setActiveItem?.('Manage Categories')}
+            className="w-full flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:border-[rgb(var(--color-primary-rgb))] transition-colors group"
+          >
+            <span className="font-medium group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">Manage Categories</span>
+            <svg className="w-5 h-5 group-hover:text-[rgb(var(--color-primary-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth={2} /></svg>
+          </button>
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 const SettingsPage: React.FC<SettingsPageProps> = ({
@@ -230,141 +368,32 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onSignOut,
   onOpenConfirmModal,
   onImportData,
+  onExportData,
   setActiveItem,
   onOpenCropModal,
   isProcessingImage = false,
   processingType = 'transparent',
   setProcessingType,
-  onExportData
+  onChangePassword
 }) => {
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const { theme, setTheme, customBackground, setCustomBackground } = useTheme();
+  const [activeHubTab, setActiveHubTab] = useState<'account' | 'app'>('account');
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const [localProcessingType, setLocalProcessingType] = useState<'transparent' | 'pattern'>('transparent');
-  const [isExporting, setIsExporting] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
+  const { theme, setTheme, customBackground, setCustomBackground } = useTheme();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Helper function to get theme colors for image processing
-  const getThemeColors = () => {
-    const isDark = theme !== 'theme-light';
-    let primaryColor = '#3b82f6'; // default blue
-    
-    if (theme.includes('green')) {
-      primaryColor = '#10b981'; // emerald
-    } else if (theme.includes('crimson')) {
-      primaryColor = '#ef4444'; // red
-    } else if (theme.includes('slate')) {
-      primaryColor = '#3b82f6'; // blue
-    }
-    
-    return { isDark, primaryColor };
-  };
-
-  // Use local state if global state handlers aren't provided (backward compatibility)
-  const currentProcessingType = processingType || localProcessingType;
-  const handleSetProcessingType = setProcessingType || setLocalProcessingType;
-
-  // Fallback function to process image directly without cropping
-  const processImageDirectly = async (imageSrc: string) => {
-    try {
-      const themeColors = getThemeColors();
-      const processedImage = currentProcessingType === 'transparent'
-        ? await processImageForBackground(imageSrc, themeColors)
-        : await createPatternBackground(imageSrc, themeColors);
-      setCustomBackground(processedImage);
-    } catch (error) {
-      console.error('Error processing image:', error);
-      alert('Failed to process image. Please try again.');
-    }
-  };
-
-  // Listen for crop completion events from the global modal
   useEffect(() => {
     const handleCropComplete = async (event: CustomEvent) => {
-      const { croppedImageUrl, processingType: eventProcessingType } = event.detail;
-      try {
-        const themeColors = getThemeColors();
-        const processedImage = eventProcessingType === 'transparent'
-          ? await processImageForBackground(croppedImageUrl, themeColors)
-          : await createPatternBackground(croppedImageUrl, themeColors);
-        setCustomBackground(processedImage);
-      } catch (error) {
-        console.error('Error processing cropped image:', error);
-        alert('Failed to process image. Please try again.');
-      }
+      const { croppedImageUrl, processingType: eventType } = event.detail;
+      const colors = THEME_COLORS[theme] || THEME_COLORS['theme-light'];
+      const themeColors = { isDark: !colors.isLight, primaryColor: colors.primary };
+      const processed = eventType === 'transparent'
+        ? await processImageForBackground(croppedImageUrl, themeColors)
+        : await createPatternBackground(croppedImageUrl, themeColors);
+      setCustomBackground(processed);
     };
-
     window.addEventListener('cropComplete', handleCropComplete as EventListener);
-    return () => {
-      window.removeEventListener('cropComplete', handleCropComplete as EventListener);
-    };
-  }, [theme]); // Re-run when theme changes to get updated colors
-
-  const handleSignOut = () => {
-    onOpenConfirmModal(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      onSignOut,
-      { confirmText: 'Sign Out', variant: 'danger' }
-    );
-  };
-
-  const handleExport = () => {
-    setIsExporting(true);
-    // Delegate to parent component which has access to decrypted data
-    onExportData();
-    // Reset state after a short delay
-    setTimeout(() => setIsExporting(false), 1000);
-  };
-
-  const handleImportClick = () => {
-      fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      setIsImporting(true);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-          try {
-              const text = e.target?.result;
-              if (typeof text !== 'string') throw new Error("File content is not a string");
-              const data = JSON.parse(text);
-              
-              // Validate the backup file structure
-              if (!data || !data.user || !Array.isArray(data.transactions)) {
-                  alert('Invalid backup file format. Missing required data.');
-                  return;
-              }
-
-              // Check version compatibility
-              if (data.version && data.version !== '1.3.0') {
-                  console.warn(`Backup version ${data.version} may not be fully compatible with current version 1.3.0`);
-              }
-
-              onOpenConfirmModal(
-                  'Import Data',
-                  'Are you sure? This will overwrite ALL current data, including your account info.',
-                  () => {
-                      onImportData(data);
-                      setIsImporting(false);
-                  },
-                  { confirmText: 'Import & Overwrite', variant: 'danger' }
-              );
-          } catch (error) {
-              console.error('Error parsing backup file:', error);
-              alert('Failed to read or parse the backup file. Please ensure it\'s a valid FinTrack backup.');
-          } finally {
-              setIsImporting(false);
-              if (fileInputRef.current) {
-                  fileInputRef.current.value = '';
-              }
-          }
-      };
-      reader.readAsText(file);
-  };
+    return () => window.removeEventListener('cropComplete', handleCropComplete as EventListener);
+  }, [theme, setCustomBackground]);
 
   if (showNotificationSettings) {
     return (
@@ -376,429 +405,212 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     );
   }
 
- 
-   return (
-     <div className="bg-[rgb(var(--color-background-rgb))] px-4 sm:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8 max-w-4xl mx-auto min-h-screen">
-       {/* Enhanced Header */}
-      <div className="text-center pb-6 sm:pb-8 border-b border-[rgb(var(--color-border-rgb))]">
-        <div className="flex flex-col sm:flex-row items-center justify-center mb-4 space-y-3 sm:space-y-0 sm:space-x-3">
-          <div className="p-2 sm:p-3 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-xl sm:rounded-2xl">
-            <SettingsIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[rgb(var(--color-primary-rgb))]" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Settings</h1>
-        </div>
-      </div>
+  const renderAccountTab = () => (
+    <div className="space-y-6 animate-fade-in">
+      <ProfileSection user={user} onUpdateUser={onUpdateUser} />
+      <SecuritySection user={user} onUpdateUser={onUpdateUser} onChangePassword={onChangePassword} />
+    </div>
+  );
 
-      <div className="space-y-6 sm:space-y-8">
-        {/* Account & Profile Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <UserIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
-            </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Account & Profile</h2>
-          </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
-              <div className="flex-1">
-                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Logged in as</p>
-                <p className="font-semibold text-[rgb(var(--color-text-rgb))] text-base sm:text-lg break-all">{user.username}</p>
-              </div>
-              <button
-                onClick={() => setActiveItem?.('Account')}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Manage Account
-              </button>
-            </div>
-            
-            <BiometricSettings user={user} onUpdateUser={onUpdateUser} />
-          </div>
-        </div>
-
-        {/* Appearance Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <SparklesIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
-            </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Appearance</h2>
-          </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
-            <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mb-4 sm:mb-6">Choose your preferred theme</p>
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
-              <div className="w-full sm:w-48">
+  const renderAppTab = () => (
+    <div className="space-y-6 animate-fade-in">
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <label className="text-sm font-medium">Theme</label>
+            <div className="flex flex-col sm:flex-row gap-6">
+              <div className="w-full sm:w-1/2 space-y-2">
                 <select
-                  className="w-full p-2 rounded border border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-rgb))] bg-[rgb(var(--color-card-muted-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))]"
                   value={theme}
-                  onChange={e => setTheme(e.target.value)}
+                  onChange={(e) => setTheme(e.target.value)}
+                  className="w-full p-3 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none transition-all"
                 >
                   {THEMES.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
-              </div>
-              <div className="flex-1">
-                <ThemePreview
-                  themeId={theme}
-                  name={THEMES.find(t => t.id === theme)?.name || ''}
-                  isActive={true}
-                  onClick={() => {}}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Custom Background Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <svg className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Card Background</h2>
-          </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
-            <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mb-4 sm:mb-6">
-              Customize your balance card with a transparent background image
-            </p>
-            
-            {customBackground ? (
-              <div className="space-y-4">
-                <div className="p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl border border-[rgb(var(--color-border-rgb))]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden border border-[rgb(var(--color-border-rgb))]">
-                        <img
-                          src={customBackground}
-                          alt="Custom background preview"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <p className="font-medium text-[rgb(var(--color-text-rgb))]">Custom Background Active</p>
-                        <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Your card background is customized</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setCustomBackground(null)}
-                      className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                <div className="text-xs text-[rgb(var(--color-text-muted-rgb))] px-1">
+                  Select a theme to customize the look and feel of the app.
                 </div>
+              </div>
+              
+              <div className="w-full sm:w-1/2 flex items-start justify-center p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl border border-[rgb(var(--color-border-rgb))]">
+                 <div className="w-full max-w-[200px]">
+                    <p className="text-xs font-medium text-[rgb(var(--color-text-muted-rgb))] mb-3 text-center">Preview</p>
+                    <ThemePreview
+                      themeId={theme}
+                    />
+                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-[rgb(var(--color-border-rgb))] space-y-4">
+            <label className="text-sm font-medium">Card Background</label>
+            {customBackground ? (
+              <div className="p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded border border-[rgb(var(--color-border-rgb))] overflow-hidden">
+                    <img src={customBackground} className="w-full h-full object-cover" alt="Preview" />
+                  </div>
+                  <span className="text-sm font-medium">Custom active</span>
+                </div>
+                <button onClick={() => setCustomBackground(null)} className="text-sm text-red-500 font-medium">Remove</button>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-[rgb(var(--color-border-rgb))] rounded-xl p-8 text-center">
-                  <svg className="w-12 h-12 text-[rgb(var(--color-text-muted-rgb))] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p className="text-[rgb(var(--color-text-rgb))] font-medium mb-2">Upload Background Image</p>
-                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] mb-4">
-                    Choose a transparent PNG or any image to customize your card background
-                  </p>
-                  <div className="space-y-4">
-                    <div className="flex gap-2 mb-4">
-                      <button
-                        onClick={() => handleSetProcessingType('transparent')}
-                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                          currentProcessingType === 'transparent'
-                            ? 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))]'
-                            : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))]'
-                        }`}
-                      >
-                        Transparent
-                      </button>
-                      <button
-                        onClick={() => handleSetProcessingType('pattern')}
-                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                          currentProcessingType === 'pattern'
-                            ? 'bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))]'
-                            : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))]'
-                        }`}
-                      >
-                        Pattern
-                      </button>
-                    </div>
-                    
-                    <input
-                      type="file"
-                      accept="image/*"
-                      disabled={isProcessingImage}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = () => {
-                            const imageSrc = reader.result as string;
-                            if (onOpenCropModal) {
-                              // Use the global crop modal
-                              onOpenCropModal(imageSrc, currentProcessingType);
-                            } else {
-                              // Fallback: process image directly without cropping
-                              console.warn('Crop modal not available, processing image directly');
-                              processImageDirectly(imageSrc);
-                            }
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                      className="block w-full text-sm text-[rgb(var(--color-text-rgb))]
-                        file:mr-4 file:py-2 file:px-4
-                        file:rounded-lg file:border-0
-                        file:text-sm file:font-medium
-                        file:bg-[rgb(var(--color-primary-rgb))] file:text-[rgb(var(--color-primary-text-rgb))]
-                        hover:file:bg-[rgb(var(--color-primary-hover-rgb))]
-                        file:cursor-pointer cursor-pointer
-                        disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    
-                    {isProcessingImage && (
-                      <div className="flex items-center justify-center py-4">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[rgb(var(--color-primary-rgb))]"></div>
-                        <span className="ml-2 text-sm text-[rgb(var(--color-text-muted-rgb))]">
-                          Processing image...
-                        </span>
-                      </div>
-                    )}
-                  </div>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-[rgb(var(--color-border-rgb))] rounded-xl p-6 text-center cursor-pointer hover:border-[rgb(var(--color-primary-rgb))] transition-colors"
+              >
+                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Click to upload custom card background</p>
+                <div className="mt-4 flex justify-center gap-2">
+                  <button onClick={(e) => { e.stopPropagation(); setProcessingType?.('transparent'); }} className={`px-3 py-1 rounded-full text-xs ${processingType === 'transparent' ? 'bg-[rgb(var(--color-primary-rgb))] text-white' : 'bg-gray-100 dark:bg-gray-800'}`}>Transparent</button>
+                  <button onClick={(e) => { e.stopPropagation(); setProcessingType?.('pattern'); }} className={`px-3 py-1 rounded-full text-xs ${processingType === 'pattern' ? 'bg-[rgb(var(--color-primary-rgb))] text-white' : 'bg-gray-100 dark:bg-gray-800'}`}>Pattern</button>
                 </div>
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Tips for best results:</p>
-                      <ul className="text-sm text-blue-700 dark:text-blue-300 mt-1 space-y-1">
-                        <li>• <strong>Transparent:</strong> Automatically makes images semi-transparent</li>
-                        <li>• <strong>Pattern:</strong> Creates a subtle pattern effect with gradient overlay</li>
-                        <li>• Images are optimized and resized for better performance</li>
-                        <li>• Both options work well with all themes</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = () => onOpenCropModal?.(reader.result as string, processingType);
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
               </div>
             )}
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Smart Features Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <SparklesIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
-            </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Smart Features</h2>
-          </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
-            <AISettings user={user} onUpdateUser={onUpdateUser} />
+      <SmartFeaturesSection user={user} onUpdateUser={onUpdateUser} setActiveItem={setActiveItem} />
 
-            <div className="border-t border-[rgb(var(--color-border-rgb))] pt-4 sm:pt-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl space-y-3 sm:space-y-0">
-                <div className="flex-1">
-                  <p className="font-medium text-[rgb(var(--color-text-rgb))]">Smart Category Suggestions</p>
-                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] pr-2">AI suggests categories based on transaction descriptions</p>
-                </div>
-                <button
-                  onClick={() => {
-                    const currentSetting = user.smartFeatures?.categorySuggestions ?? true;
-                    onUpdateUser({
-                      ...user,
-                      smartFeatures: {
-                        ...user.smartFeatures,
-                        categorySuggestions: !currentSetting
-                      }
-                    });
-                  }}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 ${
-                    user.smartFeatures?.categorySuggestions ?? true
-                      ? 'bg-[rgb(var(--color-primary-rgb))]'
-                      : 'bg-[rgb(var(--color-border-rgb))]'
-                  }`}
-                  aria-label={`Smart category suggestions are ${user.smartFeatures?.categorySuggestions ?? true ? 'enabled' : 'disabled'}`}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
-                      user.smartFeatures?.categorySuggestions ?? true
-                        ? 'translate-x-6'
-                        : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="mt-3 sm:mt-4">
-                <button
-                  onClick={() => setActiveItem?.('Manage Categories')}
-                  className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 pr-2">
-                      <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">Manage Categories</p>
-                      <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Create and organize custom categories</p>
-                    </div>
-                    <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Notifications Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <BellIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
-            </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Notifications</h2>
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+        </CardHeader>
+        <CardContent>
           <button
             onClick={() => setShowNotificationSettings(true)}
-            className="w-full bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 hover:shadow-md hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group"
+            className="w-full flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:border-[rgb(var(--color-primary-rgb))] transition-colors group"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg sm:rounded-xl flex-shrink-0">
-                  <BellIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[rgb(var(--color-primary-rgb))]" />
-                </div>
-                <div className="text-left flex-1 min-w-0">
-                  <p className="font-semibold text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors truncate">Notification Preferences</p>
-                  <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Customize alerts and reminders</p>
-                </div>
-              </div>
-              <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+            <div className="flex items-center gap-3">
+              <BellIcon className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))]" />
+              <span className="font-medium group-hover:text-[rgb(var(--color-primary-rgb))]">Preferences & Alerts</span>
             </div>
+            <svg className="w-5 h-5 group-hover:text-[rgb(var(--color-primary-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth={2} /></svg>
           </button>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Data & Privacy Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <svg className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Data & Privacy</h2>
-          </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
-            <button
-              onClick={handleExport}
-              disabled={isExporting}
-              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
-                  <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
-                    {isExporting ? (
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l4-4m-4 4l-4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">
-                      {isExporting ? 'Exporting...' : 'Export Data'}
-                    </p>
-                    <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Save a backup of all your data</p>
-                  </div>
-                </div>
-                <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+      <Card>
+        <CardHeader>
+          <CardTitle>Data & Privacy</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <button onClick={onExportData} className="w-full flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:border-green-500/50 transition-colors group">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/10 text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors">
+                <BackupIcon className="w-5 h-5" />
               </div>
-            </button>
-
-            <button
-              onClick={handleImportClick}
-              disabled={isImporting}
-              className="w-full p-3 sm:p-4 text-left bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/30 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
-                  <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                    {isImporting ? (
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors">
-                      {isImporting ? 'Importing...' : 'Import Data'}
-                    </p>
-                    <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Restore from a backup file</p>
-                  </div>
-                </div>
-                <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <div className="text-left">
+                <span className="block font-medium">Backup Data</span>
+                <span className="text-xs text-[rgb(var(--color-text-muted-rgb))]">Export all data to a .json file</span>
               </div>
-            </button>
-
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept=".json"
-              onChange={handleFileChange}
-            />
-          </div>
-        </div>
-
-        {/* Support Section */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))]/10 to-[rgb(var(--color-primary-rgb))]/5 rounded-lg">
-              <svg className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" />
-              </svg>
             </div>
-            <h2 className="text-xl font-semibold text-[rgb(var(--color-text-rgb))]">Support & Info</h2>
-          </div>
-          <div className="bg-[rgb(var(--color-card-rgb))] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 shadow-sm">
-            <ServiceWorkerDebugPanel />
-          </div>
-        </div>
-
-        {/* Sign Out Section */}
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-[rgba(var(--color-primary-rgb),0.08)] to-[rgba(var(--color-primary-rgb),0.04)] rounded-xl sm:rounded-2xl border border-[rgb(var(--color-primary-rgb))]/20 p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
-              <div className="flex-1">
-                <h3 className="font-semibold text-[rgb(var(--color-text-rgb))] mb-1">Sign Out</h3>
-                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">End your current session</p>
+            <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-green-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth={2} /></svg>
+          </button>
+          
+          <button
+            onClick={() => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = '.json';
+              input.onchange = (e: any) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (re: any) => {
+                    const data = JSON.parse(re.target.result);
+                    onOpenConfirmModal('Import Data', 'Overwrite ALL current data?', () => onImportData(data), { variant: 'danger' });
+                  };
+                  reader.readAsText(file);
+                }
+              };
+              input.click();
+            }}
+            className="w-full flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:border-blue-500/50 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                <RestoreIcon className="w-5 h-5" />
               </div>
-              <button
-                onClick={handleSignOut}
-                className="w-full sm:w-auto px-6 py-3 bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Sign Out
-              </button>
+              <div className="text-left">
+                <span className="block font-medium">Restore Backup</span>
+                <span className="text-xs text-[rgb(var(--color-text-muted-rgb))]">Import data from a .json file</span>
+              </div>
             </div>
-          </div>
-        </div>
+            <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth={2} /></svg>
+          </button>
+        </CardContent>
+      </Card>
+      
+      <Card>
+          <CardHeader><CardTitle>App Information</CardTitle></CardHeader>
+          <CardContent><ServiceWorkerDebugPanel /></CardContent>
+      </Card>
 
-        {/* Footer */}
-        <div className="text-center text-[rgb(var(--color-text-muted-rgb))] text-sm pt-6 sm:pt-8 border-t border-[rgb(var(--color-border-rgb))]">
-          <p>FinTrack App v1.3.0</p>
+      <button
+        onClick={() => onOpenConfirmModal('Sign Out', 'Are you sure?', onSignOut, { variant: 'danger' })}
+        className="w-full py-4 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-colors"
+      >
+        Sign Out
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="pb-20 max-w-4xl mx-auto px-4 py-6 space-y-8">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <div className="p-3 bg-[rgb(var(--color-primary-rgb))]/10 rounded-2xl">
+          <SettingsIcon className="w-8 h-8 text-[rgb(var(--color-primary-rgb))]" />
         </div>
+        <h1 className="text-3xl font-bold">Settings Hub</h1>
       </div>
+
+      <div className="flex p-1 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl w-fit mx-auto">
+        <button
+          onClick={() => setActiveHubTab('account')}
+          className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+            activeHubTab === 'account' ? 'bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-primary-rgb))] shadow-sm' : 'text-[rgb(var(--color-text-muted-rgb))]'
+          }`}
+        >
+          My Account
+        </button>
+        <button
+          onClick={() => setActiveHubTab('app')}
+          className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+            activeHubTab === 'app' ? 'bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-primary-rgb))] shadow-sm' : 'text-[rgb(var(--color-text-muted-rgb))]'
+          }`}
+        >
+          App Settings
+        </button>
+      </div>
+
+      <div className="mt-8">
+        {activeHubTab === 'account' ? renderAccountTab() : renderAppTab()}
+      </div>
+
+      <footer className="text-center text-[rgb(var(--color-text-muted-rgb))] text-sm pt-8 border-t border-[rgb(var(--color-border-rgb))]">
+        <p>FinTrack v1.3.0</p>
+      </footer>
     </div>
   );
 };

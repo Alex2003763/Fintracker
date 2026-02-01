@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction, Budget, User } from '../types';
 import { Category } from '../types/category';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
@@ -38,6 +38,14 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       topCategory: 'None'
     };
   }, [transactions]);
+
+  // Use useEffect to handle potential ResponsiveContainer width calculation issues
+  const [key, setKey] = useState(0);
+  useEffect(() => {
+    // Force a re-render after mount to ensure Recharts has correct container dimensions
+    const timer = setTimeout(() => setKey(prev => prev + 1), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="flex flex-col gap-6 p-0 sm:p-0 pb-20 md:pb-6 max-w-7xl mx-auto animate-fade-in-up">
@@ -90,9 +98,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         {activeTab === 'forecasting' && (
            <>
-              <div className="lg:col-span-1 h-[450px]">
-                <BudgetForecastingWidget transactions={transactions} budgets={budgets} />
-              </div>
+           <div key={key} className="lg:col-span-2 min-h-[400px]">
+              <BudgetForecastingWidget transactions={transactions} budgets={budgets} />
+            </div>
            </>
         )}
       </div>

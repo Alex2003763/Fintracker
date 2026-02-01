@@ -6,9 +6,7 @@ export const NAV_ITEMS = [
   { name: 'Transactions', icon: TransactionsIcon },
   { name: 'Insights', icon: TrendingUpIcon },
   { name: 'Goals', icon: GoalsIcon },
-  { name: 'Budgets', icon: BudgetIcon },
-  { name: 'Account', icon: UserIcon },
-  { name: 'Settings', icon: SettingsIcon },
+  { name: 'Budgets', icon: BudgetIcon }
 ];
 
 export const INITIAL_BALANCE = 0;
