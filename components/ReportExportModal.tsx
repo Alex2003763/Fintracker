@@ -8,6 +8,7 @@ import ExportProgress from './ExportProgress';
 import { generateReportData, generateReportMetadata } from '../utils/export/reportGenerator';
 import { generatePDFReport } from '../utils/export/pdfExport';
 import { generateExcelReport } from '../utils/export/excelExport';
+import { generateCSVReport } from '../utils/export/csvExport';
 import { DownloadIcon, ChevronDownIcon, CheckCircleIcon } from './icons';
 
 interface ReportExportModalProps {
@@ -114,11 +115,11 @@ const ReportExportModal: React.FC<ReportExportModalProps> = ({
             reportData
         );
         extension = 'xlsx';
-      } else {
-        // Fallback for CSV - basic implementation
-        blob = new Blob([''], { type: 'text/csv' });
-        extension = 'csv';
-      }
+       } else {
+         // CSV export
+         blob = generateCSVReport(config, reportData);
+         extension = 'csv';
+       }
 
       // Download file
       const url = URL.createObjectURL(blob);

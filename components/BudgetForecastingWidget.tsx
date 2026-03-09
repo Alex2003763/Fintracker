@@ -36,11 +36,10 @@ const BudgetForecastingWidget: React.FC<BudgetForecastingWidgetProps> = React.me
       .map(budget => {
         // Calculate current spending for this category
         const spent = transactions
-          .filter(t => 
+          .filter(t =>
             t.type === 'expense' &&
             t.category === budget.category &&
-            new Date(t.date).getMonth() === now.getMonth() &&
-            new Date(t.date).getFullYear() === now.getFullYear()
+            t.date.startsWith(budget.month)
           )
           .reduce((sum, t) => sum + t.amount, 0);
 
@@ -61,7 +60,11 @@ const BudgetForecastingWidget: React.FC<BudgetForecastingWidgetProps> = React.me
           remaining: budget.amount - spent
         };
       })
-      .sort((a, b) => (b.projected / b.budget) - (a.projected / a.budget)) // Sort by % used descending
+      .sort((a, b) => {
+        const aRatio = a.budget > 0 ? a.projected / a.budget : 0;
+        const bRatio = b.budget > 0 ? b.projected / b.budget : 0;
+        return bRatio - aRatio;
+      }) // Sort by % used descending
       .slice(0, 5); // Show top 5 risky/active budgets
   }, [transactions, budgets]);
 
@@ -91,7 +94,7 @@ const BudgetForecastingWidget: React.FC<BudgetForecastingWidgetProps> = React.me
     return null;
   };
 
-  if (budgets.length === 0) {
+  if (budgets.length === 0 || forecastData.length === 0) {
       return (
         <Card className="overflow-hidden">
             <CardHeader>
@@ -126,15 +129,16 @@ const BudgetForecastingWidget: React.FC<BudgetForecastingWidgetProps> = React.me
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0">
         {/* Responsive chart container */}
-        <div className="w-full flex-1 min-h-[250px] md:min-h-[300px]">
+        <div className="w-full h-[320px] md:h-[350px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={forecastData}
               layout="vertical"
+              barGap={-barSize}
               margin={{
                 top: 5,
                 right: 30,
-                left: isMobile ? 0 : 30,
+                left: isMobile ? 10 : 30,
                 bottom: 5
               }}
             >
@@ -148,7 +152,7 @@ const BudgetForecastingWidget: React.FC<BudgetForecastingWidgetProps> = React.me
                   <stop offset="100%" stopColor="#B91C1C" stopOpacity={1} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="rgba(var(--color-border-rgb), 0.1)" />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="rgb(var(--color-border-rgb) / 0.1)" />
               <XAxis type="number" hide />
               <YAxis
                 dataKey="category"
@@ -158,9 +162,9 @@ const BudgetForecastingWidget: React.FC<BudgetForecastingWidgetProps> = React.me
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(var(--color-border-rgb), 0.1)'}} />
+              <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgb(var(--color-border-rgb) / 0.1)'}} />
               {/* Background bar for budget limit */}
-              <Bar dataKey="budget" barSize={barSize} fill="rgba(var(--color-border-rgb), 0.2)" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="budget" barSize={barSize} fill="rgb(var(--color-border-rgb) / 0.2)" radius={[0, 4, 4, 0]} isAnimationActive={false} />
               {/* Projected spending bar */}
               <Bar dataKey="projected" barSize={projectedBarSize} radius={[0, 4, 4, 0]}>
                 {forecastData.map((entry, index) => (

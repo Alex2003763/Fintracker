@@ -98,7 +98,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         {activeTab === 'forecasting' && (
            <>
-           <div key={key} className="lg:col-span-2 min-h-[400px]">
+           <div key={key} className="lg:col-span-3 min-h-[400px]">
               <BudgetForecastingWidget transactions={transactions} budgets={budgets} />
             </div>
            </>
