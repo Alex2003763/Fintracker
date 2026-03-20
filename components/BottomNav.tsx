@@ -24,7 +24,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      <div className="flex items-stretch justify-around h-20">
+      <div className="flex items-stretch justify-around h-14">
         {navItems.map((item, idx) => (
           <button
             key={item.name}
