@@ -168,9 +168,9 @@ const TransactionsPage: React.FC<{
                     {flattenedItems.map((item, index) => {
                       if (item.type === 'header') {
                         return (
-                          <div key={`header-${item.group}-${index}`} className="px-1 pt-6 pb-2 flex justify-between items-end bg-[rgb(var(--color-bg-rgb))] sticky top-0 z-10">
+                          <div key={`header-${item.group}-${index}`} className="px-1 pt-6 pb-2 flex justify-between items-end bg-[rgb(var(--color-bg-rgb))] text-[rgb(var(--color-text-muted-rgb))] sticky top-0 z-10">
                             <h2 className="text-sm font-bold text-[rgb(var(--color-text-muted-rgb))] uppercase tracking-wider">{item.group}</h2>
-                            <span className={`text-sm font-semibold ${(item.dailyTotal || 0) >= 0 ? 'text-[rgb(var(--color-success-rgb))]' : 'text-[rgb(var(--color-error-rgb))]'}`}>
+                            <span className={`text-sm  font-semibold ${(item.dailyTotal || 0) >= 0 ? 'text-[rgb(var(--color-success-rgb))]' : 'text-[rgb(var(--color-error-rgb))]'}`}>
                               {(item.dailyTotal || 0) > 0 ? '+' : ''}{formatCurrency(item.dailyTotal || 0)}
                             </span>
                           </div>
@@ -182,6 +182,7 @@ const TransactionsPage: React.FC<{
                           <div key={item.data.id} className="px-0">
                             <div className={`
                               bg-[rgb(var(--color-card-rgb))]
+                              
                               border-x border-[rgb(var(--color-border-rgb))]
                               ${item.isFirst ? 'rounded-t-xl border-t' : ''}
                               ${item.isLast ? 'rounded-b-xl border-b shadow-sm' : 'border-b'}

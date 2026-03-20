@@ -29,7 +29,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
           <button
             key={item.name}
             onClick={() => setActiveItem(item.name)}
-            className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 relative transition-all duration-300 group ${
+            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 relative transition-all duration-300 group ${
               activeItem === item.name
                 ? 'text-[rgb(var(--color-primary-rgb))]'
                 : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'
