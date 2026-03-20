@@ -1465,7 +1465,7 @@ const App: React.FC = () => {
   }
   
   return (
-    <div className="flex min-h-[100dvh] w-full text-gray-900 transition-colors duration-200 overflow-hidden relative font-sans ios-safe-area">
+    <div className="flex min-h-[100dvh] w-full text-gray-900 transition-colors duration-200 overflow-visible relative font-sans ios-safe-area">
       <div className="hidden md:block w-[280px] fixed left-0 top-0 h-full z-40">
         <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} />
       </div>
@@ -1487,17 +1487,18 @@ const App: React.FC = () => {
       <FloatingActionButton onClick={() => handleOpenAddTransactionModal()} />
 
       <Suspense fallback={null}>
-        {/* Render modal directly, let its internal isOpen prop control visibility */}
-        <AddTransactionModal
-          isOpen={isAddTransactionModalOpen}
-          onClose={() => setIsAddTransactionModalOpen(false)}
-          onSaveTransaction={handleSaveTransaction}
-          user={user}
-          onDeleteTransaction={handleDeleteTransaction}
-          transactionToEdit={transactionToEdit}
-          initialType={addTransactionModalType}
-          smartSuggestionsEnabled={user?.smartFeatures?.categorySuggestions ?? true}
-        />
+        {isAddTransactionModalOpen && (
+          <AddTransactionModal
+            isOpen={isAddTransactionModalOpen}
+            onClose={() => setIsAddTransactionModalOpen(false)}
+            onSaveTransaction={handleSaveTransaction}
+            user={user}
+            onDeleteTransaction={handleDeleteTransaction}
+            transactionToEdit={transactionToEdit}
+            initialType={addTransactionModalType}
+            smartSuggestionsEnabled={user?.smartFeatures?.categorySuggestions ?? true}
+          />
+        )}
         
         {isAddGoalModalOpen && (
           <AddGoalModal
