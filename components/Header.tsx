@@ -32,7 +32,7 @@ const Header: React.FC<HeaderProps> = React.memo(({ user, notifications, onMarkA
   }, [showNotifications]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))]/80 backdrop-blur-md transition-colors duration-200 shadow-sm">
+    <header className="sticky top-0 z-40 border-b border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))]/80 backdrop-blur-md transition-colors duration-200 shadow-sm" style={{paddingTop: 'env(safe-area-inset-top)'}}>
       <div className="flex items-center justify-between px-4 py-3 md:px-6 max-w-7xl mx-auto">
         <div className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer" onClick={() => setActiveItem?.('Dashboard')}>
           <div className="p-1.5 bg-green-500/10 rounded-xl">
