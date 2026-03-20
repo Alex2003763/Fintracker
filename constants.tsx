@@ -3,7 +3,7 @@ import { HomeIcon, TransactionsIcon, ReportsIcon, GoalsIcon, SettingsIcon, Salar
 
 export const NAV_ITEMS = [
   { name: 'Home', icon: HomeIcon },
-  { name: 'Transact', icon: TransactionsIcon },
+  { name: 'Transactions', icon: TransactionsIcon },
   { name: 'Insights', icon: TrendingUpIcon },
   { name: 'Goals', icon: GoalsIcon },
   { name: 'Budgets', icon: BudgetIcon }
