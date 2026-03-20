@@ -5,6 +5,7 @@ import { generateSalt, deriveKey, encryptData, decryptData } from '../utils/form
 import { authenticateWebAuthn, getBiometricSession, isWebAuthnSupported } from '../utils/webauthn';
 import LoadingScreen from './LoadingScreen';
 import PasswordStrengthMeter from './PasswordStrengthMeter';
+import Button from './Button';
 
 interface AuthPageProps {
   onAuth: (user: User, sessionKey: CryptoKey) => void;
@@ -47,8 +48,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
                     // Check if biometrics are enabled and supported
                     if (isWebAuthnSupported() && parsedUser.biometricEnabled) {
                         setIsBiometricAvailable(true);
-                        // Trigger biometric prompt automatically on load if available
-                        handleBiometricAuth(parsedUser);
+                        // Auto-trigger removed to prevent errors in some browsers/contexts
+                        // User can click the button manually
                     }
                 } else {
                     setIsSignUp(true);
@@ -159,24 +160,29 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
   }
 
   return (
-    <div className="min-h-screen bg-[rgb(var(--color-bg-rgb))] flex items-center justify-center p-4 transition-colors">
-      <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl w-full bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-2xl overflow-hidden">
-        <div className="hidden md:flex flex-col justify-center p-12 bg-green-600 text-white bg-opacity-90">
-          <FinTrackIcon className="h-16 w-16 mb-4" />
-          <h2 className="text-3xl font-bold">FinTrack</h2>
-          <p className="mt-2">Take control of your finances with a clear, simple, and secure overview of your financial life.</p>
+    <div className="min-h-[100dvh] bg-[rgb(var(--color-bg-rgb))] flex items-center justify-center p-4 transition-colors">
+      <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl w-full bg-[rgb(var(--color-card-rgb))] rounded-3xl shadow-xl overflow-hidden border border-[rgb(var(--color-border-rgb))] border-opacity-50">
+        <div className="hidden md:flex flex-col justify-center p-12 bg-gradient-to-br from-[rgb(var(--color-primary-rgb))] to-[rgb(var(--color-primary-hover-rgb))] text-white">
+          <FinTrackIcon className="h-20 w-20 mb-6 drop-shadow-md text-white" />
+          <h2 className="text-4xl font-extrabold tracking-tight mb-4">FinTrack</h2>
+          <p className="text-lg text-white/90 leading-relaxed font-medium">Take control of your finances with a clear, simple, and secure overview of your financial life.</p>
         </div>
         
-        <div className="p-8 md:p-12">
+        <div className="p-8 md:p-12 lg:p-14 flex flex-col justify-center">
+          <div className="md:hidden flex flex-col items-center mb-8">
+             <FinTrackIcon className="h-16 w-16 mb-4 text-[rgb(var(--color-primary-rgb))]" />
+             <h2 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))] tracking-tight">FinTrack</h2>
+          </div>
+
           {isSignUp ? (
-            <>
-              <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))] mb-2">Create Your Secure Account</h1>
-              <p className="text-[rgb(var(--color-text-muted-rgb))] mb-8">Your data will be encrypted with your password.</p>
-              <form onSubmit={handleSignUp} className="space-y-4">
+            <div className="animate-fade-in-up">
+              <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))] mb-2 tracking-tight">Create Account</h1>
+              <p className="text-[rgb(var(--color-text-muted-rgb))] mb-8 font-medium">Your data is secured locally on your device.</p>
+              <form onSubmit={handleSignUp} className="space-y-5">
                 <input type="text" placeholder="Username (min. 3 characters)" value={username} onChange={(e) => setUsername(e.target.value)} required className={inputClasses} />
                 <div className="relative">
                   <input type={showPassword ? "text" : "password"} placeholder="Password (min. 6 characters)" value={password} onChange={(e) => { setPassword(e.target.value); setPasswordStrength(calculatePasswordStrength(e.target.value)); }} required className={inputClasses} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-4 flex items-center text-sm font-medium text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] transition-colors">
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
@@ -184,48 +190,65 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuth }) => {
                 <div className="relative">
                   <input type={showPassword ? "text" : "password"} placeholder="Confirm password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className={inputClasses} />
                 </div>
-                {error && <p className="text-sm text-red-500 text-left pt-1">{error}</p>}
-                <button type="submit" className="w-full mt-4 py-3 px-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
-                  Create Account
-                </button>
+                {error && <p className="text-sm text-red-500 font-medium py-1">{error}</p>}
+                <Button type="submit" variant="primary" fullWidth size="lg" className="mt-2 text-base h-12 shadow-md">
+                  Create Secure Account
+                </Button>
               </form>
-            </>
+            </div>
           ) : (
-            <>
-              <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))] mb-2">Welcome Back!</h1>
-              <p className="text-[rgb(var(--color-text-muted-rgb))] mb-8">Sign in to decrypt your data.</p>
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <input type="text" value={username} disabled className="w-full px-4 py-3 rounded-lg bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-muted-rgb))] cursor-not-allowed focus:outline-none" />
+            <div className="animate-fade-in-up">
+              <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))] mb-2 tracking-tight">Welcome Back</h1>
+              <p className="text-[rgb(var(--color-text-muted-rgb))] mb-8 font-medium">Sign in to securely access your data.</p>
+              <form onSubmit={handleSignIn} className="space-y-5">
+                <input type="text" value={username} disabled className="w-full px-4 py-3 rounded-lg bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-muted-rgb))] cursor-not-allowed focus:outline-none opacity-80" />
                 <div className="relative">
-                  <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required autoFocus={!isBiometricAvailable} className={inputClasses} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-[rgb(var(--color-text-muted-rgb))]">
+                  <input type={showPassword ? "text" : "password"} placeholder="Enter you password" value={password} onChange={(e) => setPassword(e.target.value)} required autoFocus={!isBiometricAvailable} className={inputClasses} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-4 flex items-center text-sm font-medium text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] transition-colors">
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
-                {error && <p className="text-sm text-red-500 text-left pt-1">{error}</p>}
+                {error && <p className="text-sm text-red-500 font-medium py-1">{error}</p>}
                 
-                <div className="flex flex-col gap-3 mt-4">
-                    <button
+                <div className="flex flex-col gap-4 mt-2">
+                    <Button
                     type="submit"
-                    disabled={isAuthenticating}
-                    className="w-full py-3 px-4 bg-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-text-rgb))] font-semibold rounded-lg shadow-md hover:bg-[rgb(var(--color-primary-hover-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 transition-colors disabled:opacity-70"
+                    disabled={isAuthenticating || !password}
+                    variant="primary"
+                    fullWidth
+                    size="lg"
+                    className="h-12 shadow-md"
                     >
                     Sign In
-                    </button>
+                    </Button>
 
                     {isBiometricAvailable && storedUser && (
-                        <button
+                        <div className="relative flex items-center py-1">
+                           <div className="flex-grow border-t border-[rgb(var(--color-border-rgb))]"></div>
+                           <span className="flex-shrink-0 mx-4 text-[rgb(var(--color-text-muted-rgb))] text-xs font-semibold uppercase tracking-wider">or sign in with</span>
+                           <div className="flex-grow border-t border-[rgb(var(--color-border-rgb))]"></div>
+                        </div>
+                    )}
+                    
+                    {isBiometricAvailable && storedUser && (
+                        <Button
                             type="button"
                             onClick={() => handleBiometricAuth(storedUser)}
                             disabled={isAuthenticating}
-                            className="w-full py-3 px-4 bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))] font-semibold rounded-lg border border-[rgb(var(--color-border-rgb))] hover:bg-[rgb(var(--color-border-rgb))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] transition-colors flex justify-center items-center gap-2"
+                            variant="secondary"
+                            fullWidth
+                            size="lg"
+                            className="h-12 bg-white/5 dark:bg-black/20 backdrop-blur-sm border border-[rgb(var(--color-border-rgb))]"
                         >
-                            <span>👆</span> Authenticate with Biometrics
-                        </button>
+                            <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+                            </svg>
+                            Use Biometrics
+                        </Button>
                     )}
                 </div>
               </form>
-            </>
+            </div>
           )}
         </div>
       </div>

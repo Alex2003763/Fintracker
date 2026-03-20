@@ -27,8 +27,8 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({
     user
 }) => {
   return (
-     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-w-7xl mx-auto pb-20 md:pb-6">
-       <div className="md:col-span-2 xl:col-span-3">
+     <div className="flex flex-col gap-4 max-w-7xl mx-auto pb-24 md:pb-8 animate-fade-in">
+       <div className="w-full">
          <PremiumBalanceCard
             transactions={transactions}
             onAddTransaction={onAddTransaction}
@@ -37,14 +37,18 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({
          />
        </div>
        
-       <div className="md:col-span-1 xl:col-span-2 space-y-4">
-         <TransactionsCard
-           transactions={transactions.slice(0, 5)}
-           onEditTransaction={onEditTransaction}
-           setActiveItem={setActiveItem}
-           user={user}
-         />
-         <UpcomingBillsCard bills={bills} onPayBill={onPayBill} onManageBills={onManageBills} />
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+         <div className="lg:col-span-2">
+           <TransactionsCard
+             transactions={transactions.slice(0, 5)}
+             onEditTransaction={onEditTransaction}
+             setActiveItem={setActiveItem}
+             user={user}
+           />
+         </div>
+         <div className="lg:col-span-1">
+           <UpcomingBillsCard bills={bills} onPayBill={onPayBill} onManageBills={onManageBills} />
+         </div>
        </div>
      </div>
    );

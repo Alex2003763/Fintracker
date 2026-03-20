@@ -7,6 +7,7 @@ import NotificationSettingsPage from './NotificationSettingsPage';
 import { processImageForBackground, createPatternBackground } from '../utils/imageProcessing';
 import { isWebAuthnSupported, registerWebAuthn } from '../utils/webauthn';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
+import Button from './Button';
 
 interface SettingsPageProps {
   user: User;
@@ -149,19 +150,21 @@ const ProfileSection: React.FC<{ user: User; onUpdateUser: (updatedUser: User) =
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
+              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
             />
           </div>
           {message.text && (
-            <p className={`text-sm ${message.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>{message.text}</p>
+            <p className={`text-sm ${message.type === 'success' ? 'text-[rgb(var(--color-success-rgb))]' : 'text-[rgb(var(--color-error-rgb))]'}`}>{message.text}</p>
           )}
-          <button
+          <Button
             type="submit"
             disabled={isLoading || username === user.username}
-            className="w-full py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] disabled:opacity-50 transition-colors font-medium"
+            variant="primary"
+            fullWidth
+            isLoading={isLoading}
           >
             {isLoading ? 'Updating...' : 'Update Username'}
-          </button>
+          </Button>
         </form>
       </CardContent>
     </Card>
@@ -233,33 +236,33 @@ const SecuritySection: React.FC<{
       <CardContent className="space-y-8">
         <form onSubmit={handlePasswordChange} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Current Password</label>
+            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Current Password</label>
             <input
               type="password"
               value={passwords.current}
               onChange={e => setPasswords({ ...passwords, current: e.target.value })}
-              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
+              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none text-[rgb(var(--color-text-rgb))]"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">New Password</label>
+            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">New Password</label>
             <input
               type="password"
               value={passwords.new}
               onChange={e => setPasswords({ ...passwords, new: e.target.value })}
-              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
+              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none text-[rgb(var(--color-text-rgb))]"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Confirm New Password</label>
+            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Confirm New Password</label>
             <input
               type="password"
               value={passwords.confirm}
               onChange={e => setPasswords({ ...passwords, confirm: e.target.value })}
-              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
+              className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none text-[rgb(var(--color-text-rgb))]"
             />
           </div>
-          {msg.text && <p className={`text-sm ${msg.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>{msg.text}</p>}
+          {msg.text && <p className={`text-sm ${msg.type === 'success' ? 'text-[rgb(var(--color-success-rgb))]' : 'text-[rgb(var(--color-error-rgb))]'}`}>{msg.text}</p>}
           <button
             type="submit"
             disabled={loading}
@@ -273,7 +276,7 @@ const SecuritySection: React.FC<{
           <div className="pt-6 border-t border-[rgb(var(--color-border-rgb))]">
             <div className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl">
               <div>
-                <p className="font-medium">Biometric Login</p>
+                <p className="font-medium text-[rgb(var(--color-text-rgb))]">Biometric Login</p>
                 <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">Use Touch ID or Face ID</p>
               </div>
               <button
@@ -305,7 +308,7 @@ const SmartFeaturesSection: React.FC<{ user: User; onUpdateUser: (user: User) =>
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-[rgb(var(--color-text-rgb))]">
       <Card>
         <CardHeader>
           <CardTitle>AI Settings</CardTitle>
@@ -322,7 +325,7 @@ const SmartFeaturesSection: React.FC<{ user: User; onUpdateUser: (user: User) =>
               onChange={e => setApiKey(e.target.value)}
               className="w-full px-4 py-2 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none"
             />
-            {msg && <p className="text-sm text-green-600">{msg}</p>}
+            {msg && <p className="text-sm text-[rgb(var(--color-success-rgb))]}">{msg}</p>}
             <button type="submit" className="w-full py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
               Save API Key
             </button>
@@ -337,7 +340,7 @@ const SmartFeaturesSection: React.FC<{ user: User; onUpdateUser: (user: User) =>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl">
             <div>
-              <p className="font-medium">Smart Suggestions</p>
+              <p className="font-medium text-[rgb(var(--color-text-rgb))]">Smart Suggestions</p>
               <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">AI suggests categories for transactions</p>
             </div>
             <button
@@ -420,35 +423,35 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
-            <label className="text-sm font-medium">Theme</label>
+            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Theme</label>
             <div className="flex flex-col sm:flex-row gap-6">
               <div className="w-full sm:w-1/2 space-y-2">
                 <select
                   value={theme}
                   onChange={(e) => setTheme(e.target.value)}
-                  className="w-full p-3 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none transition-all"
+                  className="w-full p-3 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none transition-all text-[rgb(var(--color-text-rgb))]"
                 >
                   {THEMES.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                    <option key={t.id} value={t.id} className="bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))]">{t.name}</option>
                   ))}
                 </select>
                 <div className="text-xs text-[rgb(var(--color-text-muted-rgb))] px-1">
                   Select a theme to customize the look and feel of the app.
                 </div>
               </div>
-              
+  
               <div className="w-full sm:w-1/2 flex items-start justify-center p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl border border-[rgb(var(--color-border-rgb))]">
-                 <div className="w-full max-w-[200px]">
-                    <p className="text-xs font-medium text-[rgb(var(--color-text-muted-rgb))] mb-3 text-center">Preview</p>
-                    <ThemePreview
-                      themeId={theme}
-                    />
-                 </div>
+                <div className="w-full max-w-[200px]">
+                  <p className="text-xs font-medium text-[rgb(var(--color-text-muted-rgb))] mb-3 text-center">Preview</p>
+                  <ThemePreview
+                    themeId={theme}
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-[rgb(var(--color-border-rgb))] space-y-4">
+          <div className="pt-6 border-t border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-rgb))] space-y-4">
             <label className="text-sm font-medium">Card Background</label>
             {customBackground ? (
               <div className="p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl flex items-center justify-between">
@@ -458,7 +461,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   </div>
                   <span className="text-sm font-medium">Custom active</span>
                 </div>
-                <button onClick={() => setCustomBackground(null)} className="text-sm text-red-500 font-medium">Remove</button>
+                <button onClick={() => setCustomBackground(null)} className="text-sm text-[rgb(var(--color-error-rgb))] font-medium">Remove</button>
               </div>
             ) : (
               <div
@@ -467,8 +470,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               >
                 <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Click to upload custom card background</p>
                 <div className="mt-4 flex justify-center gap-2">
-                  <button onClick={(e) => { e.stopPropagation(); setProcessingType?.('transparent'); }} className={`px-3 py-1 rounded-full text-xs ${processingType === 'transparent' ? 'bg-[rgb(var(--color-primary-rgb))] text-white' : 'bg-gray-100 dark:bg-gray-800'}`}>Transparent</button>
-                  <button onClick={(e) => { e.stopPropagation(); setProcessingType?.('pattern'); }} className={`px-3 py-1 rounded-full text-xs ${processingType === 'pattern' ? 'bg-[rgb(var(--color-primary-rgb))] text-white' : 'bg-gray-100 dark:bg-gray-800'}`}>Pattern</button>
+                  <button onClick={(e) => { e.stopPropagation(); setProcessingType?.('transparent'); }} className={`px-3 py-1 rounded-full text-xs ${processingType === 'transparent' ? 'bg-[rgb(var(--color-primary-rgb))] text-white' : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))] border border-[rgb(var(--color-border-rgb))]'}`}>Transparent</button>
+                  <button onClick={(e) => { e.stopPropagation(); setProcessingType?.('pattern'); }} className={`px-3 py-1 rounded-full text-xs ${processingType === 'pattern' ? 'bg-[rgb(var(--color-primary-rgb))] text-white' : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))] border border-[rgb(var(--color-border-rgb))]'}`}>Pattern</button>
                 </div>
                 <input
                   type="file"
@@ -503,7 +506,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           >
             <div className="flex items-center gap-3">
               <BellIcon className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))]" />
-              <span className="font-medium group-hover:text-[rgb(var(--color-primary-rgb))]">Preferences & Alerts</span>
+              <span className="font-medium text-[rgb(var(--color-text-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))]">Preferences & Alerts</span>
             </div>
             <svg className="w-5 h-5 group-hover:text-[rgb(var(--color-primary-rgb))]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth={2} /></svg>
           </button>
@@ -514,18 +517,18 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         <CardHeader>
           <CardTitle>Data & Privacy</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 ">
           <button onClick={onExportData} className="w-full flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:border-green-500/50 transition-colors group">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10 text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors">
+              <div className="p-2 rounded-lg p-2 rounded-lg bg-[rgb(var(--color-primary-rgb))]/10 text-[rgb(var(--color-primary-rgb))] group-hover:bg-[rgb(var(--color-primary-rgb))] group-hover:bg-[rgb(var(--color-success-rgb))] group-hover:text-white transition-colors">
                 <BackupIcon className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <span className="block font-medium">Backup Data</span>
+                <span className="block font-medium text-[rgb(var(--color-text-rgb))]">Backup Data</span>
                 <span className="text-xs text-[rgb(var(--color-text-muted-rgb))]">Export all data to a .json file</span>
               </div>
             </div>
-            <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-green-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth={2} /></svg>
+            <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth={2} /></svg>
           </button>
           
           <button
@@ -549,15 +552,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             className="w-full flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:border-blue-500/50 transition-colors group"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+              <div className="p-2 rounded-lg bg-[rgb(var(--color-primary-rgb))]/10 text-[rgb(var(--color-primary-rgb))] group-hover:bg-[rgb(var(--color-primary-rgb))] group-hover:text-white transition-colors">
                 <RestoreIcon className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <span className="block font-medium">Restore Backup</span>
+                <span className="block font-medium text-[rgb(var(--color-text-rgb))]">Restore Backup</span>
                 <span className="text-xs text-[rgb(var(--color-text-muted-rgb))]">Import data from a .json file</span>
               </div>
             </div>
-            <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth={2} /></svg>
+            <svg className="w-5 h-5 text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-primary-rgb))] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth={2} /></svg>
           </button>
         </CardContent>
       </Card>
@@ -569,7 +572,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
       <button
         onClick={() => onOpenConfirmModal('Sign Out', 'Are you sure?', onSignOut, { variant: 'danger' })}
-        className="w-full py-4 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-colors"
+        className="w-full py-4 bg-[rgb(var(--color-error-rgb))] text-white border-none rounded-xl font-bold shadow-lg hover:brightness-110 transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-error-rgb))]/40"
       >
         Sign Out
       </button>
@@ -582,7 +585,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         <div className="p-3 bg-[rgb(var(--color-primary-rgb))]/10 rounded-2xl">
           <SettingsIcon className="w-8 h-8 text-[rgb(var(--color-primary-rgb))]" />
         </div>
-        <h1 className="text-3xl font-bold">Settings Hub</h1>
+        <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Settings Hub</h1>
       </div>
 
       <div className="flex p-1 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl w-fit mx-auto">

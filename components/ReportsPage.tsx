@@ -605,12 +605,12 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
             <select
               value={cashFlowRange}
               onChange={(e) => setCashFlowRange(e.target.value)}
-              className="w-full appearance-none pl-4 pr-10 py-2.5 border border-[rgb(var(--color-border-rgb))] rounded-xl bg-[rgb(var(--color-card-rgb))] text-sm font-medium focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent outline-none transition-all shadow-sm cursor-pointer hover:border-[rgb(var(--color-primary-rgb))]"
+              className="w-full appearance-none pl-4 pr-10 py-2.5 border border-[rgb(var(--color-border-rgb))] rounded-xl bg-[rgb(var(--color-card-rgb))] text-sm font-medium text-[rgb(var(--color-text-rgb))] focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent outline-none transition-all shadow-sm cursor-pointer hover:border-[rgb(var(--color-primary-rgb))]"
               aria-label="Select report time range"
               title="Filter by Time Range"
             >
               {TIME_RANGE_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>
+                <option key={opt.value} value={opt.value} className="bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))]">
                   {opt.label}
                 </option>
               ))}
@@ -641,25 +641,25 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
       />
       
       {/* Metrics Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MetricCard 
-          title="Total Income" 
-          amount={currentMetrics.income} 
-          icon={<TrendingUpIcon className="h-5 w-5 text-green-600" />}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4  text-[rgb(var(--color-text-rgb))] ">
+        <MetricCard
+          title="Total Income"
+          amount={currentMetrics.income}
+          icon={<TrendingUpIcon className="h-5 w-5 text-[rgb(var(--color-success-rgb))]" />}
           trend={trends.income}
-          colorClass="text-green-600 dark:text-green-400"
+          colorClass="text-[rgb(var(--color-success-rgb))]"
         />
-        <MetricCard 
-          title="Total Expenses" 
-          amount={currentMetrics.expense} 
-          icon={<TrendingDownIcon className="h-5 w-5 text-red-600" />}
+        <MetricCard
+          title="Total Expenses"
+          amount={currentMetrics.expense}
+          icon={<TrendingDownIcon className="h-5 w-5 text-[rgb(var(--color-error-rgb))]" />}
           trend={trends.expense}
-          colorClass="text-red-600 dark:text-red-400"
+          colorClass="text-[rgb(var(--color-error-rgb))]"
         />
-        <MetricCard 
-          title="Net Cash Flow" 
-          amount={currentMetrics.net} 
-          icon={<WalletIcon className="h-5 w-5 text-blue-600" />}
+        <MetricCard
+          title="Net Cash Flow"
+          amount={currentMetrics.net}
+          icon={<WalletIcon className="h-5 w-5 text-[rgb(var(--color-primary-rgb))]" />}
           trend={trends.net}
           colorClass="text-[rgb(var(--color-text-rgb))]"
         />
@@ -783,7 +783,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
                   {/* Category Legend/List */}
                   <div className="w-full px-6 pb-6 mt-2 overflow-visible">
                      <p className="text-xs font-semibold text-[rgb(var(--color-text-muted-rgb))] mb-3 uppercase tracking-wider">Top Categories</p>
-                     <div className="space-y-1 overflow-visible">
+                     <div className="space-y-1 overflow-visible  text-[rgb(var(--color-text-rgb))] ">
                        {pieData.map((item, index) => (
                          <CategoryListItem 
                            key={item.name} 

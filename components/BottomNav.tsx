@@ -4,7 +4,7 @@ import { NAV_ITEMS } from '../constants';
 interface BottomNavProps {
   activeItem: string;
   setActiveItem: (item: string) => void;
-  onAddTransaction: (type?: 'income' | 'expense') => void;
+  onAddTransaction?: (type?: 'income' | 'expense') => void;
 }
 
 const navItems = [
@@ -17,28 +17,77 @@ const navItems = [
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[rgb(var(--color-card-rgb))] border-t border-[rgb(var(--color-border-rgb))] flex flex-col z-10 transition-colors">
-      <div className="h-16 flex items-center justify-between px-2">
-        <div className="flex flex-1 h-full">
-          {navItems.map((item) => (
-            <a
-              key={item.name}
-              href="#"
-              onClick={(e) => { e.preventDefault(); setActiveItem(item.name); }}
-              className={`flex flex-col items-center justify-center w-full h-full transition-colors duration-200 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[rgb(var(--color-primary-rgb))] ${
-                activeItem === item.name ? 'text-[rgb(var(--color-primary-subtle-text-rgb))]' : 'text-[rgb(var(--color-text-muted-rgb))]'
+    <nav
+      className="fixed bottom-0 left-0 right-0 md:hidden z-40 border-t-2 border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))] backdrop-blur-lg shadow-2xl"
+      style={{
+        boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
+    >
+      <div className="flex items-stretch justify-around h-20">
+        {navItems.map((item, idx) => (
+          <button
+            key={item.name}
+            onClick={() => setActiveItem(item.name)}
+            className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 relative transition-all duration-300 group ${
+              activeItem === item.name
+                ? 'text-[rgb(var(--color-primary-rgb))]'
+                : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'
+            }`}
+            style={{
+              borderTopWidth: activeItem === item.name ? '3px' : '0px',
+              borderTopColor: 'rgb(var(--color-primary-rgb))',
+              borderTopStyle: 'solid',
+              transition: 'all 300ms cubic-bezier(0.34, 1.56, 0.64, 1)'
+            }}
+          >
+            {/* Icon Container with scaling animation */}
+            <div className={`transition-transform duration-300 ${activeItem === item.name ? 'scale-110' : 'group-hover:scale-105'}`}>
+              <item.icon 
+                className={`w-6 h-6 ${
+                  activeItem === item.name
+                    ? 'text-[rgb(var(--color-primary-rgb))]'
+                    : 'text-[rgb(var(--color-text-muted-rgb))] group-hover:text-[rgb(var(--color-text-rgb))]'
+                } transition-colors duration-200`}
+              />
+            </div>
+            
+            {/* Label */}
+            <span 
+              className={`text-[10px] font-semibold truncate max-w-[60px] transition-all duration-200 ${
+                activeItem === item.name
+                  ? 'text-[rgb(var(--color-primary-rgb))] font-bold'
+                  : 'text-[rgb(var(--color-text-muted-rgb))]'
               }`}
-              aria-label={item.name}
-              aria-current={activeItem === item.name ? 'page' : undefined}
             >
-              <item.icon className="h-6 w-6" />
-              <span className={`text-xs mt-1 ${activeItem === item.name ? 'font-semibold' : 'font-normal'}`}>{item.name}</span>
-            </a>
-          ))}
-        </div>
+              {item.name}
+            </span>
+
+            {/* Ripple effect on active */}
+            {activeItem === item.name && (
+              <div 
+                className="absolute inset-0 bg-[rgb(var(--color-primary-rgb))] opacity-5 rounded-lg"
+                style={{
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                }}
+              />
+            )}
+          </button>
+        ))}
       </div>
-      {/* Safe Area Spacer */}
-      <div className="h-[env(safe-area-inset-bottom)] w-full" />
+
+      {/* Add dynamic animation styles */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0.05; }
+          50% { opacity: 0.1; }
+        }
+        
+        @keyframes tabbarItemBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-2px); }
+        }
+      `}</style>
     </nav>
   );
 };

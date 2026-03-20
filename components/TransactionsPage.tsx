@@ -111,42 +111,45 @@ const TransactionsPage: React.FC<{
   );
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto px-4 pb-12 relative">
-      <header className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-5xl mx-auto px-4 pb-20 pt-4 relative">
+      <header className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[rgb(var(--color-card-rgb))] p-4 rounded-2xl shadow-sm sm:bg-transparent sm:shadow-none sm:p-0">
         <div>
-          <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))] tracking-tight">Transactions</h1>
-          <p className="text-[rgb(var(--color-text-muted-rgb))] mt-1">Track your financial activity</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--color-text-rgb))] tracking-tight">Transactions</h1>
+          <p className="text-sm sm:text-base text-[rgb(var(--color-text-muted-rgb))] mt-1"></p>
         </div>
         <button
           onClick={onOpenManageRecurring}
-          className="absolute top-0 right-0 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[rgb(var(--color-primary-rgb))] rounded-lg hover:bg-opacity-90 transition-all shadow-sm"
+          className="absolute sm:relative top-4 sm:top-auto right-4 sm:right-auto flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-semibold text-white bg-[rgb(var(--color-primary-rgb))] rounded-xl hover:bg-opacity-90 transition-all shadow-md sm:shadow-sm"
           aria-label="Manage Recurring Transactions"
         >
           <RecurringIcon className="h-4 w-4" />
-          <span>Recurring</span>
+          <span className="hidden sm:inline">Recurring</span>
         </button>
       </header>
 
+      <div className="bg-[rgb(var(--color-card-rgb))] rounded-3xl shadow-sm border border-[rgb(var(--color-border-rgb))] p-4 sm:p-6 mb-4">
+        <div className="space-y-4">
+          <div className="relative group">
+            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[rgb(var(--color-text-muted-rgb))] group-focus-within:text-[rgb(var(--color-primary-rgb))] transition-colors" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search..."
+              className="w-full bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-2xl pl-12 pr-4 py-3 sm:py-3.5 text-base outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent transition-all shadow-inner text-[rgb(var(--color-text-rgb))]"
+              aria-label="Search transactions"
+            />
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 no-scrollbar px-1">
+            <FilterButton type="all" count={transactions.length} />
+            <FilterButton type="income" count={transactions.filter(t => t.type === 'income').length} />
+            <FilterButton type="expense" count={transactions.filter(t => t.type === 'expense').length} />
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-            <div className="space-y-4">
-                <div className="relative group">
-                    <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[rgb(var(--color-text-muted-rgb))] group-focus-within:text-[rgb(var(--color-primary-rgb))] transition-colors" />
-                    <input
-                        type="search"
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        placeholder="Search transactions..."
-                        className="w-full bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl pl-12 pr-4 py-3.5 text-base outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent transition-all shadow-sm"
-                        aria-label="Search transactions"
-                    />
-                </div>
-                <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
-                    <FilterButton type="all" count={transactions.length} />
-                    <FilterButton type="income" count={transactions.filter(t => t.type === 'income').length} />
-                    <FilterButton type="expense" count={transactions.filter(t => t.type === 'expense').length} />
-                </div>
-            </div>
 
             <div
               ref={listRef}
@@ -167,8 +170,8 @@ const TransactionsPage: React.FC<{
                         return (
                           <div key={`header-${item.group}-${index}`} className="px-1 pt-6 pb-2 flex justify-between items-end bg-[rgb(var(--color-bg-rgb))] sticky top-0 z-10">
                             <h2 className="text-sm font-bold text-[rgb(var(--color-text-muted-rgb))] uppercase tracking-wider">{item.group}</h2>
-                            <span className={`text-sm font-semibold ${(item.dailyTotal || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-[rgb(var(--color-text-rgb))]'}`}>
-                                {(item.dailyTotal || 0) > 0 ? '+' : ''}{formatCurrency(item.dailyTotal || 0)}
+                            <span className={`text-sm font-semibold ${(item.dailyTotal || 0) >= 0 ? 'text-[rgb(var(--color-success-rgb))]' : 'text-[rgb(var(--color-error-rgb))]'}`}>
+                              {(item.dailyTotal || 0) > 0 ? '+' : ''}{formatCurrency(item.dailyTotal || 0)}
                             </span>
                           </div>
                         );

@@ -12,28 +12,30 @@ interface TransactionsCardProps {
 
 const TransactionsCard: React.FC<TransactionsCardProps> = React.memo(({ transactions, onEditTransaction, setActiveItem, user }) => {
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="flex justify-between items-center">
-        <CardTitle>Recent Transactions</CardTitle>
+    <Card className="flex flex-col rounded-3xl overflow-hidden shadow-sm border border-[rgb(var(--color-border-rgb))]/50">
+      <CardHeader className="flex justify-between items-center pb-2 px-5 pt-5 bg-gradient-to-b from-[rgb(var(--color-card-muted-rgb))]/30 to-transparent">
+        <CardTitle className="text-lg font-bold tracking-tight">Recent Activity</CardTitle>
         <button
             onClick={() => setActiveItem('Transactions')}
-            className="text-sm font-semibold text-[rgb(var(--color-primary-subtle-text-rgb))] hover:text-[rgb(var(--color-primary-hover-rgb))] hover:underline focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] rounded px-2 py-1"
+            className="text-xs font-bold text-[rgb(var(--color-primary-rgb))] hover:bg-[rgb(var(--color-primary-rgb))]/10 px-3 py-1.5 rounded-full transition-all active:scale-95 flex items-center gap-1"
             aria-label="View all transactions"
         >
-            View All
+            See All
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
         </button>
       </CardHeader>
-      <CardContent className="overflow-hidden">
+      <CardContent className="overflow-hidden px-3 pb-4">
         {transactions.length > 0 ? (
-            <div className="space-y-1">
-            {transactions.map(transaction => (
-                <TransactionRow
-                  key={transaction.id}
-                  transaction={transaction}
-                  onEdit={onEditTransaction}
-                  user={user}
-                  variant="compact"
-                />
+            <div className="space-y-1 mt-1">
+            {transactions.map((transaction, index) => (
+                <div key={transaction.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 50}ms`}}>
+                   <TransactionRow
+                     transaction={transaction}
+                     onEdit={onEditTransaction}
+                     user={user}
+                     variant="compact"
+                   />
+                </div>
             ))}
             </div>
         ) : (

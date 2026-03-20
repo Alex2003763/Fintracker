@@ -48,7 +48,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
   return (
     <div
       style={style}
-      className={`w-full flex items-center gap-3 rounded-xl hover:bg-[rgb(var(--color-card-muted-rgb))] transition-all group cursor-pointer ${isCompact ? 'py-2 px-2' : 'px-3 py-3'}`}
+      className={`w-full flex items-center gap-3.5 rounded-2xl hover:bg-[rgb(var(--color-card-muted-rgb))]/60 active:bg-[rgb(var(--color-card-muted-rgb))] transition-all duration-200 group cursor-pointer ${isCompact ? 'p-2.5' : 'p-4 border border-transparent hover:border-[rgb(var(--color-border-rgb))]/50 hover:shadow-sm'}`}
       onClick={handleClick}
       role="button"
       tabIndex={0}
@@ -58,43 +58,46 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
         }
       }}
     >
-      <div className={`rounded-full flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 ${
+      <div className={`rounded-[14px] flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105 group-active:scale-95 shadow-sm ${
           isCompact
-            ? 'p-1.5'
-            : 'p-2.5'
+            ? 'w-10 h-10'
+            : 'w-12 h-12 border border-white/10 dark:border-white/5'
         } ${
           isIncome
-            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-            : 'bg-[rgba(var(--color-border-rgb),0.4)] text-[rgb(var(--color-text-muted-rgb))]'
+            ? 'bg-gradient-to-br from-green-400/20 to-green-500/10 text-green-600 dark:text-green-400'
+            : 'bg-gradient-to-br from-[rgb(var(--color-border-rgb))]/50 to-[rgb(var(--color-card-muted-rgb))]/50 text-[rgb(var(--color-text-rgb))]'
         }`}>
         <CategoryIcon
           category={transaction.category}
           emoji={displayEmoji}
-          className={`${isCompact ? 'h-4 w-4' : 'h-5 w-5'} ${isIncome ? 'text-current' : 'text-[rgb(var(--color-text-rgb))]'}`}
+          className={`${isCompact ? 'h-5 w-5' : 'h-6 w-6'} ${isIncome ? 'text-current drop-shadow-sm' : 'opacity-80'}`}
         />
       </div>
       
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-baseline mb-1">
-            <p className={`font-semibold text-[rgb(var(--color-text-rgb))] truncate ${isCompact ? 'text-sm' : 'text-base'}`}>
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        <div className="flex justify-between items-center mb-0.5">
+            <p className={`font-bold text-[rgb(var(--color-text-rgb))] truncate ${isCompact ? 'text-sm' : 'text-[15px]'}`}>
             {transaction.description}
             </p>
-            <p className={`font-bold whitespace-nowrap ml-2 ${isCompact ? 'text-xs' : 'text-sm'} ${amountColor}`}>
-                {transaction.type === 'expense' ? '-' : '+'}{formatCurrency(transaction.amount)}
+            <p className={`font-extrabold whitespace-nowrap pl-2 flex items-center ${isCompact ? 'text-sm' : 'text-base'} ${amountColor}`}>
+                {transaction.type === 'expense' ? '' : '+'}{formatCurrency(transaction.amount)}
             </p>
         </div>
-        <div className="flex justify-between items-center text-[10px] sm:text-xs text-[rgb(var(--color-text-muted-rgb))] mt-0.5">
-            <p className="truncate">
+        <div className="flex justify-between items-center text-xs text-[rgb(var(--color-text-muted-rgb))] font-medium">
+            <p className="truncate opacity-80 flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${isIncome ? 'bg-green-500' : 'bg-[rgb(var(--color-primary-rgb))]'} opacity-60`}></span>
                 {transaction.category}
             </p>
-            {isCompact && (
-                 <span className="opacity-75">{new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-            )}
+            <span className="opacity-60 tabular-nums">
+                {new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
         </div>
       </div>
 
       {!isCompact && (
-        <ChevronRightIcon className="w-4 h-4 text-[rgb(var(--color-text-muted-rgb))] opacity-30 group-hover:opacity-100 transition-opacity" />
+        <div className="ml-1 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+           <ChevronRightIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))] opacity-80" />
+        </div>
       )}
     </div>
   );

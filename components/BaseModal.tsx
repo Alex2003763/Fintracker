@@ -193,7 +193,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
     <div
       className={`
         fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-2 sm:p-4
-        bg-black/60 backdrop-blur-sm
+        bg-[rgba(var(--color-bg-rgb),0.7)] backdrop-blur-2xl
         ${currentAnimation.backdrop}
         ${className}
       `}
@@ -207,7 +207,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
       <div
         ref={modalRef}
         className={`
-          bg-[rgb(var(--color-card-rgb))]
+          bg-[rgb(var(--color-card-rgb))] bg-opacity-80 backdrop-blur-xl
           ${sizeClasses[size]}
           ${variantClasses[variant]}
           w-full rounded-t-2xl sm:rounded-2xl shadow-2xl
