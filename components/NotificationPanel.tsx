@@ -15,7 +15,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, on
    const hasMoreNotifications = notifications.length > MAX_DISPLAYED;
 
    return (
-     <div className="fixed top-24 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-96 md:left-auto md:right-6 md:translate-x-0 bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-xl border border-[rgb(var(--color-border-rgb))] z-50 transition-all duration-200 animate-fade-in-up">
+     <div className="fixed top-20 inset-x-4 mt-2 bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-2xl border border-[rgb(var(--color-border-rgb))] z-50 transition-all duration-200 animate-fade-in-up ring-2 ring-[rgba(var(--color-primary-rgb),0.15)] backdrop-blur-xl">
        <div className="p-4 border-b border-[rgb(var(--color-border-rgb))] flex justify-between items-center bg-[rgb(var(--color-card-rgb))] rounded-t-2xl">
          <div className="flex items-center gap-2">
             <BellIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
