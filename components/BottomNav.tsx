@@ -21,6 +21,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
       className="fixed bottom-0 left-0 right-0 md:hidden z-40 border-t-2 border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))] backdrop-blur-lg shadow-2xl"
       style={{
         boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)',
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
       }}
     >
       <div className="flex items-stretch justify-around h-14">

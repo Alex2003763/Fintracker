@@ -1,4 +1,4 @@
-
+ 
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import ErrorBoundary from './components/ErrorBoundary';
