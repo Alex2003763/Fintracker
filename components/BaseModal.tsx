@@ -257,13 +257,16 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
         )}
 
         {/* Content */}
-        <div className={`
-          flex-1 ${disableContentPadding ? '' : 'overflow-y-auto'}
-          transform transition-all ${prefersReducedMotion || isMobile ? 'duration-150' : 'duration-300'} ease-out
-          ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}
-        `} style={{ transitionDelay: isOpen ? (prefersReducedMotion || isMobile ? '75ms' : '150ms') : '0ms' }}>
-          {children}
-        </div>
+         <div className={`
+           flex-1 ${disableContentPadding ? '' : 'overflow-y-auto'}
+           transform transition-all ${prefersReducedMotion || isMobile ? 'duration-150' : 'duration-300'} ease-out
+           ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}
+         `} style={{
+           transitionDelay: isOpen ? (prefersReducedMotion || isMobile ? '75ms' : '150ms') : '0ms',
+           paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)'
+         }}>
+           {children}
+         </div>
       </div>
     </div>,
     document.body

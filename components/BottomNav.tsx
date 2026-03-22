@@ -26,14 +26,14 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem, setActiveItem }) => {
     >
       <div className="flex items-stretch justify-around h-14">
         {navItems.map((item, idx) => (
-          <button
-            key={item.name}
-            onClick={() => setActiveItem(item.name)}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 relative transition-all duration-300 group ${
-              activeItem === item.name
-                ? 'text-[rgb(var(--color-primary-rgb))]'
-                : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'
-            }`}
+            <button
+              key={item.name}
+              onClick={() => setActiveItem(item.name)}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 relative transition-all duration-300 group ${
+                activeItem === item.name
+                  ? 'text-[rgb(var(--color-primary-rgb))] pb-[calc(env(safe-area-inset-bottom,0px)+4px)]'
+                  : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'
+              }`}
             style={{
               borderTopWidth: activeItem === item.name ? '3px' : '0px',
               borderTopColor: 'rgb(var(--color-primary-rgb))',
