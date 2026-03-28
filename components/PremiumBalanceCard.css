@@ -22,6 +22,17 @@
   transform: rotateY(180deg);
 }
 
+.premium-card-flipper.flipped .premium-card-front {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.premium-card-flipper .premium-card-front {
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+
 @media (hover: hover) and (pointer: fine) {
   .premium-card-container:hover .premium-card-flipper:not(.flipped) {
     transform: scale(1.015) rotateY(-4deg) rotateX(2deg);
