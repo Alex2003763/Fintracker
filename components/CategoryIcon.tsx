@@ -1,48 +1,73 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { CATEGORY_ICON_MAP } from '../constants';
 
 interface CategoryIconProps {
   category: string;
   emoji?: string;
   className?: string;
+  size?: 'xs' | 'sm' | 'md' | 'lg';
 }
 
-const CategoryIcon: React.FC<CategoryIconProps> = ({ category, emoji, className = 'h-6 w-6' }) => {
-  // If custom emoji is provided, display it
+// Size map — use size prop OR fall back to className
+const SIZE_MAP = {
+  xs: { container: 'h-5 w-5',  font: '0.95rem' },
+  sm: { container: 'h-6 w-6',  font: '1.1rem'  },
+  md: { container: 'h-8 w-8',  font: '1.35rem' },
+  lg: { container: 'h-10 w-10', font: '1.6rem'  },
+};
+
+const CategoryIcon: React.FC<CategoryIconProps> = memo(({
+  category,
+  emoji,
+  className,
+  size,
+}) => {
+  const sizeStyle = size ? SIZE_MAP[size] : null;
+  const containerClass = sizeStyle ? sizeStyle.container : (className ?? 'h-6 w-6');
+
+  // ── Custom emoji ──────────────────────────────────────────────────────────
   if (emoji) {
     return (
-      <div className={`flex items-center justify-center ${className}`}>
-        <span className="text-2xl leading-none" style={{ fontSize: '1.5rem' }}>
-          {emoji}
-        </span>
-      </div>
+      <span
+        className={`flex items-center justify-center flex-shrink-0 select-none leading-none ${containerClass}`}
+        role="img"
+        aria-label={category}
+        style={sizeStyle ? { fontSize: sizeStyle.font } : undefined}
+      >
+        {emoji}
+      </span>
     );
   }
 
-  // Otherwise, use the default SVG icon
+  // ── Mapped SVG icon ───────────────────────────────────────────────────────
   const IconComponent = CATEGORY_ICON_MAP[category];
-  
   if (IconComponent) {
-    return <IconComponent className={className} />;
+    return (
+      <IconComponent
+        className={`flex-shrink-0 ${containerClass}`}
+        aria-label={category}
+      />
+    );
   }
 
-  // Fallback icon if no mapping exists
+  // ── Fallback: first letter avatar ─────────────────────────────────────────
+  const letter = category?.trim()?.[0]?.toUpperCase() ?? '?';
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
+    <span
+      className={`flex items-center justify-center flex-shrink-0 rounded-full font-bold select-none
+        bg-[rgb(var(--color-border-rgb))]/40 text-[rgb(var(--color-text-muted-rgb))]
+        ${containerClass}`}
+      role="img"
+      aria-label={category || 'Unknown category'}
+      style={sizeStyle
+        ? { fontSize: `calc(${sizeStyle.font} * 0.55)` }
+        : { fontSize: '0.6em' }
+      }
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-      />
-    </svg>
+      {letter}
+    </span>
   );
-};
+});
 
+CategoryIcon.displayName = 'CategoryIcon';
 export default CategoryIcon;

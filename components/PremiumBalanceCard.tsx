@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Transaction } from '../types';
 import { formatCurrency } from '../utils/formatters';
-import { SalaryIcon, CartIcon, ReportsIcon } from './icons';
+import { SalaryIcon, CartIcon } from './icons';
 import { useTheme } from './ThemeContext';
 import './PremiumBalanceCard.css';
 
@@ -22,47 +22,48 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = React.memo(({
   const { customBackground } = useTheme();
 
   const { balance, dailyChange, dailyIncome, dailyExpense } = useMemo(() => {
-    const currentBalance = transactions.reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+    const currentBalance = transactions.reduce(
+      (sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0
+    );
 
     const today = new Date();
-    const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
 
     let income = 0;
     let expense = 0;
+    let hasYesterdayData = false;
 
-    const transactionsYesterday = transactions.filter(t => {
-        const tDate = new Date(t.date);
-        if (tDate >= yesterday && tDate < today) {
-            if (t.type === 'income') income += t.amount;
-            else expense += t.amount;
-            return true;
-        }
-        return false;
+    transactions.forEach(t => {
+      const tDate = new Date(t.date);
+      tDate.setHours(0, 0, 0, 0);
+      if (tDate.getTime() === yesterday.getTime()) {
+        hasYesterdayData = true;
+        if (t.type === 'income') income += t.amount;
+        else expense += t.amount;
+      }
     });
 
-    if (transactionsYesterday.length === 0) {
-        return { balance: currentBalance, dailyChange: 0, dailyIncome: 0, dailyExpense: 0 };
+    if (!hasYesterdayData) {
+      return { balance: currentBalance, dailyChange: 0, dailyIncome: 0, dailyExpense: 0 };
     }
 
     const changeYesterday = income - expense;
     const previousBalance = currentBalance - changeYesterday;
-
     let percentageChange = 0;
-    if (previousBalance !== 0 && Math.abs(previousBalance) > 0.01) {
-      percentageChange = (changeYesterday / Math.abs(previousBalance)) * 100;
-      // Cap percentage at reasonable bounds to prevent extreme values
-      percentageChange = Math.max(-999, Math.min(999, percentageChange));
+    if (Math.abs(previousBalance) > 0.01) {
+      percentageChange = Math.max(-999, Math.min(999, (changeYesterday / Math.abs(previousBalance)) * 100));
     }
 
     return { balance: currentBalance, dailyChange: percentageChange, dailyIncome: income, dailyExpense: expense };
   }, [transactions]);
 
-  const changeColor = dailyChange >= 0 ? 'text-green-400 bg-green-400/20' : 'text-red-400 bg-red-400/20';
-  const sign = dailyChange >= 0 ? '+' : '';
+  const isPositive = dailyChange >= 0;
+  const sign = isPositive ? '+' : '';
+  const net = dailyIncome - dailyExpense;
 
-  const handleFlip = useCallback(() => {
-    setIsFlipped(prev => !prev);
-  }, []);
+  const handleFlip = useCallback(() => setIsFlipped(prev => !prev), []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -79,115 +80,160 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = React.memo(({
         onKeyDown={handleKeyDown}
         tabIndex={0}
         role="button"
-        aria-label={`Premium balance card showing ${formatCurrency(balance)}. ${isFlipped ? 'Currently showing back of card' : 'Currently showing front of card'}. Press Enter to flip card.`}
+        aria-label={isFlipped ? 'Flip to balance view' : 'Flip to daily summary'}
         aria-pressed={isFlipped}
+        style={customBackground ? { backgroundImage: `url('${customBackground}')`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
       >
-        {/* Card Front */}
-        <div
-          className="premium-card-front"
-          aria-hidden={isFlipped}
-          style={{
-            backgroundImage: customBackground
-              ? `url(${customBackground})`
-              : `linear-gradient(135deg, rgb(var(--gradient-from-rgb)), rgb(var(--gradient-to-rgb)))`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-          }}
-        >
+        {/* ── FRONT ── */}
+        <div className="premium-card-front">
+          {/* Decorative orbs */}
+          <div className="card-orb card-orb-1" />
+          <div className="card-orb card-orb-2" />
+          {/* Shimmer overlay */}
+          <div className="card-shimmer" />
+
+          {/* Header */}
           <div className="premium-card-header">
             <div className="premium-card-logo">
-              <span>Fintracker</span>
+              <span className="logo-icon">◈</span>
+              Fintracker
             </div>
             <div className="premium-card-top-right">
-              <div className="premium-card-change">
-                <div className={`daily-change ${changeColor}`}>
-                  <span className="change-icon">{dailyChange >= 0 ? '↗' : '↘'}</span>
-                  <span>{sign}{dailyChange.toFixed(1)}%</span>
-                </div>
+              {/* Change badge */}
+              <div className={`daily-change ${isPositive ? 'change-positive' : 'change-negative'}`}>
+                <svg className="change-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path
+                    strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                    d={isPositive ? 'M7 17L17 7M17 7H7M17 7v10' : 'M7 7l10 10M17 17H7M17 17V7'}
+                  />
+                </svg>
+                {sign}{dailyChange.toFixed(1)}%
               </div>
-                      </div>
-          </div>
-          
-          <div className="premium-card-balance">
-            <span className="balance-label">Current Balance</span>
-            <div className="premium-card-balance-row">
-              <span className="balance-amount" aria-label={`Balance ${formatCurrency(balance)}`}>
-                {formatCurrency(balance)}
-              </span>
-              <div className="premium-card-chip" aria-hidden="true"></div>
+              {/* Flip button */}
+              <button
+                className="premium-card-flip-button"
+                onClick={(e) => { e.stopPropagation(); handleFlip(); }}
+                aria-label="View daily summary"
+                tabIndex={-1}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
             </div>
           </div>
-          
+
+          {/* Balance */}
+          <div className="premium-card-balance">
+            <span className="balance-label">Total Balance</span>
+            <div className="premium-card-balance-row">
+              <span className="balance-amount">{formatCurrency(balance)}</span>
+              {/* EMV Chip */}
+              <div className="premium-card-chip">
+                <div className="chip-lines">
+                  <div className="chip-line" />
+                  <div className="chip-line" />
+                  <div className="chip-line" />
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Action Bar */}
           <div className="premium-card-actions">
             <button
               className="action-button income-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddTransaction('income');
-              }}
+              onClick={(e) => { e.stopPropagation(); onAddTransaction('income'); }}
               aria-label="Add Income"
-              title="Add Income"
             >
               <SalaryIcon className="action-icon" />
               <span className="action-label">Income</span>
             </button>
             <button
               className="action-button expense-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddTransaction('expense');
-              }}
+              onClick={(e) => { e.stopPropagation(); onAddTransaction('expense'); }}
               aria-label="Add Expense"
-              title="Add Expense"
             >
               <CartIcon className="action-icon" />
               <span className="action-label">Expense</span>
             </button>
-            {/* Removed Reports button as requested */}
           </div>
         </div>
-        
-        {/* Card Back */}
-        <div className="premium-card-back" aria-hidden={!isFlipped}>
+
+        {/* ── BACK ── */}
+        <div className="premium-card-back">
+          <div className="card-orb card-orb-back-1" />
+          <div className="card-orb card-orb-back-2" />
+
           <div className="premium-card-back-header">
-            <h3 className="back-title">Daily Summary</h3>
+            <div>
+              <p className="back-subtitle">Yesterday's Activity</p>
+              <h3 className="back-title">Daily Summary</h3>
+            </div>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleFlip();
-              }}
               className="back-close-button"
-              aria-label="Flip to front of card"
+              onClick={(e) => { e.stopPropagation(); handleFlip(); }}
+              aria-label="Flip to front"
               tabIndex={-1}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           <div className="premium-card-summary">
+            {/* Income row */}
             <div className="summary-item">
-              <span className="summary-label income-label">Income</span>
+              <div className="summary-item-left">
+                <div className="summary-dot dot-income" />
+                <span className="summary-label income-label">Income</span>
+              </div>
               <span className="summary-amount income-amount">{formatCurrency(dailyIncome)}</span>
             </div>
+
+            {/* Expense row */}
             <div className="summary-item">
-              <span className="summary-label expense-label">Expenses</span>
+              <div className="summary-item-left">
+                <div className="summary-dot dot-expense" />
+                <span className="summary-label expense-label">Expenses</span>
+              </div>
               <span className="summary-amount expense-amount">{formatCurrency(dailyExpense)}</span>
             </div>
-            <div className="summary-divider"></div>
-            <div className="summary-item">
-              <span className="summary-label net-label">Net</span>
-              <span className={`summary-amount net-amount ${dailyIncome - dailyExpense >= 0 ? 'positive' : 'negative'}`}>
-                {dailyIncome - dailyExpense >= 0 ? '+' : ''}{formatCurrency(dailyIncome - dailyExpense)}
+
+            <div className="summary-divider" />
+
+            {/* Net row */}
+            <div className="summary-item summary-item-net">
+              <div className="summary-item-left">
+                <div className={`summary-dot ${net >= 0 ? 'dot-positive' : 'dot-negative'}`} />
+                <span className="summary-label net-label">Net</span>
+              </div>
+              <span className={`summary-amount net-amount ${net >= 0 ? 'positive' : 'negative'}`}>
+                {net >= 0 ? '+' : ''}{formatCurrency(net)}
               </span>
             </div>
           </div>
 
+          {/* Mini bar chart */}
+          {(dailyIncome > 0 || dailyExpense > 0) && (
+            <div className="summary-bar-chart">
+              <div
+                className="bar-segment bar-income"
+                style={{ flex: dailyIncome || 0.001 }}
+                title={`Income: ${formatCurrency(dailyIncome)}`}
+              />
+              <div
+                className="bar-segment bar-expense"
+                style={{ flex: dailyExpense || 0.001 }}
+                title={`Expense: ${formatCurrency(dailyExpense)}`}
+              />
+            </div>
+          )}
+
           <div className="premium-card-back-footer">
-            <p className="back-footer-text">Yesterday</p>
+            <p className="back-footer-text">Tap card to flip back</p>
           </div>
         </div>
       </div>
@@ -195,4 +241,5 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = React.memo(({
   );
 });
 
+PremiumBalanceCard.displayName = 'PremiumBalanceCard';
 export default PremiumBalanceCard;

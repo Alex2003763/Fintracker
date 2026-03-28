@@ -8,6 +8,7 @@ import { processImageForBackground, createPatternBackground } from '../utils/ima
 import { isWebAuthnSupported, registerWebAuthn } from '../utils/webauthn';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
 import Button from './Button';
+import ToggleButton from './ToggleButton';
 
 interface SettingsPageProps {
   user: User;
@@ -273,24 +274,21 @@ const SecuritySection: React.FC<{
         </form>
 
         {isBiometricAvailable && (
-          <div className="pt-6 border-t border-[rgb(var(--color-border-rgb))]">
-            <div className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl">
-              <div>
-                <p className="font-medium text-[rgb(var(--color-text-rgb))]">Biometric Login</p>
-                <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">Use Touch ID or Face ID</p>
-              </div>
-              <button
-                onClick={handleToggleBiometrics}
-                disabled={isRegistering}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  user.biometricEnabled ? 'bg-[rgb(var(--color-primary-rgb))]' : 'bg-[rgb(var(--color-border-rgb))]'
-                }`}
-              >
-                <span className={`h-4 w-4 bg-white rounded-full transition-transform ${user.biometricEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
-            </div>
-          </div>
-        )}
+  <div className="pt-6 border-t border-[rgb(var(--color-border-rgb))]">
+    <div className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl">
+      <div>
+        <p className="font-medium text-[rgb(var(--color-text-rgb))]">Biometric Login</p>
+        <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">Use Touch ID or Face ID</p>
+      </div>
+      <ToggleButton
+        checked={user.biometricEnabled}
+        onChange={handleToggleBiometrics}
+        disabled={isRegistering}
+        size="md"
+      />
+    </div>
+  </div>
+)}
       </CardContent>
     </Card>
   );
@@ -338,20 +336,16 @@ const SmartFeaturesSection: React.FC<{ user: User; onUpdateUser: (user: User) =>
           <CardTitle>Categorization</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl">
-            <div>
-              <p className="font-medium text-[rgb(var(--color-text-rgb))]">Smart Suggestions</p>
-              <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">AI suggests categories for transactions</p>
-            </div>
-            <button
-               onClick={() => onUpdateUser({ ...user, smartFeatures: { ...user.smartFeatures, categorySuggestions: !(user.smartFeatures?.categorySuggestions ?? true) } })}
-               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                (user.smartFeatures?.categorySuggestions ?? true) ? 'bg-[rgb(var(--color-primary-rgb))]' : 'bg-[rgb(var(--color-border-rgb))]'
-              }`}
-            >
-              <span className={`h-4 w-4 bg-white rounded-full transition-transform ${(user.smartFeatures?.categorySuggestions ?? true) ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
-          </div>
+    <div className="flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl">
+      <div>
+        <p className="font-medium text-[rgb(var(--color-text-rgb))]">Smart Suggestions</p>
+      </div>
+      <ToggleButton
+        checked={user.smartFeatures?.categorySuggestions ?? true}
+        onChange={() => onUpdateUser({ ...user, smartFeatures: { ...user.smartFeatures, categorySuggestions: !(user.smartFeatures?.categorySuggestions ?? true) } })}
+        size="md"
+      />
+    </div>
           <button
             onClick={() => setActiveItem?.('Manage Categories')}
             className="w-full flex items-center justify-between p-4 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl hover:border-[rgb(var(--color-primary-rgb))] transition-colors group"
@@ -571,11 +565,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       </Card>
 
       <button
-        onClick={() => onOpenConfirmModal('Sign Out', 'Are you sure?', onSignOut, { variant: 'danger' })}
-        className="w-full py-4 bg-[rgb(var(--color-error-rgb))] text-white border-none rounded-xl font-bold shadow-lg hover:brightness-110 transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-error-rgb))]/40"
-      >
-        Sign Out
-      </button>
+  onClick={() => onOpenConfirmModal('Sign Out', 'Are you sure?', onSignOut, { variant: 'danger' })}
+  className="w-full py-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-none rounded-xl font-bold shadow-lg hover:brightness-110 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400/40 dark:focus:ring-gray-600/40"
+>
+  Sign Out
+</button>
     </div>
   );
 
