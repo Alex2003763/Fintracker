@@ -135,32 +135,34 @@ const SettingsRow: React.FC<{
   right?: React.ReactNode;
   onClick?: () => void;
   hoverColor?: string;
-}> = ({ icon, iconBg, label, sublabel, right, onClick, hoverColor = 'rgb(var(--color-primary-rgb))' }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="w-full flex items-center gap-4 p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/60 active:scale-[0.98] transition-all text-left min-h-[60px]"
-    style={{ cursor: onClick ? 'pointer' : 'default' }}
-  >
-    <div
-      className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-      style={{ backgroundColor: iconBg || `rgb(var(--color-primary-rgb), 0.12)`, color: `rgb(var(--color-primary-rgb))` }}
+}> = ({ icon, iconBg, label, sublabel, right, onClick, hoverColor = 'rgb(var(--color-primary-rgb))' }) => {
+  const Wrapper = onClick ? 'button' : 'div';
+  return (
+    <Wrapper
+      {...(onClick ? { type: 'button', onClick } : {})}
+      className="w-full flex items-center gap-4 p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/60 active:scale-[0.98] transition-all text-left min-h-[60px]"
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
-      {icon}
-    </div>
-    <div className="flex-1 min-w-0">
-      <p className="font-medium text-[rgb(var(--color-text-rgb))] text-sm leading-snug">{label}</p>
-      {sublabel && <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mt-0.5 leading-snug">{sublabel}</p>}
-    </div>
-    {right ?? (
-      onClick && (
-        <svg className="w-4 h-4 text-[rgb(var(--color-text-muted-rgb))] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      )
-    )}
-  </button>
-);
+      <div
+        className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+        style={{ backgroundColor: iconBg || `rgb(var(--color-primary-rgb), 0.12)`, color: `rgb(var(--color-primary-rgb))` }}
+      >
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-[rgb(var(--color-text-rgb))] text-sm leading-snug">{label}</p>
+        {sublabel && <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mt-0.5 leading-snug">{sublabel}</p>}
+      </div>
+      {right ?? (
+        onClick && (
+          <svg className="w-4 h-4 text-[rgb(var(--color-text-muted-rgb))] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        )
+      )}
+    </Wrapper>
+  );
+};
 
 
 // ─── Profile Section ──────────────────────────────────────────────────────────

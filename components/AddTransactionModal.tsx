@@ -232,7 +232,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     } else {
       setAiSuggestions([]);
     }
-  }, [description, type, smartSuggestionsEnabled, currentCategories]);
+  }, [description, type, smartSuggestionsEnabled]);
 
   const clrErr = (k: string) => setErrors(p => { const n = { ...p }; delete n[k]; return n; });
 

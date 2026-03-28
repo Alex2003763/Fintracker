@@ -13,6 +13,13 @@ export function generateCSVReport(
   // Add BOM for UTF-8 support in Excel
   csvContent += '\uFEFF';
 
+  // 強制將所有欄位轉為字串並用 toLocaleString 處理中文
+  function toTWString(cell: any) {
+    if (typeof cell === 'number') return cell.toLocaleString('zh-TW');
+    if (cell instanceof Date) return cell.toLocaleDateString('zh-TW');
+    return String(cell);
+  }
+
   // Add details (transaction history, category breakdown, or monthly summary)
   if (data.details && data.details.headers && data.details.rows) {
     // Add headers
@@ -25,7 +32,7 @@ export function generateCSVReport(
         if (cell === undefined || cell === null) {
           return '';
         }
-        const cellStr = String(cell);
+        const cellStr = toTWString(cell);
         if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
           return `"${cellStr.replace(/"/g, '""')}"`;
         }

@@ -27,7 +27,7 @@ const REPORT_TYPE_LABELS: { [key in ReportType]: string } = {
   budget_performance: 'Budget Performance',
   goal_progress: 'Goal Progress',
   transaction_history: 'Transaction History',
-  tax_expenses: 'Tax Expenses'
+  tax_expenses: 'Tax Expenses',
 };
 
 const REPORT_TYPE_ICONS: { [key in ReportType]: string } = {
@@ -36,7 +36,7 @@ const REPORT_TYPE_ICONS: { [key in ReportType]: string } = {
   budget_performance: '💰',
   goal_progress: '🎯',
   transaction_history: '📝',
-  tax_expenses: '🧾'
+  tax_expenses: '🧾',
 };
 
 const REPORT_TYPE_DESCRIPTIONS: { [key in ReportType]: string } = {
@@ -45,17 +45,23 @@ const REPORT_TYPE_DESCRIPTIONS: { [key in ReportType]: string } = {
   budget_performance: 'How well you stuck to your budgets.',
   goal_progress: 'Progress towards your savings goals.',
   transaction_history: 'Complete list of all transactions.',
-  tax_expenses: 'Tax-deductible expenses helper.'
+  tax_expenses: 'Tax-deductible expenses helper.',
 };
 
+const FORMAT_META: { id: ExportFormat; label: string; icon: string; desc: string }[] = [
+  { id: 'pdf',   label: 'PDF',   icon: '📄', desc: 'Best for sharing' },
+  { id: 'excel', label: 'Excel', icon: '📊', desc: 'Editable data'    },
+  { id: 'csv',   label: 'CSV',   icon: '📋', desc: 'Raw export'       },
+];
+
+const INCLUDE_OPTIONS = [
+  { key: 'includeCharts'  as const, label: 'Visual Charts',         icon: '📈', csvDisabled: true  },
+  { key: 'includeSummary' as const, label: 'Executive Summary',     icon: '📌', csvDisabled: false },
+  { key: 'includeDetails' as const, label: 'Detailed Transactions', icon: '🔍', csvDisabled: false },
+];
+
 const ReportExportModal: React.FC<ReportExportModalProps> = ({
-  isOpen,
-  onClose,
-  transactions,
-  budgets,
-  goals,
-  user,
-  categories
+  isOpen, onClose, transactions, budgets, goals, user, categories,
 }) => {
   const [config, setConfig] = useState<ExportConfig>({
     format: 'pdf',
@@ -63,11 +69,11 @@ const ReportExportModal: React.FC<ReportExportModalProps> = ({
     dateRange: {
       start: new Date(new Date().setMonth(new Date().getMonth() - 1)),
       end: new Date(),
-      preset: 'last_month'
+      preset: 'last_month',
     },
     includeCharts: true,
     includeSummary: true,
-    includeDetails: true
+    includeDetails: true,
   });
 
   const [isExporting, setIsExporting] = useState(false);
@@ -80,252 +86,279 @@ const ReportExportModal: React.FC<ReportExportModalProps> = ({
   const handleExport = async () => {
     setIsExporting(true);
     setExportResult(null);
-
-    // Give UI time to update
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
       const reportData = generateReportData(config, transactions, budgets, goals);
-      const metadata = generateReportMetadata(config, transactions);
-      
+      const metadata   = generateReportMetadata(config, transactions);
       let blob: Blob;
       let extension: string;
 
       if (config.format === 'pdf') {
         blob = await generatePDFReport(
-          { 
-            ...config, 
-            format: 'pdf', 
-            includePageNumbers: true,
-            includeLogo: true 
-          }, 
-          reportData, 
-          metadata
+          { ...config, format: 'pdf', includePageNumbers: true, includeLogo: true },
+          reportData, metadata
         );
         extension = 'pdf';
       } else if (config.format === 'excel') {
-         // Create sheet config based on report type
-         const sheets = [
-             { name: 'Summary', data: [], headers: [] }, // Placeholders, real data handled in utility
-             { name: 'Transactions', data: [], headers: [] }
-         ];
-        
-        blob = await generateExcelReport(
-            { ...config, format: 'excel', sheets }, 
-            reportData
-        );
+        const sheets = [
+          { name: 'Summary',      data: [], headers: [] },
+          { name: 'Transactions', data: [], headers: [] },
+        ];
+        blob = await generateExcelReport({ ...config, format: 'excel', sheets }, reportData);
         extension = 'xlsx';
-       } else {
-         // CSV export
-         blob = generateCSVReport(config, reportData);
-         extension = 'csv';
-       }
+      } else {
+        blob = generateCSVReport(config, reportData);
+        extension = 'csv';
+      }
 
-      // Download file
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const url      = URL.createObjectURL(blob);
+      const link     = document.createElement('a');
       const filename = `${REPORT_TYPE_LABELS[config.reportType].replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.${extension}`;
-      
       link.setAttribute('href', url);
       link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
       setExportResult({ success: true, fileName: filename });
     } catch (error: any) {
       console.error('Export failed:', error);
-      setExportResult({ 
-        success: false, 
-        fileName: '', 
-        error: error.message || 'An unknown error occurred' 
-      });
+      setExportResult({ success: false, fileName: '', error: error.message || 'An unknown error occurred' });
     } finally {
       setIsExporting(false);
     }
   };
 
-  const handleClose = () => {
-      setExportResult(null);
-      setIsExporting(false);
-      onClose();
-  }
+  const handleClose = () => { setExportResult(null); setIsExporting(false); onClose(); };
 
   return (
     <>
-      <BaseModal
-        isOpen={isOpen}
-        onClose={handleClose}
-        title="Export Financial Report"
-      >
-        <div className="space-y-6 max-h-[75vh] overflow-y-auto px-1">
-          {/* Report Type Selection */}
-          <section className="space-y-3">
-             <label className="block text-sm font-bold text-[rgb(var(--color-text-rgb))] uppercase tracking-wide opacity-80">Report Type</label>
-             {/* Desktop Grid View */}
-             <div className="hidden sm:grid gap-3 sm:grid-cols-2">
-                {Object.entries(REPORT_TYPE_LABELS).map(([value, label]) => (
-                   <button
-                      key={value}
-                      onClick={() => setConfig({ ...config, reportType: value as ReportType })}
-                      className={`relative flex flex-col items-start p-4 rounded-xl border text-left transition-all hover:shadow-md active:scale-95 duration-200
-                         ${config.reportType === value 
-                            ? 'border-[rgb(var(--color-primary-rgb))] bg-[rgba(var(--color-primary-rgb),0.08)] ring-1 ring-[rgb(var(--color-primary-rgb))]' 
-                            : 'border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))] hover:border-[rgb(var(--color-primary-rgb))]'
-                         }`}
-                   >
-                      <span className="text-2xl mb-2">{REPORT_TYPE_ICONS[value as ReportType]}</span>
-                      <div className="flex-1 w-full">
-                        <span className={`block text-sm font-semibold ${config.reportType === value ? 'text-[rgb(var(--color-primary-rgb))]' : 'text-[rgb(var(--color-text-rgb))]'}`}>
-                           {label}
-                        </span>
-                        <span className="text-xs text-[rgb(var(--color-text-muted-rgb))] line-clamp-2 block mt-0.5">
-                           {REPORT_TYPE_DESCRIPTIONS[value as ReportType]}
-                        </span>
-                      </div>
-                      {config.reportType === value && (
-                        <div className="absolute top-3 right-3 text-[rgb(var(--color-primary-rgb))]">
-                          <CheckCircleIcon className="w-5 h-5" />
-                        </div>
-                      )}
-                   </button>
-                ))}
-             </div>
+      <BaseModal isOpen={isOpen} onClose={handleClose} title="Export Financial Report">
 
-             {/* Mobile Dropdown View */}
-             <div className="sm:hidden relative">
-               <div className="relative w-full">
-                 <select
-                   value={config.reportType}
-                   onChange={(e) => setConfig({ ...config, reportType: e.target.value as ReportType })}
-                   className="w-full appearance-none bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-primary-rgb))] text-base rounded-xl p-4 pr-10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] transition-shadow"
-                   style={{ color: 'rgb(var(--color-primary-rgb))' }}
-                 >
-                   {Object.entries(REPORT_TYPE_LABELS).map(([value, label]) => (
-                     <option key={value} value={value}>
-                       {REPORT_TYPE_ICONS[value as ReportType]} {label}
-                     </option>
-                   ))}
-                 </select>
-                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[rgb(var(--color-text-muted-rgb))]">
-                   <ChevronDownIcon className="h-5 w-5" />
-                 </div>
-               </div>
-               <div className="mt-2 p-3 bg-[rgba(var(--color-primary-rgb),0.05)] rounded-lg text-sm text-[rgb(var(--color-text-muted-rgb))] border border-[rgba(var(--color-primary-rgb),0.1)]">
-                 <span className="font-medium text-[rgb(var(--color-primary-rgb))] block mb-1">About this report:</span>
-                 {REPORT_TYPE_DESCRIPTIONS[config.reportType]}
-               </div>
-             </div>
-          </section>
+        <div className="space-y-5 max-h-[78vh] overflow-y-auto px-1 pb-1">
 
-          <div className="h-px bg-[rgb(var(--color-border-rgb))] opacity-50" />
+          {/* ── Report Type ── */}
+          <section>
+            <SectionLabel>Report Type</SectionLabel>
 
-          {/* Configuration Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             {/* Date Range Selection */}
-             <section>
-               <label className="block text-sm font-bold text-[rgb(var(--color-primary-rgb))] uppercase tracking-wide opacity-90 mb-3">Time Period</label>
-               <DateRangePicker 
-                 value={config.dateRange} 
-                 onChange={(range) => setConfig({...config, dateRange: range})} 
-               />
-             </section>
+            {/* Desktop grid */}
+            <div className="hidden sm:grid gap-2.5 sm:grid-cols-3">
+              {Object.entries(REPORT_TYPE_LABELS).map(([value, label]) => {
+                const active = config.reportType === value;
+                return (
+                  <button
+                    key={value}
+                    onClick={() => setConfig({ ...config, reportType: value as ReportType })}
+                    className={`
+                      group relative flex flex-col gap-1.5 p-3.5 rounded-2xl border-2 text-left
+                      transition-all duration-200 hover:shadow-md active:scale-95 focus:outline-none
+                      focus-visible:ring-2 focus-visible:ring-[rgb(var(--color-primary-rgb))]
+                      ${active
+                        ? 'border-[rgb(var(--color-primary-rgb))] bg-[rgba(var(--color-primary-rgb),0.07)] shadow-sm'
+                        : 'border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))] hover:border-[rgba(var(--color-primary-rgb),0.5)] hover:bg-[rgba(var(--color-primary-rgb),0.03)]'
+                      }
+                    `}
+                  >
+                    <span className="text-xl leading-none">{REPORT_TYPE_ICONS[value as ReportType]}</span>
+                    <span className={`text-xs font-bold leading-tight ${active ? 'text-[rgb(var(--color-primary-rgb))]' : 'text-[rgb(var(--color-text-rgb))]'}`}>
+                      {label}
+                    </span>
+                    <span className="text-[10px] leading-snug text-[rgb(var(--color-text-muted-rgb))] line-clamp-2">
+                      {REPORT_TYPE_DESCRIPTIONS[value as ReportType]}
+                    </span>
 
-             {/* Format Selection */}
-             <section>
-               <label className="block text-sm font-bold text-[rgb(var(--color-text-rgb))] uppercase tracking-wide opacity-80 mb-3">Export Format</label>
-               <div className="flex gap-3">
-                 {(['pdf', 'excel', 'csv'] as ExportFormat[]).map((format) => (
-                   <button
-                     key={format}
-                     type="button"
-                     onClick={() => setConfig({ ...config, format })}
-                     className={`flex-1 flex flex-col items-center justify-center py-3 px-2 rounded-xl border-2 transition-all text-sm font-bold relative overflow-hidden group
-                       ${config.format === format 
-                         ? 'border-[rgb(var(--color-primary-rgb))] bg-[rgb(var(--color-primary-rgb))] text-white shadow-lg transform scale-[1.02]' 
-                         : 'border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))]'}`}
-                   >
-                     <span className="uppercase tracking-wider text-xs relative z-10">{format}</span>
-                     {config.format === format && <div className="absolute inset-0 bg-white opacity-10 blur-sm rounded-xl"></div>}
-                   </button>
-                 ))}
-               </div>
-             </section>
-          </div>
+                    {active && (
+                      <span className="absolute top-2.5 right-2.5 text-[rgb(var(--color-primary-rgb))]">
+                        <CheckCircleIcon className="w-4 h-4" />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Options */}
-          <section className="bg-[rgb(var(--color-card-muted-rgb))] rounded-xl p-4 border border-[rgb(var(--color-border-rgb))]">
-            <label className="block text-sm font-bold text-[rgb(var(--color-text-rgb))] uppercase tracking-wide opacity-80 mb-3">Include in Report</label>
-            <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4">
-              <label className={`flex items-center gap-3 cursor-pointer p-2.5 rounded-lg transition-colors ${config.format === 'csv' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[rgba(var(--color-text-rgb),0.05)]'} touch-manipulation`}>
-                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${config.includeCharts ? 'bg-[rgb(var(--color-primary-rgb))] border-[rgb(var(--color-primary-rgb))]' : 'border-[rgb(var(--color-text-rgb))] bg-transparent dark:border-gray-500'}`}>
-                    {config.includeCharts && <CheckCircleIcon className="w-3.5 h-3.5 text-white" />}
-                </div>
-                <input
-                  type="checkbox"
-                  checked={config.includeCharts}
-                  onChange={(e) => setConfig({ ...config, includeCharts: e.target.checked })}
-                  className="sr-only"
-                  disabled={config.format === 'csv'}
-                />
-                <span className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Visual Charts</span>
-              </label>
-              
-              <label className="flex items-center gap-3 cursor-pointer p-2.5 rounded-lg hover:bg-[rgba(var(--color-text-rgb),0.05)] transition-colors touch-manipulation">
-                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${config.includeSummary ? 'bg-[rgb(var(--color-primary-rgb))] border-[rgb(var(--color-primary-rgb))]' : 'border-[rgb(var(--color-text-rgb))] bg-transparent dark:border-gray-500'}`}>
-                    {config.includeSummary && <CheckCircleIcon className="w-3.5 h-3.5 text-white" />}
-                </div>
-                <input
-                  type="checkbox"
-                  checked={config.includeSummary}
-                  onChange={(e) => setConfig({ ...config, includeSummary: e.target.checked })}
-                  className="sr-only"
-                />
-                <span className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Executive Summary</span>
-              </label>
-
-              <label className="flex items-center gap-3 cursor-pointer p-2.5 rounded-lg hover:bg-[rgba(var(--color-text-rgb),0.05)] transition-colors touch-manipulation">
-                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${config.includeDetails ? 'bg-[rgb(var(--color-primary-rgb))] border-[rgb(var(--color-primary-rgb))]' : 'border-[rgb(var(--color-text-rgb))] bg-transparent dark:border-gray-500'}`}>
-                    {config.includeDetails && <CheckCircleIcon className="w-3.5 h-3.5 text-white" />}
-                </div>
-                <input
-                  type="checkbox"
-                  checked={config.includeDetails}
-                  onChange={(e) => setConfig({ ...config, includeDetails: e.target.checked })}
-                  className="sr-only"
-                />
-                <span className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Detailed Transactions</span>
-              </label>
+            {/* Mobile dropdown */}
+            <div className="sm:hidden space-y-2">
+              <div className="relative">
+                <select
+                  value={config.reportType}
+                  onChange={e => setConfig({ ...config, reportType: e.target.value as ReportType })}
+                  className="w-full appearance-none bg-[rgb(var(--color-card-rgb))] border-2 border-[rgb(var(--color-primary-rgb))] text-[rgb(var(--color-primary-rgb))] text-sm font-semibold rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:ring-offset-2 transition-shadow"
+                >
+                  {Object.entries(REPORT_TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {REPORT_TYPE_ICONS[value as ReportType]} {label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[rgb(var(--color-text-muted-rgb))]" />
+              </div>
+              <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] bg-[rgba(var(--color-primary-rgb),0.04)] border border-[rgba(var(--color-primary-rgb),0.12)] rounded-xl px-3.5 py-2.5 leading-relaxed">
+                <span className="font-semibold text-[rgb(var(--color-primary-rgb))]">About: </span>
+                {REPORT_TYPE_DESCRIPTIONS[config.reportType]}
+              </p>
             </div>
           </section>
 
-          <div className="pt-4 flex flex-col sm:flex-row justify-end gap-3 border-t border-[rgb(var(--color-border-rgb))] mt-4">
+          <Divider />
+
+          {/* ── Date Range + Format ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <section>
+              <SectionLabel accent>Time Period</SectionLabel>
+              <DateRangePicker
+                value={config.dateRange}
+                onChange={range => setConfig({ ...config, dateRange: range })}
+              />
+            </section>
+
+            <section>
+              <SectionLabel>Export Format</SectionLabel>
+              <div className="grid grid-cols-3 gap-2.5 h-[calc(100%-2rem)]">
+                {FORMAT_META.map(({ id, label, icon, desc }) => {
+                  const active = config.format === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setConfig({ ...config, format: id })}
+                      className={`
+                        flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-2xl border-2
+                        transition-all duration-200 focus:outline-none focus-visible:ring-2
+                        focus-visible:ring-[rgb(var(--color-primary-rgb))] active:scale-95
+                        ${active
+                          ? 'border-[rgb(var(--color-primary-rgb))] bg-[rgb(var(--color-primary-rgb))] text-white shadow-lg scale-[1.03]'
+                          : 'border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-rgb))] hover:border-[rgba(var(--color-primary-rgb),0.5)] hover:bg-[rgba(var(--color-primary-rgb),0.04)] text-[rgb(var(--color-text-rgb))]'
+                        }
+                      `}
+                    >
+                      <span className={`text-lg leading-none ${active ? '' : 'grayscale'}`}>{icon}</span>
+                      <span className="text-xs font-extrabold uppercase tracking-widest">{label}</span>
+                      <span className={`text-[10px] font-medium ${active ? 'text-white/70' : 'text-[rgb(var(--color-text-muted-rgb))]'}`}>
+                        {desc}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+
+          {/* ── Include Options ── */}
+          <section className="rounded-2xl border border-[rgb(var(--color-border-rgb))] bg-[rgb(var(--color-card-muted-rgb))] p-4">
+            <SectionLabel>Include in Report</SectionLabel>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {INCLUDE_OPTIONS.map(({ key, label, icon, csvDisabled }) => {
+                const disabled = csvDisabled && config.format === 'csv';
+                const checked  = config[key] as boolean;
+                return (
+                  <label
+                    key={key}
+                    className={`
+                      flex items-center gap-3 flex-1 cursor-pointer select-none
+                      px-3.5 py-2.5 rounded-xl border transition-all duration-150
+                      ${disabled
+                        ? 'opacity-40 cursor-not-allowed border-transparent bg-transparent'
+                        : checked
+                          ? 'border-[rgba(var(--color-primary-rgb),0.3)] bg-[rgba(var(--color-primary-rgb),0.06)]'
+                          : 'border-transparent hover:bg-[rgba(var(--color-text-rgb),0.04)]'
+                      }
+                    `}
+                  >
+                    {/* Custom checkbox */}
+                    <span
+                      className={`
+                        shrink-0 w-[18px] h-[18px] rounded-[5px] border-2 flex items-center justify-center
+                        transition-colors duration-150
+                        ${checked
+                          ? 'bg-[rgb(var(--color-primary-rgb))] border-[rgb(var(--color-primary-rgb))]'
+                          : 'border-[rgba(var(--color-text-rgb),0.3)] bg-transparent'
+                        }
+                      `}
+                    >
+                      {checked && (
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 8" fill="none">
+                          <path d="M1 4l3 3 5-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={e => !disabled && setConfig({ ...config, [key]: e.target.checked })}
+                      className="sr-only"
+                      disabled={disabled}
+                    />
+                    <span className="text-lg leading-none">{icon}</span>
+                    <span className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">{label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ── Footer Actions ── */}
+          <div className="flex flex-col sm:flex-row justify-end items-center gap-3 pt-2 border-t border-[rgb(var(--color-border-rgb))]">
             <button
               onClick={handleClose}
-              className="px-5 py-3 text-sm font-medium text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] rounded-xl transition-colors w-full sm:w-auto text-center"
+              className="w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] rounded-xl transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleExport}
               disabled={isExporting}
-              className="flex items-center justify-center px-6 py-3 text-sm font-bold bg-[rgb(var(--color-primary-rgb))] text-white rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] hover:shadow-lg hover:-translate-y-0.5 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none w-full sm:w-auto"
+              className="
+                w-full sm:w-auto group flex items-center justify-center gap-2
+                px-6 py-2.5 text-sm font-bold text-white rounded-xl
+                bg-[rgb(var(--color-primary-rgb))]
+                hover:bg-[rgb(var(--color-primary-hover-rgb))] hover:shadow-lg hover:-translate-y-0.5
+                active:translate-y-0 active:shadow-sm
+                transition-all duration-200 shadow-md
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none
+              "
             >
-              <DownloadIcon className="h-4 w-4 mr-2" />
-              {isExporting ? 'Generating Report...' : `Download ${config.format.toUpperCase()} Report`}
+              {isExporting ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                  </svg>
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <DownloadIcon className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
+                  Download {config.format.toUpperCase()}
+                </>
+              )}
             </button>
           </div>
+
         </div>
       </BaseModal>
 
-      <ExportProgress 
-        isExporting={isExporting} 
+      <ExportProgress
+        isExporting={isExporting}
         result={exportResult}
         onClose={() => setExportResult(null)}
       />
     </>
   );
 };
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+const SectionLabel: React.FC<{ accent?: boolean; children: React.ReactNode }> = ({ accent, children }) => (
+  <p className={`text-[11px] font-extrabold uppercase tracking-widest mb-2.5
+    ${accent ? 'text-[rgb(var(--color-primary-rgb))]' : 'text-[rgb(var(--color-text-muted-rgb))]'}`}>
+    {children}
+  </p>
+);
+
+const Divider = () => (
+  <div className="h-px bg-gradient-to-r from-transparent via-[rgb(var(--color-border-rgb))] to-transparent opacity-60" />
+);
 
 export default ReportExportModal;

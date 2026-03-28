@@ -142,27 +142,30 @@ function generateCategoryBreakdown(transactions: Transaction[]) {
 }
 
 function generateMonthlyDetails(transactions: Transaction[]) {
-  const headers = ['Month', 'Income', 'Expenses', 'Net Savings'];
-  
-  const months: {[key: string]: { income: number, expense: number, sortKey: number }} = {};
-  
+  // 中文欄位標題
+  const headers = ['月份', '收入', '支出', '淨儲蓄'];
+
+  const months: {[key: string]: { income: number, expense: number, sortKey: number, label: string }} = {};
+
   transactions.forEach(t => {
     const date = new Date(t.date);
-    const key = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+    // 使用繁體中文顯示格式：2024年3月
+    const label = date.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long' });
+    const key = `${date.getFullYear()}-${date.getMonth()}`;
     const sortKey = date.getFullYear() * 100 + date.getMonth();
-    
+
     if (!months[key]) {
-      months[key] = { income: 0, expense: 0, sortKey };
+      months[key] = { income: 0, expense: 0, sortKey, label };
     }
-    
+
     if (t.type === 'income') months[key].income += t.amount;
     else months[key].expense += t.amount;
   });
 
-  const rows = Object.entries(months)
-    .sort((a, b) => b[1].sortKey - a[1].sortKey)
-    .map(([month, data]) => [
-      month,
+  const rows = Object.values(months)
+    .sort((a, b) => b.sortKey - a.sortKey)
+    .map(data => [
+      data.label,
       formatCurrency(data.income),
       formatCurrency(data.expense),
       formatCurrency(data.income - data.expense)

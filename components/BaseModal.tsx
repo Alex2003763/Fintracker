@@ -30,8 +30,30 @@ const prefersReducedMotion =
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let lockCount = 0;
-const lockScroll   = () => { if (lockCount++ === 0) document.body.style.overflow = 'hidden'; };
-const unlockScroll = () => { if (--lockCount <= 0) { lockCount = 0; document.body.style.overflow = ''; } };
+const lockScroll   = () => { 
+  if (lockCount++ === 0) {
+    document.body.style.overflow = 'hidden';
+    console.log('[BaseModal] lockScroll, lockCount:', lockCount);
+  }
+};
+const unlockScroll = () => { 
+  if (--lockCount <= 0) { 
+    lockCount = 0; 
+    document.body.style.overflow = '';
+    console.log('[BaseModal] unlockScroll, lockCount:', lockCount);
+  } else {
+    console.log('[BaseModal] unlockScroll, lockCount:', lockCount);
+  }
+  // 確保 body 的 overflow 被清除
+  if (lockCount === 0) {
+    document.body.style.overflow = '';
+  }
+  // 如果還是沒有清除，強制清除
+  if (document.body.style.overflow === 'hidden') {
+    document.body.style.overflow = '';
+    console.log('[BaseModal] Forced clear body overflow');
+  }
+};
 
 // ─── Liquid Glass CSS ────────────────────────────────────────────────────────
 const LIQUID_GLASS_CSS = `
@@ -318,8 +340,11 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
         prevFocus.current?.focus();
       }, 300);
       return () => clearTimeout(t);
+    } else {
+      // 強制確保 body overflow 被清除
+      unlockScroll();
     }
-  }, [isOpen]);
+  }, [isOpen, phase]);
 
   // ── Focus first focusable element ─────────────────────────────────────────
   useEffect(() => {
