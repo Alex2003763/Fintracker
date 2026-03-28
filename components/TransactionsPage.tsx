@@ -329,9 +329,8 @@ const TransactionsPage: React.FC<{
                         key={item.data.id}
                         className={`
                           bg-[rgb(var(--color-card-rgb))]
-                          border-x border-[rgb(var(--color-border-rgb))]
-                          ${item.isFirst ? 'rounded-t-2xl border-t' : ''}
-                          ${item.isLast ? 'rounded-b-2xl border-b mb-1 shadow-sm' : 'border-b border-[rgba(var(--color-border-rgb),0.6)]'}
+                          ${item.isFirst ? 'rounded-t-2xl' : ''}
+                          ${item.isLast ? 'rounded-b-2xl mb-1 shadow-sm' : 'border-b border-[rgba(var(--color-border-rgb),0.6)]'}
                           hover:bg-[rgb(var(--color-card-muted-rgb))]
                           transition-colors duration-150
                         `}

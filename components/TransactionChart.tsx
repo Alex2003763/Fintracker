@@ -42,7 +42,7 @@ const TransactionChart: React.FC<TransactionChartProps> = ({ transactions }) => 
   }, [transactions]);
 
   return (
-    <div className="h-72 w-full mt-6">
+    <div className="h-72 w-full min-w-[300px] min-h-[200px] mt-6 aspect-[1.5]">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={data}

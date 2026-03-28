@@ -323,10 +323,9 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
 
   // ── Focus first focusable element ─────────────────────────────────────────
   useEffect(() => {
-    if (phase === 'open') {
-      setTimeout(() => {
-        modalRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
-      }, 80);
+    if (phase === 'entering' || phase === 'open') {
+      // 立即聚焦 input，不再延遲
+      modalRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
     }
   }, [phase]);
 
