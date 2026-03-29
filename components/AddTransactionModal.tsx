@@ -140,7 +140,7 @@ const injectCSS = () => {
 const FieldLabel: React.FC<{ htmlFor?: string; required?: boolean; children: React.ReactNode }> = ({ htmlFor, required, children }) => (
   <label htmlFor={htmlFor}
     className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-[rgb(var(--color-text-muted-rgb))]/60 mb-2 select-none">
-    {children}{required && <span className="text-red-500 text-[10px]">*</span>}
+    {children}{required && <span className="text-[10px]" style={{color:'rgb(var(--color-error-rgb))'}}>*</span>}
   </label>
 );
 
@@ -150,7 +150,7 @@ const ErrMsg: React.FC<{ msg?: string }> = ({ msg }) => (
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
         d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
     </svg>
-    <span className="text-[11px] text-red-400">{msg}</span>
+    <span className="text-[11px]" style={{color:'rgb(var(--color-error-rgb))'}}>{msg}</span>
   </div>
 );
 
@@ -305,7 +305,8 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           type="button"
           onClick={() => setShowDeleteConfirmation(true)}
           disabled={isSubmitting}
-          className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-semibold text-red-400 hover:bg-red-500/10 active:scale-95 transition-all touch-manipulation"
+          className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-semibold hover:bg-[rgba(var(--color-error-rgb),0.10)] active:scale-95 transition-all touch-manipulation"
+          style={{color:'rgb(var(--color-error-rgb))'}}
         >
           <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -327,8 +328,9 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           type="submit"
           form="atm-form"
           disabled={isSubmitting}
-          className="atm-pulse-ring flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold text-white active:scale-95 transition-all touch-manipulation disabled:opacity-55"
+          className="atm-pulse-ring flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold active:scale-95 transition-all touch-manipulation disabled:opacity-55"
           style={{
+            color: 'rgb(var(--color-text-rgb))',
             background: isExpense
               ? 'linear-gradient(135deg,#ef4444,#dc2626)'
               : 'linear-gradient(135deg,#22c55e,#16a34a)',
@@ -421,7 +423,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               <button
                 type="button"
                 onClick={() => setSuggestedEmoji(undefined)}
-                className="w-6 h-6 rounded-full flex items-center justify-center bg-[rgb(var(--color-text-muted-rgb))]/10 hover:bg-red-500/20 hover:text-red-400 text-[rgb(var(--color-text-muted-rgb))] transition-all active:scale-90"
+                className="w-6 h-6 rounded-full flex items-center justify-center bg-[rgb(var(--color-text-muted-rgb))]/10 hover:bg-[rgba(var(--color-error-rgb),0.20)] hover:text-[rgb(var(--color-error-rgb))] text-[rgb(var(--color-text-muted-rgb))] transition-all active:scale-90"
                 aria-label="Remove emoji"
               >
                 <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
