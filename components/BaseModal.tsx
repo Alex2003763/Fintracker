@@ -30,14 +30,29 @@ const prefersReducedMotion =
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let lockCount = 0;
-const lockScroll = () => { 
+let modalInstanceCount = 0;
+const activeModals = new Set<string>();
+
+const lockScroll = () => {
   if (lockCount++ === 0) {
     document.body.style.overflow = 'hidden';
+    console.log('[BaseModal] Scroll locked, lockCount:', lockCount);
   }
 };
-const unlockScroll = () => { 
-  lockCount = 0;
-  document.body.style.overflow = '';
+
+const unlockScroll = () => {
+  lockCount = Math.max(0, lockCount - 1);
+  if (lockCount === 0) {
+    document.body.style.overflow = '';
+    console.log('[BaseModal] Scroll unlocked, lockCount:', lockCount);
+  } else {
+    console.log('[BaseModal] Scroll still locked by other modals, lockCount:', lockCount);
+  }
+  // 強制移除任何殘留 backdrop
+  if (typeof document !== 'undefined') {
+    const backdrops = document.querySelectorAll('.lg-backdrop');
+    backdrops.forEach(el => el.parentNode && el.parentNode.removeChild(el));
+  }
 };
 
 // ─── Liquid Glass CSS ────────────────────────────────────────────────────────
@@ -300,9 +315,24 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
 }) => {
   injectCSS();
 
-  const modalRef  = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const prevFocus = useRef<HTMLElement | null>(null);
   const [phase, setPhase] = useState<'closed' | 'entering' | 'open' | 'exiting'>('closed');
+  const modalId = React.useRef(`modal-${Date.now()}-${++modalInstanceCount}`);
+  
+  // 追蹤 active modals
+  React.useEffect(() => {
+    if (isOpen) {
+      activeModals.add(modalId.current);
+      console.log('[BaseModal] Modal opened:', modalId.current, 'title:', title, 'Active modals:', Array.from(activeModals));
+    } else {
+      activeModals.delete(modalId.current);
+      console.log('[BaseModal] Modal closed:', modalId.current, 'Active modals:', Array.from(activeModals));
+    }
+    return () => {
+      activeModals.delete(modalId.current);
+    };
+  }, [isOpen, title]);
 
   const isSidebar  = variant === 'sidebar';
   const isSheet    = variant === 'sheet';
@@ -317,15 +347,21 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
       if (phase === 'closed') {
         prevFocus.current = document.activeElement as HTMLElement;
         lockScroll();
+        console.log('[BaseModal] Modal entering:', modalId.current, 'Active modals count:', activeModals.size);
         setPhase('entering');
-        timeoutId = setTimeout(() => setPhase('open'), 520);
+        timeoutId = setTimeout(() => {
+          setPhase('open');
+          console.log('[BaseModal] Modal open:', modalId.current);
+        }, 520);
       }
     } else if (phase !== 'closed' && phase !== 'exiting') {
+      console.log('[BaseModal] Modal exiting:', modalId.current);
       setPhase('exiting');
       timeoutId = setTimeout(() => {
         setPhase('closed');
         unlockScroll();
         prevFocus.current?.focus();
+        console.log('[BaseModal] Modal closed:', modalId.current);
       }, 300);
     }
 
@@ -389,21 +425,27 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   const wrapperAlign = isSidebar
     ? 'items-stretch justify-end p-0'
     : 'items-end justify-center p-0';
-
+  
   const panelShape = isSidebar
     ? 'h-full max-h-screen w-full max-w-xs rounded-none'
     : `w-full ${SIZE_CLASSES[size]} mx-0 sm:mx-auto rounded-t-[32px]`;
-
+  
+  // 計算 z-index：最後開啟的 modal 有最高的 z-index
+  const activeModalCount = activeModals.size;
+  const zIndex = 9999 + (activeModalCount > 0 ? activeModalCount - 1 : 0);
+  console.log('[BaseModal] Rendering modal:', modalId.current, 'zIndex:', zIndex, 'phase:', phase, 'activeModalCount:', activeModalCount);
+  
   return createPortal(
     <div
-      className={`fixed inset-0 z-[9999] flex overscroll-contain ${wrapperAlign} ${className}`}
+      className={`fixed inset-0 flex overscroll-contain ${wrapperAlign} ${className}`}
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel ?? title}
       aria-describedby={ariaDescribedBy}
+      style={{ zIndex }}
       onClick={closeOnBackdropClick ? (e) => {
         if (e.target === e.currentTarget) {
-          console.log('[BaseModal] Backdrop clicked, trigger onClose');
+          console.log('[BaseModal] Backdrop clicked on modal:', modalId.current, 'trigger onClose');
           onClose();
         }
       } : undefined}

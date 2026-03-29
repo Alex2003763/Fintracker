@@ -538,7 +538,14 @@ const footer = (
         onConfirm={() => {
           if (transactionToEdit && onDeleteTransaction) onDeleteTransaction(transactionToEdit.id);
           setShowDeleteConfirmation(false);
-          onClose();
+          setTimeout(() => { onClose(); }, 10); // 保險延遲，確保狀態同步
+          setTimeout(() => {
+            if (typeof document !== 'undefined') {
+              document.body.style.overflow = '';
+              const backdrops = document.querySelectorAll('.lg-backdrop');
+              backdrops.forEach(el => el.parentNode && el.parentNode.removeChild(el));
+            }
+          }, 350); // 動畫結束後強制清理
         }}
         title="Delete Transaction"
         message={`Are you sure you want to delete "${transactionToEdit?.description}"? This action cannot be undone.`}
