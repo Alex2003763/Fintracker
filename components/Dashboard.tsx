@@ -94,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = memo(({
           transactions={recentTransactions}
           onEditTransaction={onEditTransaction}
           setActiveItem={setActiveItem}
-          user={user}
+          user={user ?? null}
         />
       </div>
 

@@ -297,64 +297,84 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const categories = currentCategories[type];
   const isExpense  = type === 'expense';
 
-  // ── Footer ─────────────────────────────────────────────────────────────────
-  const footer = (
-    <div className="flex items-center gap-2">
-      {isEditing && (
-        <button
-          type="button"
-          onClick={() => setShowDeleteConfirmation(true)}
-          disabled={isSubmitting}
-          className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-semibold hover:bg-[rgba(var(--color-error-rgb),0.10)] active:scale-95 transition-all touch-manipulation"
-          style={{color:'rgb(var(--color-error-rgb))'}}
-        >
-          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          Delete
-        </button>
-      )}
-      <div className="flex gap-2 ml-auto">
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={isSubmitting}
-          className="px-4 py-2.5 rounded-2xl text-sm font-semibold text-[rgb(var(--color-text-muted-rgb))] bg-[rgb(var(--color-card-muted-rgb))]/50 border border-white/8 hover:bg-[rgb(var(--color-card-muted-rgb))] active:scale-95 transition-all touch-manipulation"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          form="atm-form"
-          disabled={isSubmitting}
-          className="atm-pulse-ring flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold active:scale-95 transition-all touch-manipulation disabled:opacity-55"
-          style={{
-            color: 'rgb(var(--color-text-rgb))',
-            background: isExpense
-              ? 'linear-gradient(135deg,#ef4444,#dc2626)'
-              : 'linear-gradient(135deg,#22c55e,#16a34a)',
-            boxShadow: isExpense
-              ? '0 4px 16px rgba(239,68,68,0.28)'
-              : '0 4px 16px rgba(34,197,94,0.28)',
-          }}
-        >
-          {isSubmitting ? (
-            <>
-              <svg className="atm-spin" width="13" height="13" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40 20" />
-              </svg>
-              Saving…
-            </>
-          ) : isEditing
-            ? '✓ Save Changes'
-            : `+ Add ${isExpense ? 'Expense' : 'Income'}`
-          }
-        </button>
-      </div>
-    </div>
-  );
+const footer = (
+  <div className="flex items-center gap-2">
 
+    {/* ── Delete — ghost danger, left-anchored ── */}
+    {isEditing && (
+      <button
+        type="button"
+        onClick={() => setShowDeleteConfirmation(true)}
+        disabled={isSubmitting}
+        className="atm-btn-danger flex items-center gap-1.5 px-3 py-2 rounded-xl
+                   text-xs font-semibold touch-manipulation
+                   focus:outline-none focus:ring-2 focus:ring-red-400/25"
+      >
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2}
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete
+      </button>
+    )}
+
+    <div className="flex items-center gap-2 ml-auto">
+
+      {/* ── Cancel — ghost neutral ── */}
+      <button
+        type="button"
+        onClick={onClose}
+        disabled={isSubmitting}
+        className="atm-btn-ghost px-4 py-2 rounded-xl text-sm font-medium
+                   touch-manipulation
+                   focus:outline-none focus:ring-2 focus:ring-white/10"
+      >
+        Cancel
+      </button>
+
+      {/* ── Submit — solid primary ── */}
+      <button
+        type="submit"
+        form="atm-form"
+        disabled={isSubmitting}
+        className="atm-btn-submit atm-pulse-ring flex items-center gap-2 px-5 py-2 rounded-xl
+                   text-sm font-bold touch-manipulation
+                   focus:outline-none focus:ring-2"
+        style={{
+          background: isExpense
+            ? 'linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%)'
+            : 'linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%)',
+          boxShadow: isExpense
+            ? '0 1px 2px rgba(239,68,68,0.20), 0 4px 14px rgba(239,68,68,0.30)'
+            : '0 1px 2px rgba(34,197,94,0.20), 0 4px 14px rgba(34,197,94,0.30)',
+        }}
+      >
+        {isSubmitting ? (
+          <>
+            <svg className="atm-spin" width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40 20" />
+            </svg>
+            Saving…
+          </>
+        ) : isEditing ? (
+          <>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+            Save Changes
+          </>
+        ) : (
+          <>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+            </svg>
+            Add {isExpense ? 'Expense' : 'Income'}
+          </>
+        )}
+      </button>
+    </div>
+  </div>
+);
   return (
     <>
       <BaseModal
