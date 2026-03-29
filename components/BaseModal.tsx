@@ -30,29 +30,14 @@ const prefersReducedMotion =
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let lockCount = 0;
-const lockScroll   = () => { 
+const lockScroll = () => { 
   if (lockCount++ === 0) {
     document.body.style.overflow = 'hidden';
-    console.log('[BaseModal] lockScroll, lockCount:', lockCount);
   }
 };
 const unlockScroll = () => { 
-  if (--lockCount <= 0) { 
-    lockCount = 0; 
-    document.body.style.overflow = '';
-    console.log('[BaseModal] unlockScroll, lockCount:', lockCount);
-  } else {
-    console.log('[BaseModal] unlockScroll, lockCount:', lockCount);
-  }
-  // 確保 body 的 overflow 被清除
-  if (lockCount === 0) {
-    document.body.style.overflow = '';
-  }
-  // 如果還是沒有清除，強制清除
-  if (document.body.style.overflow === 'hidden') {
-    document.body.style.overflow = '';
-    console.log('[BaseModal] Forced clear body overflow');
-  }
+  lockCount = 0;
+  document.body.style.overflow = '';
 };
 
 // ─── Liquid Glass CSS ────────────────────────────────────────────────────────
@@ -326,37 +311,53 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
 
   // ── Phase management ──────────────────────────────────────────────────────
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
     if (isOpen) {
-      prevFocus.current = document.activeElement as HTMLElement;
-      lockScroll();
-      setPhase('entering');
-      const t = setTimeout(() => setPhase('open'), 520);
-      return () => clearTimeout(t);
-    } else if (phase !== 'closed') {
+      if (phase === 'closed') {
+        prevFocus.current = document.activeElement as HTMLElement;
+        lockScroll();
+        setPhase('entering');
+        timeoutId = setTimeout(() => setPhase('open'), 520);
+      }
+    } else if (phase !== 'closed' && phase !== 'exiting') {
       setPhase('exiting');
-      const t = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         setPhase('closed');
         unlockScroll();
         prevFocus.current?.focus();
       }, 300);
-      return () => clearTimeout(t);
-    } else {
-      // 強制確保 body overflow 被清除
-      unlockScroll();
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [isOpen, phase]);
+
+  // Handle sudden unmount
+  useEffect(() => {
+    return () => {
+      if (phase !== 'closed') {
+        unlockScroll();
+      }
+    };
+  }, [phase]);
 
   // ── Focus first focusable element ─────────────────────────────────────────
   useEffect(() => {
-    if (phase === 'entering' || phase === 'open') {
-      // 立即聚焦 input，不再延遲
-      modalRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    if (phase === 'entering') {
+      const firstInput = modalRef.current?.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea');
+      const firstAny = modalRef.current?.querySelector<HTMLElement>(FOCUSABLE);
+      const target = firstInput || firstAny;
+      if (target) {
+        target.focus();
+      }
     }
   }, [phase]);
 
   // ── Keyboard trap ─────────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && closeOnEscape) { onClose(); return; }
+      if (e.key === 'Escape' && closeOnEscape) { console.log('[BaseModal] Escape key pressed, triggering onClose'); onClose(); return; }
     if (e.key === 'Tab' && modalRef.current) {
       const all = Array.from(modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
       if (!all.length) return;
@@ -400,7 +401,12 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
       aria-modal="true"
       aria-label={ariaLabel ?? title}
       aria-describedby={ariaDescribedBy}
-      onClick={closeOnBackdropClick ? (e) => { if (e.target === e.currentTarget) onClose(); } : undefined}
+      onClick={closeOnBackdropClick ? (e) => {
+        if (e.target === e.currentTarget) {
+          console.log('[BaseModal] Backdrop clicked, trigger onClose');
+          onClose();
+        }
+      } : undefined}
     >
       {/* ── Backdrop ───────────────────────────────────────────────────── */}
       <div
