@@ -5,6 +5,8 @@ import TransactionsCard from './TransactionsCard';
 import GoalsCard from './GoalsCard';
 import UpcomingBillsCard from './UpcomingBillsCard';
 
+import { Goal } from '../types';
+
 interface DashboardProps {
   transactions: Transaction[];
   bills:        Bill[];
@@ -14,6 +16,7 @@ interface DashboardProps {
   onPayBill:     (bill: Bill) => void;
   onManageBills: () => void;
   user?: User;
+  goals?: Goal[];
 }
 
 // ─── CSS ─────────────────────────────────────────────────────────────────────
@@ -60,7 +63,7 @@ const SectionHeader: React.FC<{
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 const Dashboard: React.FC<DashboardProps> = memo(({
   transactions, bills, onAddTransaction, onEditTransaction,
-  setActiveItem, onPayBill, onManageBills, user,
+  setActiveItem, onPayBill, onManageBills, user, goals, 
 }) => {
   injectCSS();
 
@@ -87,10 +90,6 @@ const Dashboard: React.FC<DashboardProps> = memo(({
 
       {/* ── Recent transactions ── */}
       <div className="db-card" style={{ animationDelay: '120ms' }}>
-        <SectionHeader
-          title="Recent Transactions"
-          action={{ label: 'See all', onClick: () => setActiveItem('Transactions') }}
-        />
         <TransactionsCard
           transactions={recentTransactions}
           onEditTransaction={onEditTransaction}
@@ -120,7 +119,13 @@ const Dashboard: React.FC<DashboardProps> = memo(({
           title="Goals"
           action={{ label: 'See all', onClick: () => setActiveItem('Goals') }}
         />
-        <GoalsCard goals={[]} setActiveItem={setActiveItem} />
+        {(!goals || goals.length === 0) ? (
+          <div className="text-center text-[rgb(var(--color-text-muted-rgb))] py-6">
+            No goals yet. <button type="button" className="underline text-[rgb(var(--color-primary-rgb))]" onClick={() => setActiveItem('Goals')}>Add one now</button>
+          </div>
+        ) : (
+          <GoalsCard goals={goals} />
+        )}
       </div>
 
     </div>

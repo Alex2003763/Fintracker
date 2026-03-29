@@ -4,12 +4,10 @@ import Card, { CardHeader, CardTitle, CardContent } from './Card';
 import { formatCurrency } from '../utils/formatters';
 import AddGoalModal from './AddGoalModal';
 
-interface Goal {
-  id: string;
-  name: string;
-  target: number;
-  current: number;
-}
+import { Goal } from '../types';
+
+// Deprecated local Goal interface, use types.ts
+
 
 interface GoalsCardProps {
   goals: Goal[];
@@ -40,14 +38,14 @@ const GoalsCard: React.FC<GoalsCardProps> = ({ goals, user, onAddGoal, onEditGoa
         ) : (
           <ul className="space-y-3">
             {goals.map(goal => {
-              const percent = Math.min(100, Math.round((goal.current / goal.target) * 100));
+               const percent = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
               return (
                 <li key={goal.id} className="flex flex-col gap-1">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold">{goal.name}</span>
-                    <span>{formatCurrency(goal.current)} / {formatCurrency(goal.target)}</span>
+                    <span className="font-semibold text-[rgb(var(--color-text-rgb))]">{goal.name}</span>
+                    <span className="text-[rgb(var(--color-text-muted-rgb))]">{formatCurrency(goal.currentAmount)} / {formatCurrency(goal.targetAmount)}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                  <div className="w-full bg-[rgba(var(--color-primary-rgb),0.08)] rounded-full h-2.5">
                     <div
                       className="h-2.5 rounded-full"
                       style={{ width: `${percent}%`, backgroundColor: 'rgb(var(--color-primary-rgb))' }}

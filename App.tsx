@@ -708,7 +708,8 @@ const App: React.FC = () => {
     // For now, we follow standard PWA behavior where data lives in the browser.
     
     setActiveItem('Home');
-    setConfirmationModalState({ ...confirmationModalState, isOpen: false });
+    setConfirmationModalState(prev => ({ ...prev, isOpen: false }));
+    
   };
   
   const handleExportData = () => {
@@ -775,7 +776,7 @@ const App: React.FC = () => {
         for (const item of data.notifications) await dbMutations.addNotification(item);
       }
 
-      setConfirmationModalState({ ...confirmationModalState, isOpen: false });
+      setConfirmationModalState(prev => ({ ...prev, isOpen: false }));
       initialProcessingDone.current = false;
   };
 
@@ -1305,24 +1306,30 @@ const App: React.FC = () => {
         return false;
     }
   }, [user, sessionKey]);
+// ✅ 使用 useRef 儲存 callback，避免 stale closure
+const confirmCallbackRef = useRef<(() => void) | null>(null);
 
-  const handleOpenConfirmModal = useCallback((title: string, message: string, onConfirm: () => void, options: { confirmText?: string; variant?: 'primary' | 'danger' } = {}) => {
-    const closeModal = () => setConfirmationModalState(prev => ({ ...prev, isOpen: false }));
+const handleOpenConfirmModal = useCallback((
+  title: string,
+  message: string,
+  onConfirm: () => void,
+  options: { confirmText?: string; variant?: 'primary' | 'danger' } = {}
+) => {
+  confirmCallbackRef.current = onConfirm; // ref 永不過期
 
-    setConfirmationModalState({
-        isOpen: true,
-        title,
-        message,
-        onConfirm: () => {
-          onConfirm();
-          closeModal();
-        },
-        confirmText: options.confirmText || 'Confirm',
-        variant: options.variant || 'primary'
-    });
-
-    return closeModal;
-  }, []);
+  setConfirmationModalState({
+    isOpen: true,
+    title,
+    message,
+    onConfirm: () => {
+      confirmCallbackRef.current?.();
+      // ✅ functional update，不依賴外部快照
+      setConfirmationModalState(prev => ({ ...prev, isOpen: false }));
+    },
+    confirmText: options.confirmText || 'Confirm',
+    variant: options.variant || 'primary',
+  });
+}, []); // ✅ 依賴陣列維持 [] 因為不再 close over 任何外部狀態
 
   const handleMarkAsRead = useCallback(async (id: string) => {
     await dbMutations.updateNotification(id, { read: true });
@@ -1360,7 +1367,8 @@ const App: React.FC = () => {
                 onPayBill={handlePayBill}
                 onManageBills={handleManageBills}
                 user={user}
-              />;
+                goals={goals}
+               />;
             case 'Transactions':
               return <TransactionsPage
                 transactions={sortedTransactions}
@@ -1557,16 +1565,18 @@ const App: React.FC = () => {
         )}
       </Suspense>
       
-      <ConfirmationModal
+
+      {confirmationModalState.isOpen && (
+        <ConfirmationModal
           isOpen={confirmationModalState.isOpen}
-          onClose={() => setConfirmationModalState({ ... confirmationModalState, isOpen: false })}
+          onClose={() => setConfirmationModalState(prev => ({ ...prev, isOpen: false }))}
           onConfirm={confirmationModalState.onConfirm}
           title={confirmationModalState.title}
           message={confirmationModalState.message}
           confirmButtonText={confirmationModalState.confirmText}
           confirmButtonVariant={confirmationModalState.variant}
-      />
-      {needRefresh && <UpdatePrompt onUpdate={() => updateServiceWorker(true)} />}
+        />
+      )}
     </div>
   );
 };
