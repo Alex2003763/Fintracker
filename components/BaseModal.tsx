@@ -373,11 +373,10 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   // Handle sudden unmount
   useEffect(() => {
     return () => {
-      if (phase !== 'closed') {
-        unlockScroll();
-      }
+      // 強制解鎖 scroll，確保所有 modal 關閉時 lockCount 歸零
+      unlockScroll();
     };
-  }, [phase]);
+  }, []);
 
   // ── Focus first focusable element ─────────────────────────────────────────
   useEffect(() => {
