@@ -327,8 +327,28 @@ const CategoryListItem = React.memo(({
   // Memoize filtered transactions for this category to avoid re-calculating on every render
   const categoryTransactions = useMemo(() => {
     if (!isExpanded) return [];
-    return transactions
-      .filter((t: any) => t.category === item.name)
+    
+    const expTransactions = transactions.filter((t: any) => {
+      if (t.type === 'expense') return true;
+      if (t.type === 'income' || t.type === 'transfer' || t.amount >= 0) return false;
+      return true;
+    });
+
+    return expTransactions
+      .filter((t: any) => {
+        let categoryName = typeof t.category === 'object' && t.category !== null
+          ? t.category.name || 'Uncategorized'
+          : typeof t.category === 'string'
+            ? t.category
+            : 'Uncategorized';
+        if (categoryName.toLowerCase() === 'other') categoryName = 'Other';
+
+        if (item.name !== 'Other') {
+          return categoryName === item.name;
+        }
+
+        return categoryName === 'Other' || t.category === 'other';
+      })
       .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 10); // Limit to top 10 for performance
   }, [isExpanded, transactions, item.name]);
@@ -387,9 +407,21 @@ const CategoryListItem = React.memo(({
               ) : (
                 <li className="text-center py-4 text-xs text-[rgb(var(--color-text-muted-rgb))]">No transactions found.</li>
               )}
-              {transactions.filter((t: any) => t.category === item.name).length > 10 && (
+              {transactions.filter((t: any) => {
+                if (t.type === 'income' || t.type === 'transfer' || t.amount >= 0) return false;
+                let catName = typeof t.category === 'object' && t.category !== null ? t.category.name : t.category;
+                if (catName?.toLowerCase() === 'other') catName = 'Other';
+                if (item.name !== 'Other') return catName === item.name;
+                return catName === 'Other' || (typeof t.category === 'string' && t.category.toLowerCase() === 'other');
+              }).length > 10 && (
                 <li className="py-2 text-center text-xs text-[rgb(var(--color-primary-rgb))] font-medium">
-                  + {transactions.filter((t: any) => t.category === item.name).length - 10} more transactions
+                  + {transactions.filter((t: any) => {
+                    if (t.type === 'income' || t.type === 'transfer' || t.amount >= 0) return false;
+                    let catName = typeof t.category === 'object' && t.category !== null ? t.category.name : t.category;
+                    if (catName?.toLowerCase() === 'other') catName = 'Other';
+                    if (item.name !== 'Other') return catName === item.name;
+                    return catName === 'Other' || (typeof t.category === 'string' && t.category.toLowerCase() === 'other');
+                  }).length - 10} more transactions
                 </li>
               )}
             </ul>
@@ -485,8 +517,8 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
 
   // Calculate metrics
   const calculateMetrics = (txs: Transaction[]) => {
-    const income = txs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const expense = txs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const income = txs.filter(t => t.type === 'income').reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    const expense = txs.filter(t => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
     return { income, expense, net: income - expense };
   };
 
@@ -525,11 +557,11 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
         };
       }
       if (t.type === 'income') {
-        data[monthKey].income += t.amount;
-        data[monthKey].net += t.amount;
+        data[monthKey].income += Math.abs(t.amount);
+        data[monthKey].net += Math.abs(t.amount);
       } else {
-        data[monthKey].expense += t.amount;
-        data[monthKey].net -= t.amount;
+        data[monthKey].expense += Math.abs(t.amount);
+        data[monthKey].net -= Math.abs(t.amount);
       }
     });
 
@@ -545,12 +577,28 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
   // Process data for Pie Chart
   // Optimization: Group small slices into 'Other'
   const pieData = useMemo(() => {
+    console.log('[DEBUG] filteredTransactions:', filteredTransactions.map(t => ({ id: t.id, description: t.description, type: t.type, category: t.category, amount: t.amount })));
+    
     const categoryMap: { [key: string]: number } = {};
+    // 僅保留 type === 'expense' 的交易，完全排除 type 為 undefined 或其他型態
     const expenseTransactions = filteredTransactions.filter(t => t.type === 'expense');
     
+    console.log('[DEBUG] expenseTransactions:', expenseTransactions.map(t => ({ id: t.id, description: t.description, type: t.type, category: t.category, amount: t.amount })));
+
+    const debugOtherTxns = [];
     expenseTransactions.forEach(t => {
-      categoryMap[t.category] = (categoryMap[t.category] || 0) + t.amount;
+      let categoryName = typeof t.category === 'object' && t.category !== null
+        ? (t.category as any).name || 'Uncategorized'
+        : typeof t.category === 'string'
+          ? t.category
+          : 'Uncategorized';
+      if (categoryName.toLowerCase() === 'other') {
+        categoryName = 'Other';
+        debugOtherTxns.push({ id: t.id, description: t.description, amount: t.amount, category: t.category });
+      }
+      categoryMap[categoryName] = (categoryMap[categoryName] || 0) + Math.abs(t.amount);
     });
+    console.log('[DEBUG] pieData Other transactions:', debugOtherTxns);
 
     const total = Object.values(categoryMap).reduce((sum, amount) => sum + amount, 0) || 1;
     
@@ -565,16 +613,13 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
     // If too many categories, group tail into 'Other'
     if (processedData.length > 8) {
       const topCategories = processedData.slice(0, 7);
-      const otherCategories = processedData.slice(7);
+      const otherCategories = processedData.slice(7).filter(item => item.name !== 'Other');
       const otherValue = otherCategories.reduce((sum, item) => sum + item.value, 0);
       const otherPercentage = Number(((otherValue / total) * 100).toFixed(1));
-      
-      // Ensure 'Other' doesn't conflict if a category explicitly named 'Other' exists
-      // Although unlikely in standard use, robust data handling prevents key collisions
+      // 如果已經有 "Other"，不要再合併 group tail 進去
       const existingOther = topCategories.find(c => c.name === 'Other');
       if (existingOther) {
-         existingOther.value += otherValue;
-         existingOther.percentage = Number(((existingOther.value / total) * 100).toFixed(1));
+         // 不動 existingOther，只保留 topCategories
          processedData = topCategories;
       } else if (otherValue > 0) {
          processedData = [
@@ -586,6 +631,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
       }
     }
 
+    console.log('[DEBUG] pieData:', processedData);
     return processedData;
   }, [filteredTransactions]);
 
@@ -792,7 +838,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
                            totalSpending={totalSpending}
                            expandedCategory={expandedCategory}
                            setExpandedCategory={setExpandedCategory}
-                           transactions={transactions}
+                           transactions={filteredTransactions}
                            categories={categories}
                          />
                        ))}

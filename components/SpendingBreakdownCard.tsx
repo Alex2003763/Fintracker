@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { Transaction, SpendingCategory } from '../types';
 import { useTheme } from './ThemeContext';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, Sector } from 'recharts';
+// FIX #5: 移除未使用的 Legend import
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Sector } from 'recharts';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
 import { formatCurrency } from '../utils/formatters';
 
@@ -14,10 +15,26 @@ const SpendingBreakdownCard: React.FC<SpendingBreakdownCardProps> = ({ transacti
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const spendingByCategory: SpendingCategory[] = useMemo(() => {
-    const expenses = transactions.filter(t => t.type === 'expense');
+    const expenses = transactions.filter(t => {
+      if (t.type === 'expense') return true;
+      if (t.type === 'income' || t.type === 'transfer' || t.amount >= 0) return false;
+      return true;
+    });
+
     const categoryMap: { [key: string]: number } = {};
     expenses.forEach(t => {
-      categoryMap[t.category] = (categoryMap[t.category] || 0) + t.amount;
+      let categoryName = typeof t.category === 'object' && t.category !== null
+        ? (t.category as any).name || 'Uncategorized'
+        : typeof t.category === 'string'
+          ? t.category
+          : 'Uncategorized';
+      
+      // Capitalize 'other' to 'Other' to combine them into one category
+      if (categoryName.toLowerCase() === 'other') {
+        categoryName = 'Other';
+      }
+
+      categoryMap[categoryName] = (categoryMap[categoryName] || 0) + Math.abs(t.amount);
     });
     return Object.entries(categoryMap)
       .map(([name, amount]) => ({ name, amount }))
@@ -50,49 +67,45 @@ const SpendingBreakdownCard: React.FC<SpendingBreakdownCardProps> = ({ transacti
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const percentage = totalSpending > 0 ? ((data.amount / totalSpending) * 100).toFixed(0) : 0;
+      // FIX #4: toFixed(1) 避免小分類顯示 0%
+      const percentage = totalSpending > 0 ? ((data.amount / totalSpending) * 100).toFixed(1) : '0.0';
       return (
         <div className="bg-[rgb(var(--color-card-rgb))] p-3 rounded-lg shadow-lg border border-[rgb(var(--color-border-rgb))]">
-          <p className="font-bold text-[rgb(var(--color-text-rgb))]">{`${data.name}`}</p>
-          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">{`${formatCurrency(data.amount)} (${percentage}%)`}</p>
+          <p className="font-bold text-[rgb(var(--color-text-rgb))]">{data.name}</p>
+          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+            {`${formatCurrency(data.amount)} (${percentage}%)`}
+          </p>
         </div>
       );
     }
     return null;
   };
 
-  const CustomLegend = (props: any) => {
-    const { payload } = props;
-    if (!payload) return null;
-    
-    return (
-      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4" aria-label="Spending categories legend">
-        {payload.map((entry: any, index: number) => (
-          <li key={`item-${index}`} className="flex items-center text-xs text-[rgb(var(--color-text-muted-rgb))]">
-            <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: entry.color }} aria-hidden="true" />
-            {entry.value}
-          </li>
-        ))}
-      </ul>
-    );
-  };
+  // FIX #5: 移除未使用的 CustomLegend 元件
 
   const renderActiveShape = (props: any) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent } = props;
-  
+
     return (
       <g>
         <text x={cx} y={cy} dy={-4} textAnchor="middle" fill={fill} fontSize={14} fontWeight="bold">
           {payload.name}
         </text>
-        <text x={cx} y={cy} dy={14} textAnchor="middle" fill="rgb(var(--color-text-muted-rgb))" fontSize={12}>
-          {`${(percent * 100).toFixed(0)}%`}
+        {/* FIX #2: CSS 變數在 SVG attribute 中不生效，改用 style prop */}
+        <text
+          x={cx} y={cy} dy={14}
+          textAnchor="middle"
+          style={{ fill: 'rgb(var(--color-text-muted-rgb))' }}
+          fontSize={12}
+        >
+          {/* FIX #4: toFixed(1) 顯示更精確的百分比 */}
+          {`${(percent * 100).toFixed(1)}%`}
         </text>
         <Sector
           cx={cx}
           cy={cy}
-          innerRadius={innerRadius}
-          outerRadius={outerRadius + 4}
+          innerRadius={innerRadius} // FIX #1: 加回 innerRadius，保持甜甜圈形狀
+          outerRadius={outerRadius + 6}
           startAngle={startAngle}
           endAngle={endAngle}
           fill={fill}
@@ -126,7 +139,8 @@ const SpendingBreakdownCard: React.FC<SpendingBreakdownCardProps> = ({ transacti
                   dataKey="amount"
                   onMouseEnter={onPieEnter}
                   onMouseLeave={onPieLeave}
-                  activeIndex={activeIndex ?? -1}
+                  // FIX #3: null 時傳 undefined 而非 -1，避免 recharts 邊界問題
+                  activeIndex={activeIndex !== null ? activeIndex : undefined}
                   activeShape={renderActiveShape}
                 >
                   {spendingByCategory.map((entry, index) => (
@@ -139,7 +153,10 @@ const SpendingBreakdownCard: React.FC<SpendingBreakdownCardProps> = ({ transacti
             <div className="w-full px-4 mt-4 space-y-2">
               {spendingByCategory.map((category, index) => (
                 <div key={category.name} className="flex items-center text-sm">
-                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: colors[index % colors.length] }} />
+                  <div
+                    className="w-2 h-2 rounded-full mr-2"
+                    style={{ backgroundColor: colors[index % colors.length] }}
+                  />
                   <div className="flex-1 text-[rgb(var(--color-text-muted-rgb))]">{category.name}</div>
                   <div className="w-24 h-2 bg-[rgb(var(--color-card-muted-rgb))] rounded-full overflow-hidden mx-2">
                     <div
@@ -150,7 +167,9 @@ const SpendingBreakdownCard: React.FC<SpendingBreakdownCardProps> = ({ transacti
                       }}
                     />
                   </div>
-                  <div className="font-semibold text-[rgb(var(--color-text-rgb))] w-16 text-right">{formatCurrency(category.amount)}</div>
+                  <div className="font-semibold text-[rgb(var(--color-text-rgb))] w-16 text-right">
+                    {formatCurrency(category.amount)}
+                  </div>
                 </div>
               ))}
             </div>
@@ -159,7 +178,8 @@ const SpendingBreakdownCard: React.FC<SpendingBreakdownCardProps> = ({ transacti
           <div className="text-center py-8 text-[rgb(var(--color-text-muted-rgb))]">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[rgba(var(--color-border-rgb),0.3)] flex items-center justify-center">
               <svg className="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
             </div>
             <p className="font-medium">No spending data yet</p>

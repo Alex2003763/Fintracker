@@ -29,25 +29,30 @@ const prefersReducedMotion =
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-let lockCount = 0;
 let modalInstanceCount = 0;
 const activeModals = new Set<string>();
 
-const lockScroll = () => {
-  if (lockCount++ === 0) {
-    document.body.style.overflow = 'hidden';
-    console.log('[BaseModal] Scroll locked, lockCount:', lockCount);
+const lockScroll = (id: string) => {
+  if (!activeModals.has(id)) {
+    activeModals.add(id);
+    if (activeModals.size === 1) {
+      document.body.style.overflow = 'hidden';
+      console.log('[BaseModal] Body scroll locked by:', id);
+    }
   }
 };
 
-const unlockScroll = () => {
-  lockCount = Math.max(0, lockCount - 1);
-  if (lockCount === 0) {
-    document.body.style.overflow = '';
-    console.log('[BaseModal] Scroll unlocked, lockCount:', lockCount);
-  } else {
-    console.log('[BaseModal] Scroll still locked by other modals, lockCount:', lockCount);
+const unlockScroll = (id: string) => {
+  if (activeModals.has(id)) {
+    activeModals.delete(id);
+    console.log('[BaseModal] Modal instance unlocked:', id);
   }
+  
+  if (activeModals.size === 0) {
+    document.body.style.overflow = '';
+    console.log('[BaseModal] All modals closed, body scroll restored');
+  }
+  
   // 強制移除任何殘留 backdrop
   if (typeof document !== 'undefined') {
     const backdrops = document.querySelectorAll('.lg-backdrop');
@@ -320,19 +325,19 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   const [phase, setPhase] = useState<'closed' | 'entering' | 'open' | 'exiting'>('closed');
   const modalId = React.useRef(`modal-${Date.now()}-${++modalInstanceCount}`);
   
-  // 追蹤 active modals
+  // Scroll lock and instance tracking
   React.useEffect(() => {
+    const id = modalId.current;
     if (isOpen) {
-      activeModals.add(modalId.current);
-      console.log('[BaseModal] Modal opened:', modalId.current, 'title:', title, 'Active modals:', Array.from(activeModals));
+      lockScroll(id);
     } else {
-      activeModals.delete(modalId.current);
-      console.log('[BaseModal] Modal closed:', modalId.current, 'Active modals:', Array.from(activeModals));
+      setTimeout(() => unlockScroll(id), 10); // Small timeout to ensure it runs after phase update
     }
+    
     return () => {
-      activeModals.delete(modalId.current);
+      setTimeout(() => unlockScroll(id), 10);
     };
-  }, [isOpen, title]);
+  }, [isOpen]);
 
   const isSidebar  = variant === 'sidebar';
   const isSheet    = variant === 'sheet';
@@ -342,43 +347,38 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   // ── Phase management ──────────────────────────────────────────────────────
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
-
+  
     if (isOpen) {
       if (phase === 'closed') {
         prevFocus.current = document.activeElement as HTMLElement;
-        lockScroll();
-        console.log('[BaseModal] Modal entering:', modalId.current, 'Active modals count:', activeModals.size);
         setPhase('entering');
         timeoutId = setTimeout(() => {
           setPhase('open');
-          console.log('[BaseModal] Modal open:', modalId.current);
+          console.log('[BaseModal] Phase transition: open', modalId.current);
         }, 520);
       }
-    } else if (phase !== 'closed' && phase !== 'exiting') {
-      console.log('[BaseModal] Modal exiting:', modalId.current);
-      setPhase('exiting');
+    } else if (phase !== 'closed') {
+      // Make sure we trigger exiting if we're not closed yet
+      if (phase !== 'exiting') {
+        setPhase('exiting');
+      }
+      
+      // Always set a timeout to clean up to 'closed' when not isOpen
       timeoutId = setTimeout(() => {
         setPhase('closed');
-        unlockScroll();
         prevFocus.current?.focus();
-        console.log('[BaseModal] Modal closed:', modalId.current);
+        console.log('[BaseModal] Phase transition: closed', modalId.current);
       }, 300);
     }
-
+  
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [isOpen, phase]);
 
-  // Handle sudden unmount
-  useEffect(() => {
-    return () => {
-      // 強制解鎖 scroll，確保所有 modal 關閉時 lockCount 歸零
-      unlockScroll();
-    };
-  }, []);
-
-  // ── Focus first focusable element ─────────────────────────────────────────
+// ── Focus first focusable element ─────────────────────────────────────────
   useEffect(() => {
     if (phase === 'entering') {
       const firstInput = modalRef.current?.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea');
@@ -390,9 +390,14 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
     }
   }, [phase]);
 
+
   // ── Keyboard trap ─────────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-      if (e.key === 'Escape' && closeOnEscape) { console.log('[BaseModal] Escape key pressed, triggering onClose'); onClose(); return; }
+      if (e.key === 'Escape' && closeOnEscape) {
+        console.log('[BaseModal] Escape key pressed, triggering onClose');
+        onClose();
+        return;
+      }
     if (e.key === 'Tab' && modalRef.current) {
       const all = Array.from(modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
       if (!all.length) return;
