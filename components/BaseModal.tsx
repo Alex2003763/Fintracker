@@ -130,35 +130,17 @@ const LIQUID_GLASS_CSS = `
   .lg-backdrop-enter { animation: lg-backdrop-in  0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
   .lg-backdrop-exit  { animation: lg-backdrop-out 0.25s cubic-bezier(0.4, 0, 1, 1)   forwards; }
 
-  /* ── Panel ── */
-  /* Light mode: high-opacity white so text is always legible */
+  /* ── Panel: uses theme CSS variables — works for ALL themes automatically ── */
   .lg-panel {
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: saturate(180%) blur(32px) brightness(1.02);
-    -webkit-backdrop-filter: saturate(180%) blur(32px) brightness(1.02);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgb(var(--color-card-rgb));
+    border: 1px solid rgba(var(--color-border-rgb), 0.6);
     box-shadow:
-      0 2px 0 0 rgba(255,255,255,0.8) inset,
-      0 -1px 0 0 rgba(0,0,0,0.04) inset,
-      0 40px 100px rgba(0,0,0,0.18),
-      0 12px 32px rgba(0,0,0,0.10),
-      0 4px 8px rgba(0,0,0,0.06);
+      0 2px 0 0 rgba(255,255,255,0.06) inset,
+      0 40px 100px rgba(0,0,0,0.28),
+      0 12px 32px rgba(0,0,0,0.16),
+      0 4px 8px rgba(0,0,0,0.10);
     will-change: transform, opacity;
-  }
-
-  /* Dark mode: solid enough background to ensure contrast */
-  :root.theme-dark-slate .lg-panel,
-  :root.theme-dark-green .lg-panel,
-  :root.theme-dark-crimson .lg-panel,
-  .dark .lg-panel {
-    background: rgba(28, 28, 36, 0.96);
-    border-color: rgba(255, 255, 255, 0.10);
-    box-shadow:
-      0 2px 0 0 rgba(255,255,255,0.08) inset,
-      0 -1px 0 0 rgba(255,255,255,0.03) inset,
-      0 40px 100px rgba(0,0,0,0.60),
-      0 12px 32px rgba(0,0,0,0.40),
-      0 4px 8px rgba(0,0,0,0.24);
+    color: rgb(var(--color-text-rgb));
   }
 
   /* ── Animation variants ── */
@@ -185,16 +167,16 @@ const LIQUID_GLASS_CSS = `
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255,255,255,0.9) 35%,
-      rgba(255,255,255,0.9) 65%,
+      rgba(255,255,255,0.4) 35%,
+      rgba(255,255,255,0.4) 65%,
       transparent
     );
     pointer-events: none;
-    opacity: 0.6;
+    opacity: 0.5;
     z-index: 1;
   }
 
-  /* ── Title: follow user theme via --color-text-rgb ── */
+  /* ── Title: theme variable ── */
   .lg-title {
     font-size: 1rem;
     font-weight: 700;
@@ -203,26 +185,19 @@ const LIQUID_GLASS_CSS = `
     color: rgb(var(--color-text-rgb));
   }
 
-  /* ── Subtitle: same theme variable, slightly muted ── */
+  /* ── Subtitle: theme variable, muted ── */
   .lg-subtitle {
     font-size: 0.8125rem;
     line-height: 1.4;
     margin-top: 0.2rem;
-    color: rgb(var(--color-text-rgb));
-    opacity: 0.6;
+    color: rgb(var(--color-text-muted-rgb));
   }
 
   /* ── Dividers ── */
   .lg-divider {
     height: 1px;
     flex-shrink: 0;
-    background: rgba(0, 0, 0, 0.08);
-  }
-  :root.theme-dark-slate .lg-divider,
-  :root.theme-dark-green .lg-divider,
-  :root.theme-dark-crimson .lg-divider,
-  .dark .lg-divider {
-    background: rgba(255, 255, 255, 0.09);
+    background: rgba(var(--color-border-rgb), 0.7);
   }
 
   /* ── Drag handle ── */
@@ -230,16 +205,10 @@ const LIQUID_GLASS_CSS = `
     width: 36px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(0, 0, 0, 0.18);
+    background: rgba(var(--color-text-muted-rgb), 0.35);
     margin: 10px auto 4px;
     flex-shrink: 0;
     animation: lg-handle-pulse 2.5s ease-in-out 0.6s infinite;
-  }
-  .dark .lg-handle,
-  :root.theme-dark-slate .lg-handle,
-  :root.theme-dark-green .lg-handle,
-  :root.theme-dark-crimson .lg-handle {
-    background: rgba(255, 255, 255, 0.22);
   }
 
   /* ── Close button ── */
@@ -250,35 +219,18 @@ const LIQUID_GLASS_CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.07);
-    border: 1px solid rgba(0, 0, 0, 0.10);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: rgb(var(--color-text-rgb));
-    opacity: 0.65;
+    background: rgba(var(--color-text-muted-rgb), 0.12);
+    border: 1px solid rgba(var(--color-border-rgb), 0.8);
+    color: rgb(var(--color-text-muted-rgb));
     cursor: pointer;
     flex-shrink: 0;
-    transition: background 0.15s, border-color 0.15s, transform 0.15s, opacity 0.15s;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s, color 0.15s;
     touch-action: manipulation;
   }
   .lg-close:hover {
-    background: rgba(0, 0, 0, 0.13);
-    border-color: rgba(0, 0, 0, 0.18);
-    opacity: 1;
-  }
-  :root.theme-dark-slate .lg-close,
-  :root.theme-dark-green .lg-close,
-  :root.theme-dark-crimson .lg-close,
-  .dark .lg-close {
-    background: rgba(255, 255, 255, 0.10);
-    border-color: rgba(255, 255, 255, 0.14);
-  }
-  :root.theme-dark-slate .lg-close:hover,
-  :root.theme-dark-green .lg-close:hover,
-  :root.theme-dark-crimson .lg-close:hover,
-  .dark .lg-close:hover {
-    background: rgba(255, 255, 255, 0.18);
-    border-color: rgba(255, 255, 255, 0.24);
+    background: rgba(var(--color-text-muted-rgb), 0.22);
+    border-color: rgba(var(--color-border-rgb), 1);
+    color: rgb(var(--color-text-rgb));
   }
   .lg-close:active { transform: scale(0.88); }
 
@@ -286,14 +238,8 @@ const LIQUID_GLASS_CSS = `
   .lg-body::-webkit-scrollbar { width: 3px; }
   .lg-body::-webkit-scrollbar-track { background: transparent; }
   .lg-body::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.16);
+    background: rgba(var(--color-border-rgb), 0.8);
     border-radius: 3px;
-  }
-  .dark .lg-body::-webkit-scrollbar-thumb,
-  :root.theme-dark-slate .lg-body::-webkit-scrollbar-thumb,
-  :root.theme-dark-green .lg-body::-webkit-scrollbar-thumb,
-  :root.theme-dark-crimson .lg-body::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.18);
   }
 
   /* ── Reduced motion ── */
@@ -360,7 +306,6 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   const isMobile   = typeof window !== 'undefined' && window.innerWidth < 640;
   const showHandle = isSheet || isMobile;
 
-  // ── Phase management ──────────────────────────────────────────────────────
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
 
@@ -381,7 +326,6 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
     return () => { if (timeoutId) clearTimeout(timeoutId); };
   }, [isOpen, phase]);
 
-  // ── Focus first focusable element ─────────────────────────────────────────
   useEffect(() => {
     if (phase === 'entering') {
       const firstInput = modalRef.current?.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea');
@@ -390,7 +334,6 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
     }
   }, [phase]);
 
-  // ── Keyboard trap ─────────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape' && closeOnEscape) { onClose(); return; }
     if (e.key === 'Tab' && modalRef.current) {
@@ -410,7 +353,6 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
 
   if (phase === 'closed') return null;
 
-  // ── Animation class ───────────────────────────────────────────────────────
   const isExiting = phase === 'exiting';
   const getAnimClass = () => {
     if (prefersReducedMotion) return '';
@@ -420,7 +362,6 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
     return isExiting ? `lg-anim-${key}-exit` : `lg-anim-${key}-enter`;
   };
 
-  // ── Layout ────────────────────────────────────────────────────────────────
   const wrapperAlign = isSidebar
     ? 'items-stretch justify-end p-0'
     : 'items-end justify-center p-0';
@@ -444,7 +385,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
         if (e.target === e.currentTarget) onClose();
       } : undefined}
     >
-      {/* ── Backdrop ───────────────────────────────────────────────────── */}
+      {/* Backdrop */}
       <div
         aria-hidden="true"
         className={`lg-backdrop ${isExiting ? 'lg-backdrop-exit' : 'lg-backdrop-enter'}`}
@@ -453,7 +394,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
         }}
       />
 
-      {/* ── Panel ──────────────────────────────────────────────────────── */}
+      {/* Panel */}
       <div
         ref={modalRef}
         className={`
@@ -466,13 +407,10 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
         onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        {/* Specular top edge */}
         <div className="lg-specular" aria-hidden="true" />
-
-        {/* Drag handle */}
         {showHandle && <div className="lg-handle" />}
 
-        {/* ── Header ─────────────────────────────────────────────────── */}
+        {/* Header */}
         {(title || showCloseButton) && (
           <>
             <div className={`
@@ -481,14 +419,8 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
             `}>
               {title ? (
                 <div className="min-w-0 flex-1">
-                  <h2 className="lg-title">
-                    {title}
-                  </h2>
-                  {subtitle && (
-                    <p className="lg-subtitle">
-                      {subtitle}
-                    </p>
-                  )}
+                  <h2 className="lg-title">{title}</h2>
+                  {subtitle && <p className="lg-subtitle">{subtitle}</p>}
                 </div>
               ) : <div className="flex-1" />}
 
@@ -505,7 +437,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
           </>
         )}
 
-        {/* ── Content ────────────────────────────────────────────────── */}
+        {/* Content */}
         <div className={`
           lg-body lg-content-animate flex-1 overflow-y-auto overscroll-contain
           ${disableContentPadding ? '' : 'px-5 py-4'}
@@ -513,7 +445,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
           {children}
         </div>
 
-        {/* ── Footer ─────────────────────────────────────────────────── */}
+        {/* Footer */}
         {footer && (
           <>
             <div className="lg-divider" />
