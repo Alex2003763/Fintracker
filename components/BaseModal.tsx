@@ -144,7 +144,6 @@ const LIQUID_GLASS_CSS = `
       0 12px 32px rgba(0,0,0,0.10),
       0 4px 8px rgba(0,0,0,0.06);
     will-change: transform, opacity;
-    color: #1a1a1a;
   }
 
   /* Dark mode: solid enough background to ensure contrast */
@@ -160,7 +159,6 @@ const LIQUID_GLASS_CSS = `
       0 40px 100px rgba(0,0,0,0.60),
       0 12px 32px rgba(0,0,0,0.40),
       0 4px 8px rgba(0,0,0,0.24);
-    color: #e8e8ec;
   }
 
   /* ── Animation variants ── */
@@ -196,32 +194,22 @@ const LIQUID_GLASS_CSS = `
     z-index: 1;
   }
 
-  /* ── Title & subtitle ── */
+  /* ── Title: follow user theme via --color-text-rgb ── */
   .lg-title {
     font-size: 1rem;
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.3;
-    color: #111111;
-  }
-  .dark .lg-title,
-  :root.theme-dark-slate .lg-title,
-  :root.theme-dark-green .lg-title,
-  :root.theme-dark-crimson .lg-title {
-    color: #f0f0f4;
+    color: rgb(var(--color-text-rgb));
   }
 
+  /* ── Subtitle: same theme variable, slightly muted ── */
   .lg-subtitle {
     font-size: 0.8125rem;
     line-height: 1.4;
     margin-top: 0.2rem;
-    color: #555560;
-  }
-  .dark .lg-subtitle,
-  :root.theme-dark-slate .lg-subtitle,
-  :root.theme-dark-green .lg-subtitle,
-  :root.theme-dark-crimson .lg-subtitle {
-    color: #9898a8;
+    color: rgb(var(--color-text-rgb));
+    opacity: 0.6;
   }
 
   /* ── Dividers ── */
@@ -266,16 +254,17 @@ const LIQUID_GLASS_CSS = `
     border: 1px solid rgba(0, 0, 0, 0.10);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    color: #444450;
+    color: rgb(var(--color-text-rgb));
+    opacity: 0.65;
     cursor: pointer;
     flex-shrink: 0;
-    transition: background 0.15s, border-color 0.15s, transform 0.15s, color 0.15s;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s, opacity 0.15s;
     touch-action: manipulation;
   }
   .lg-close:hover {
     background: rgba(0, 0, 0, 0.13);
     border-color: rgba(0, 0, 0, 0.18);
-    color: #111111;
+    opacity: 1;
   }
   :root.theme-dark-slate .lg-close,
   :root.theme-dark-green .lg-close,
@@ -283,7 +272,6 @@ const LIQUID_GLASS_CSS = `
   .dark .lg-close {
     background: rgba(255, 255, 255, 0.10);
     border-color: rgba(255, 255, 255, 0.14);
-    color: #b0b0c0;
   }
   :root.theme-dark-slate .lg-close:hover,
   :root.theme-dark-green .lg-close:hover,
@@ -291,7 +279,6 @@ const LIQUID_GLASS_CSS = `
   .dark .lg-close:hover {
     background: rgba(255, 255, 255, 0.18);
     border-color: rgba(255, 255, 255, 0.24);
-    color: #e8e8f0;
   }
   .lg-close:active { transform: scale(0.88); }
 
