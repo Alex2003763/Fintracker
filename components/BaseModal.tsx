@@ -37,7 +37,6 @@ const lockScroll = (id: string) => {
     activeModals.add(id);
     if (activeModals.size === 1) {
       document.body.style.overflow = 'hidden';
-      console.log('[BaseModal] Body scroll locked by:', id);
     }
   }
 };
@@ -45,15 +44,10 @@ const lockScroll = (id: string) => {
 const unlockScroll = (id: string) => {
   if (activeModals.has(id)) {
     activeModals.delete(id);
-    console.log('[BaseModal] Modal instance unlocked:', id);
   }
-  
   if (activeModals.size === 0) {
     document.body.style.overflow = '';
-    console.log('[BaseModal] All modals closed, body scroll restored');
   }
-  
-  // 強制移除任何殘留 backdrop
   if (typeof document !== 'undefined') {
     const backdrops = document.querySelectorAll('.lg-backdrop');
     backdrops.forEach(el => el.parentNode && el.parentNode.removeChild(el));
@@ -71,7 +65,6 @@ const LIQUID_GLASS_CSS = `
     to   { opacity: 0; }
   }
 
-  /* Slide up from bottom of screen */
   @keyframes lg-slide-up-in {
     0%   { opacity: 0;   transform: translateY(100vh); }
     55%  { opacity: 1;   transform: translateY(-8px) scale(1.008); }
@@ -138,36 +131,36 @@ const LIQUID_GLASS_CSS = `
   .lg-backdrop-exit  { animation: lg-backdrop-out 0.25s cubic-bezier(0.4, 0, 1, 1)   forwards; }
 
   /* ── Panel ── */
+  /* Light mode: high-opacity white so text is always legible */
   .lg-panel {
-    background: rgba(255, 255, 255, 0.14);
-    backdrop-filter: saturate(200%) blur(48px) brightness(1.06);
-    -webkit-backdrop-filter: saturate(200%) blur(48px) brightness(1.06);
-    border: 1px solid rgba(255, 255, 255, 0.26);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: saturate(180%) blur(32px) brightness(1.02);
+    -webkit-backdrop-filter: saturate(180%) blur(32px) brightness(1.02);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow:
-      0 2px 0 0 rgba(255,255,255,0.4) inset,
-      0 -1px 0 0 rgba(255,255,255,0.06) inset,
-      1px 0 0 0 rgba(255,255,255,0.12) inset,
-      -1px 0 0 0 rgba(255,255,255,0.12) inset,
-      0 40px 100px rgba(0,0,0,0.22),
-      0 12px 32px rgba(0,0,0,0.14),
-      0 4px 8px rgba(0,0,0,0.08);
+      0 2px 0 0 rgba(255,255,255,0.8) inset,
+      0 -1px 0 0 rgba(0,0,0,0.04) inset,
+      0 40px 100px rgba(0,0,0,0.18),
+      0 12px 32px rgba(0,0,0,0.10),
+      0 4px 8px rgba(0,0,0,0.06);
     will-change: transform, opacity;
+    color: #1a1a1a;
   }
 
+  /* Dark mode: solid enough background to ensure contrast */
   :root.theme-dark-slate .lg-panel,
   :root.theme-dark-green .lg-panel,
   :root.theme-dark-crimson .lg-panel,
   .dark .lg-panel {
-    background: rgba(22, 22, 30, 0.62);
+    background: rgba(28, 28, 36, 0.96);
     border-color: rgba(255, 255, 255, 0.10);
     box-shadow:
-      0 2px 0 0 rgba(255,255,255,0.14) inset,
-      0 -1px 0 0 rgba(255,255,255,0.04) inset,
-      1px 0 0 0 rgba(255,255,255,0.06) inset,
-      -1px 0 0 0 rgba(255,255,255,0.06) inset,
-      0 40px 100px rgba(0,0,0,0.55),
-      0 12px 32px rgba(0,0,0,0.35),
-      0 4px 8px rgba(0,0,0,0.2);
+      0 2px 0 0 rgba(255,255,255,0.08) inset,
+      0 -1px 0 0 rgba(255,255,255,0.03) inset,
+      0 40px 100px rgba(0,0,0,0.60),
+      0 12px 32px rgba(0,0,0,0.40),
+      0 4px 8px rgba(0,0,0,0.24);
+    color: #e8e8ec;
   }
 
   /* ── Animation variants ── */
@@ -194,38 +187,54 @@ const LIQUID_GLASS_CSS = `
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255,255,255,0.7) 35%,
-      rgba(255,255,255,0.7) 65%,
+      rgba(255,255,255,0.9) 35%,
+      rgba(255,255,255,0.9) 65%,
       transparent
     );
     pointer-events: none;
-    opacity: 0.8;
+    opacity: 0.6;
     z-index: 1;
+  }
+
+  /* ── Title & subtitle ── */
+  .lg-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    color: #111111;
+  }
+  .dark .lg-title,
+  :root.theme-dark-slate .lg-title,
+  :root.theme-dark-green .lg-title,
+  :root.theme-dark-crimson .lg-title {
+    color: #f0f0f4;
+  }
+
+  .lg-subtitle {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    margin-top: 0.2rem;
+    color: #555560;
+  }
+  .dark .lg-subtitle,
+  :root.theme-dark-slate .lg-subtitle,
+  :root.theme-dark-green .lg-subtitle,
+  :root.theme-dark-crimson .lg-subtitle {
+    color: #9898a8;
   }
 
   /* ── Dividers ── */
   .lg-divider {
     height: 1px;
     flex-shrink: 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255,255,255,0.22) 25%,
-      rgba(255,255,255,0.22) 75%,
-      transparent 100%
-    );
+    background: rgba(0, 0, 0, 0.08);
   }
   :root.theme-dark-slate .lg-divider,
   :root.theme-dark-green .lg-divider,
   :root.theme-dark-crimson .lg-divider,
   .dark .lg-divider {
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255,255,255,0.09) 25%,
-      rgba(255,255,255,0.09) 75%,
-      transparent 100%
-    );
+    background: rgba(255, 255, 255, 0.09);
   }
 
   /* ── Drag handle ── */
@@ -233,10 +242,16 @@ const LIQUID_GLASS_CSS = `
     width: 36px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(150,150,160,0.38);
+    background: rgba(0, 0, 0, 0.18);
     margin: 10px auto 4px;
     flex-shrink: 0;
     animation: lg-handle-pulse 2.5s ease-in-out 0.6s infinite;
+  }
+  .dark .lg-handle,
+  :root.theme-dark-slate .lg-handle,
+  :root.theme-dark-green .lg-handle,
+  :root.theme-dark-crimson .lg-handle {
+    background: rgba(255, 255, 255, 0.22);
   }
 
   /* ── Close button ── */
@@ -247,26 +262,36 @@ const LIQUID_GLASS_CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(120,120,135,0.20);
-    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(0, 0, 0, 0.07);
+    border: 1px solid rgba(0, 0, 0, 0.10);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    color: rgba(120,120,135,0.9);
+    color: #444450;
     cursor: pointer;
     flex-shrink: 0;
     transition: background 0.15s, border-color 0.15s, transform 0.15s, color 0.15s;
     touch-action: manipulation;
   }
   .lg-close:hover {
-    background: rgba(120,120,135,0.32);
-    border-color: rgba(255,255,255,0.28);
-    color: rgba(60,60,70,0.9);
+    background: rgba(0, 0, 0, 0.13);
+    border-color: rgba(0, 0, 0, 0.18);
+    color: #111111;
+  }
+  :root.theme-dark-slate .lg-close,
+  :root.theme-dark-green .lg-close,
+  :root.theme-dark-crimson .lg-close,
+  .dark .lg-close {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #b0b0c0;
   }
   :root.theme-dark-slate .lg-close:hover,
   :root.theme-dark-green .lg-close:hover,
   :root.theme-dark-crimson .lg-close:hover,
   .dark .lg-close:hover {
-    color: rgba(220,220,230,0.9);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.24);
+    color: #e8e8f0;
   }
   .lg-close:active { transform: scale(0.88); }
 
@@ -274,8 +299,14 @@ const LIQUID_GLASS_CSS = `
   .lg-body::-webkit-scrollbar { width: 3px; }
   .lg-body::-webkit-scrollbar-track { background: transparent; }
   .lg-body::-webkit-scrollbar-thumb {
-    background: rgba(120,120,130,0.28);
+    background: rgba(0, 0, 0, 0.16);
     border-radius: 3px;
+  }
+  .dark .lg-body::-webkit-scrollbar-thumb,
+  :root.theme-dark-slate .lg-body::-webkit-scrollbar-thumb,
+  :root.theme-dark-green .lg-body::-webkit-scrollbar-thumb,
+  :root.theme-dark-crimson .lg-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
   }
 
   /* ── Reduced motion ── */
@@ -324,16 +355,14 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   const prevFocus = useRef<HTMLElement | null>(null);
   const [phase, setPhase] = useState<'closed' | 'entering' | 'open' | 'exiting'>('closed');
   const modalId = React.useRef(`modal-${Date.now()}-${++modalInstanceCount}`);
-  
-  // Scroll lock and instance tracking
+
   React.useEffect(() => {
     const id = modalId.current;
     if (isOpen) {
       lockScroll(id);
     } else {
-      setTimeout(() => unlockScroll(id), 10); // Small timeout to ensure it runs after phase update
+      setTimeout(() => unlockScroll(id), 10);
     }
-    
     return () => {
       setTimeout(() => unlockScroll(id), 10);
     };
@@ -347,57 +376,36 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   // ── Phase management ──────────────────────────────────────────────────────
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
-  
+
     if (isOpen) {
       if (phase === 'closed') {
         prevFocus.current = document.activeElement as HTMLElement;
         setPhase('entering');
-        timeoutId = setTimeout(() => {
-          setPhase('open');
-          console.log('[BaseModal] Phase transition: open', modalId.current);
-        }, 520);
+        timeoutId = setTimeout(() => setPhase('open'), 520);
       }
     } else if (phase !== 'closed') {
-      // Make sure we trigger exiting if we're not closed yet
-      if (phase !== 'exiting') {
-        setPhase('exiting');
-      }
-      
-      // Always set a timeout to clean up to 'closed' when not isOpen
+      if (phase !== 'exiting') setPhase('exiting');
       timeoutId = setTimeout(() => {
         setPhase('closed');
         prevFocus.current?.focus();
-        console.log('[BaseModal] Phase transition: closed', modalId.current);
       }, 300);
     }
-  
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
+
+    return () => { if (timeoutId) clearTimeout(timeoutId); };
   }, [isOpen, phase]);
 
-// ── Focus first focusable element ─────────────────────────────────────────
+  // ── Focus first focusable element ─────────────────────────────────────────
   useEffect(() => {
     if (phase === 'entering') {
       const firstInput = modalRef.current?.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea');
       const firstAny = modalRef.current?.querySelector<HTMLElement>(FOCUSABLE);
-      const target = firstInput || firstAny;
-      if (target) {
-        target.focus();
-      }
+      (firstInput || firstAny)?.focus();
     }
   }, [phase]);
 
-
   // ── Keyboard trap ─────────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-      if (e.key === 'Escape' && closeOnEscape) {
-        console.log('[BaseModal] Escape key pressed, triggering onClose');
-        onClose();
-        return;
-      }
+    if (e.key === 'Escape' && closeOnEscape) { onClose(); return; }
     if (e.key === 'Tab' && modalRef.current) {
       const all = Array.from(modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
       if (!all.length) return;
@@ -429,16 +437,14 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
   const wrapperAlign = isSidebar
     ? 'items-stretch justify-end p-0'
     : 'items-end justify-center p-0';
-  
+
   const panelShape = isSidebar
     ? 'h-full max-h-screen w-full max-w-xs rounded-none'
-    : `w-full ${SIZE_CLASSES[size]} mx-0 sm:mx-auto rounded-t-[32px]`;
-  
-  // 計算 z-index：最後開啟的 modal 有最高的 z-index
+    : `w-full ${SIZE_CLASSES[size]} mx-0 sm:mx-auto rounded-t-[28px] sm:rounded-[20px] sm:mb-8`;
+
   const activeModalCount = activeModals.size;
   const zIndex = 9999 + (activeModalCount > 0 ? activeModalCount - 1 : 0);
-  console.log('[BaseModal] Rendering modal:', modalId.current, 'zIndex:', zIndex, 'phase:', phase, 'activeModalCount:', activeModalCount);
-  
+
   return createPortal(
     <div
       className={`fixed inset-0 flex overscroll-contain ${wrapperAlign} ${className}`}
@@ -448,10 +454,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
       aria-describedby={ariaDescribedBy}
       style={{ zIndex }}
       onClick={closeOnBackdropClick ? (e) => {
-        if (e.target === e.currentTarget) {
-          console.log('[BaseModal] Backdrop clicked on modal:', modalId.current, 'trigger onClose');
-          onClose();
-        }
+        if (e.target === e.currentTarget) onClose();
       } : undefined}
     >
       {/* ── Backdrop ───────────────────────────────────────────────────── */}
@@ -459,7 +462,7 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
         aria-hidden="true"
         className={`lg-backdrop ${isExiting ? 'lg-backdrop-exit' : 'lg-backdrop-enter'}`}
         style={{
-          background: 'radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.28), rgba(0,0,0,0.52))',
+          background: 'radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.30), rgba(0,0,0,0.55))',
         }}
       />
 
@@ -491,11 +494,11 @@ export const BaseModal: React.FC<BaseModalProps> = memo(({
             `}>
               {title ? (
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-base font-bold tracking-tight leading-snug text-[rgb(var(--color-text-rgb))]">
+                  <h2 className="lg-title">
                     {title}
                   </h2>
                   {subtitle && (
-                    <p className="mt-0.5 text-xs leading-snug text-[rgb(var(--color-text-muted-rgb))] opacity-75">
+                    <p className="lg-subtitle">
                       {subtitle}
                     </p>
                   )}
