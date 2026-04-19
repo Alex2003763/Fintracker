@@ -332,7 +332,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                         />
                         <Tooltip
                           contentStyle={tooltipStyle}
-                          formatter={(value: number, name: string) => [formatCurrency(value), name]}
+                          formatter={(value: number, name: string) => [formatCurrency(value, user.currency), name]}
                         />
                         <Legend wrapperStyle={{ fontSize: 12 }} />
                         <Bar dataKey="income" name="Income" fill={incomeColor} radius={[4, 4, 0, 0]} maxBarSize={48} />
@@ -389,7 +389,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                       />
                       <Tooltip
                         contentStyle={tooltipStyle}
-                        formatter={(value: number) => [formatCurrency(value), 'Net Worth']}
+                        formatter={(value: number) => [formatCurrency(value, user.currency), 'Net Worth']}
                       />
                       <Area
                         type="monotone"
@@ -412,7 +412,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     <div key={label} className="rounded-xl p-3 flex flex-col gap-1" style={{ background: 'rgba(128,128,128,0.07)' }}>
                       <span className="text-xs" style={{ color: chartTextColor }}>{label}</span>
                       <span className="text-base font-bold" style={{ color: value >= 0 ? incomeColor : expenseColor }}>
-                        {formatCurrency(value)}
+                        {formatCurrency(value, user.currency)}
                       </span>
                     </div>
                   ))}
