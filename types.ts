@@ -146,6 +146,31 @@ export interface NotificationSettings {
     };
 }
 
+// Supported currencies
+export type CurrencyCode =
+  | 'USD' | 'HKD' | 'EUR' | 'GBP' | 'JPY' | 'CNY'
+  | 'AUD' | 'CAD' | 'SGD' | 'KRW' | 'TWD' | 'MYR'
+  | 'THB' | 'INR' | 'CHF' | 'NZD' | 'SEK' | 'NOK';
+
+export interface CurrencyOption {
+  code: CurrencyCode;
+  symbol: string;
+  name: string;
+  locale: string;
+}
+
+// Net Worth entry — manually added assets / liabilities
+export interface NetWorthEntry {
+  id: string;
+  name: string;
+  type: 'asset' | 'liability';
+  category: 'cash' | 'investment' | 'property' | 'vehicle' | 'other_asset'
+           | 'credit_card' | 'loan' | 'mortgage' | 'other_liability';
+  amount: number;
+  note?: string;
+  updatedAt: string; // ISO date string
+}
+
 export interface User {
     username: string;
     salt: string; // Stored as base64
@@ -153,6 +178,7 @@ export interface User {
     avatar?: string; // base64 encoded image
     biometricEnabled?: boolean;
     biometricCredentialId?: string; // Base64URL string
+    currency?: CurrencyCode; // Preferred currency, defaults to 'USD'
     aiSettings?: {
         apiKey: string;
         model: string;
@@ -166,6 +192,7 @@ export interface User {
         expense: { [key: string]: SubCategory[] };
         income: { [key: string]: SubCategory[] };
     }; // User's custom category structure
+    netWorthEntries?: NetWorthEntry[]; // User's assets and liabilities
 }
 
 export interface SubCategory {
