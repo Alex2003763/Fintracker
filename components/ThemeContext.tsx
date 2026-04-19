@@ -9,6 +9,7 @@ export const THEMES = [
   { id: 'theme-sunset-orange', name: 'Sunset Orange' },
   { id: 'theme-purple', name: 'Purple' },
   { id: 'theme-midnight-black', name: 'Midnight Black' },
+  { id: 'theme-pixel', name: 'Pixel 🎮' },
 ];
 
 interface ThemeContextType {
@@ -23,10 +24,8 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<string>(() => {
     if (typeof window === 'undefined' || !window.localStorage) return 'theme-light';
-    // Migration: Check for old key first
     const oldTheme = localStorage.getItem('financeFlowTheme');
     if (oldTheme && THEMES.some(t => t.id === oldTheme)) {
-      // Migrate to new key
       localStorage.setItem('fintrackTheme', oldTheme);
       localStorage.removeItem('financeFlowTheme');
       return oldTheme;
@@ -39,10 +38,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [customBackground, setCustomBackground] = useState<string | null>(() => {
     if (typeof window === 'undefined' || !window.localStorage) return null;
-    // Migration: Check for old key first
     const oldBackground = localStorage.getItem('financeFlowCustomBackground');
     if (oldBackground) {
-      // Migrate to new key
       localStorage.setItem('fintrackCustomBackground', oldBackground);
       localStorage.removeItem('financeFlowCustomBackground');
       return oldBackground;
