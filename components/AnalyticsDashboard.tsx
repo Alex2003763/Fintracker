@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction, Budget, User } from '../types';
 import { Category } from '../types/category';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
-import { SparklesIcon, TrendingUpIcon, PieChartIcon, ArrowRightIcon, DownloadIcon } from './icons';
+import { SparklesIcon, TrendingUpIcon, PieChartIcon, ArrowRightIcon, DownloadIcon, WalletIcon, ChevronDownIcon, ReportsIcon } from './icons';
 import ReportExportModal from './ReportExportModal';
 import { useTheme } from './ThemeContext';
 import { formatCurrency } from '../utils/formatters';
@@ -183,34 +183,95 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     color: isDark ? '#cdccca' : '#28251d',
   };
 
+  const TAB_META: { id: TabId; label: string; shortLabel: string; icon: React.ReactNode }[] = [
+    { id: 'overview',    label: 'Overview',    shortLabel: 'Overview',  icon: <ReportsIcon className="h-4 w-4 shrink-0" /> },
+    { id: 'trends',      label: 'Trends',      shortLabel: 'Trends',    icon: <TrendingUpIcon className="h-4 w-4 shrink-0" /> },
+    { id: 'forecasting', label: 'Forecasting', shortLabel: 'Forecast',  icon: <SparklesIcon className="h-4 w-4 shrink-0" /> },
+    { id: 'net worth',   label: 'Net Worth',   shortLabel: 'Net Worth', icon: <WalletIcon className="h-4 w-4 shrink-0" /> },
+  ];
+  const activeMeta = TAB_META.find((t) => t.id === activeTab)!;
+
   return (
     <div className="flex flex-col gap-6 pb-20 md:pb-6 max-w-7xl mx-auto animate-fade-in-up">
 
-      {/* Header row */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex space-x-1 bg-[rgb(var(--color-card-muted-rgb))] p-1 rounded-xl overflow-x-auto">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap capitalize ${
-                activeTab === tab
-                  ? 'bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))] shadow-sm'
-                  : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] hover:bg-[rgba(var(--color-text-rgb),0.05)]'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+      {/* ── Tab header ── */}
+      <div className="flex items-center gap-2">
+
+        {/* Mobile: icon-prefixed dropdown */}
+        <div className="relative flex-1 sm:hidden">
+          <span
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 flex items-center"
+            style={{ color: 'rgb(var(--color-primary-rgb))' }}
+          >
+            {activeMeta.icon}
+          </span>
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as TabId)}
+            className="w-full appearance-none pl-9 pr-9 py-2.5 rounded-xl text-sm font-semibold outline-none cursor-pointer"
+            style={{
+              background: 'rgb(var(--color-card-muted-rgb))',
+              color: 'rgb(var(--color-primary-rgb))',
+              border: '1.5px solid rgba(var(--color-primary-rgb), 0.4)',
+            }}
+          >
+            {TAB_META.map(({ id, shortLabel }) => (
+              <option
+                key={id}
+                value={id}
+                style={{ background: 'rgb(var(--color-card-rgb))', color: 'rgb(var(--color-text-rgb))' }}
+              >
+                {shortLabel}
+              </option>
+            ))}
+          </select>
+          <ChevronDownIcon
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4"
+            style={{ color: 'rgb(var(--color-primary-rgb))' }}
+          />
         </div>
+
+        {/* Desktop: pill tab bar with icons */}
+        <div className="hidden sm:flex flex-1 gap-1 bg-[rgb(var(--color-card-muted-rgb))] p-1 rounded-xl">
+          {TAB_META.map(({ id, label, icon }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap"
+                style={isActive
+                  ? {
+                      background: 'rgb(var(--color-primary-rgb))',
+                      color: 'rgb(var(--color-primary-text-rgb))',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
+                    }
+                  : {
+                      background: 'transparent',
+                      color: 'rgb(var(--color-text-muted-rgb))',
+                    }}
+              >
+                {icon}
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Export button */}
         <button
           onClick={() => setIsExportModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
-          style={{ background: 'rgba(128,128,128,0.1)', color: 'var(--color-text)' }}
+          className="shrink-0 flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+          style={{
+            background: 'rgb(var(--color-card-muted-rgb))',
+            color: 'rgb(var(--color-text-rgb))',
+            border: '1px solid rgba(var(--color-border-rgb,128 128 128), 0.35)',
+          }}
         >
           <DownloadIcon className="h-4 w-4" />
-          Export Report
+          <span className="hidden sm:inline">Export Report</span>
         </button>
+
       </div>
 
       {/* OVERVIEW */}
