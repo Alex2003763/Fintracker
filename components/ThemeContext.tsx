@@ -10,6 +10,7 @@ export const THEMES = [
   { id: 'theme-purple', name: 'Purple' },
   { id: 'theme-midnight-black', name: 'Midnight Black' },
   { id: 'theme-pixel', name: 'Pixel 🎮' },
+  { id: 'theme-cyberpunk', name: 'Cyberpunk 🌆' },
 ];
 
 interface ThemeContextType {
