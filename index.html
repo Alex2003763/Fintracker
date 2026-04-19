@@ -30,8 +30,43 @@
          const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
          document.documentElement.className = isDarkMode ? 'theme-dark-slate' : 'theme-light';
        }
+    </script>
 
-     </script>
+    <style>
+      /* Initial loader — uses theme CSS variables so it always matches the user's chosen theme */
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgb(var(--color-bg-rgb));
+        z-index: 9999;
+      }
+      .loader-ring {
+        position: absolute;
+        width: 6rem;
+        height: 6rem;
+        border-radius: 9999px;
+        background-color: rgba(var(--color-primary-rgb), 0.2);
+        animation: loader-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
+      .loader-icon {
+        position: relative;
+        width: 4rem;
+        height: 4rem;
+        color: rgb(var(--color-primary-rgb));
+        animation: loader-pulse 2s ease-in-out infinite;
+      }
+      @keyframes loader-ping {
+        75%, 100% { transform: scale(2); opacity: 0; }
+      }
+      @keyframes loader-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+    </style>
+
     <script type="importmap">
 {
   "imports": {
@@ -48,9 +83,9 @@
   <body>
     <div id="root">
       <div id="initial-loader">
-        <div class="relative flex items-center justify-center">
-          <div class="absolute h-24 w-24 rounded-full bg-green-500/20 animate-ping"></div>
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-500 pulsating-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+          <div class="loader-ring"></div>
+          <svg class="loader-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
           </svg>
         </div>
