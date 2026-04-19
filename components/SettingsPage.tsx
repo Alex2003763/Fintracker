@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, NotificationSettings } from '../types';
+import { CURRENCIES } from '../utils/formatters';
 import { useTheme, THEMES } from './ThemeContext';
 import {
   SparklesIcon, BellIcon, SettingsIcon, UserIcon,
@@ -533,7 +534,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
           </div>
 
-          {/* Card Background */}
+          {/* Currency */}           <div className="pt-4 border-t border-[rgb(var(--color-border-rgb))] space-y-3">             <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Currency</label>             <select               value={user.currency || 'USD'}               onChange={e => onUpdateUser({ ...user, currency: e.target.value as any })}               className="w-full p-3.5 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none text-[rgb(var(--color-text-rgb))] text-base appearance-none"               style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '18px' }}             >               {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol} {c.name} ({c.code})</option>)}             </select>           </div>            {/* Card Background */}
           <div className="pt-4 border-t border-[rgb(var(--color-border-rgb))] space-y-3">
             <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Card Background</label>
             {customBackground ? (
