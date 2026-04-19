@@ -1,9 +1,42 @@
+import { CurrencyCode, CurrencyOption } from '../types';
 
-export const formatCurrency = (amount: number): string => {
-  return amount.toLocaleString('en-US', {
+// All supported currencies with locale + symbol info
+export const CURRENCIES: CurrencyOption[] = [
+  { code: 'USD', symbol: '$',  name: 'US Dollar',          locale: 'en-US' },
+  { code: 'HKD', symbol: 'HK$', name: 'Hong Kong Dollar',  locale: 'zh-HK' },
+  { code: 'EUR', symbol: '€',  name: 'Euro',               locale: 'de-DE' },
+  { code: 'GBP', symbol: '£',  name: 'British Pound',      locale: 'en-GB' },
+  { code: 'JPY', symbol: '¥',  name: 'Japanese Yen',       locale: 'ja-JP' },
+  { code: 'CNY', symbol: '¥',  name: 'Chinese Yuan',       locale: 'zh-CN' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar',  locale: 'en-AU' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar',    locale: 'en-CA' },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar',   locale: 'en-SG' },
+  { code: 'KRW', symbol: '₩',  name: 'Korean Won',         locale: 'ko-KR' },
+  { code: 'TWD', symbol: 'NT$',name: 'Taiwan Dollar',      locale: 'zh-TW' },
+  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit',  locale: 'ms-MY' },
+  { code: 'THB', symbol: '฿',  name: 'Thai Baht',          locale: 'th-TH' },
+  { code: 'INR', symbol: '₹',  name: 'Indian Rupee',       locale: 'en-IN' },
+  { code: 'CHF', symbol: 'Fr', name: 'Swiss Franc',        locale: 'de-CH' },
+  { code: 'NZD', symbol: 'NZ$',name: 'New Zealand Dollar', locale: 'en-NZ' },
+  { code: 'SEK', symbol: 'kr', name: 'Swedish Krona',      locale: 'sv-SE' },
+  { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone',    locale: 'nb-NO' },
+];
+
+// Currency-aware formatter — falls back to USD if no currency given
+export const formatCurrency = (amount: number, currency?: CurrencyCode | string): string => {
+  const code = (currency || 'USD') as string;
+  const opt = CURRENCIES.find(c => c.code === code);
+  const locale = opt?.locale || 'en-US';
+  return amount.toLocaleString(locale, {
     style: 'currency',
-    currency: 'USD',
+    currency: code,
   });
+};
+
+// Convenience: get just the symbol for a currency code
+export const getCurrencySymbol = (currency?: CurrencyCode | string): string => {
+  const opt = CURRENCIES.find(c => c.code === (currency || 'USD'));
+  return opt?.symbol || '$';
 };
 
 export const parseQuickAddInput = (input: string): { description: string, amount: number } | null => {
