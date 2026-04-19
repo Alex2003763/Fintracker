@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDownIcon, ChevronUpIcon } from './icons';
 
+// Only rendered in development builds — never ships to production
+if (!import.meta.env.DEV) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (globalThis as any).__swDebugPanelGuard = true;
+}
+
 interface CacheInfo {
   name: string;
   size: number;
@@ -17,6 +23,9 @@ interface ServiceWorkerInfo {
 }
 
 const ServiceWorkerDebugPanel: React.FC = () => {
+  // Hard-bail in production — component returns null immediately
+  if (!import.meta.env.DEV) return null;
+
   const [swInfo, setSwInfo] = useState<ServiceWorkerInfo>({
     isSupported: false,
     isRegistered: false,
@@ -57,7 +66,6 @@ const ServiceWorkerDebugPanel: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Check if service workers are supported
       const isSupported = 'serviceWorker' in navigator;
 
       if (!isSupported) {
@@ -66,11 +74,9 @@ const ServiceWorkerDebugPanel: React.FC = () => {
         return;
       }
 
-      // Check registration status
       const registration = await navigator.serviceWorker.getRegistration();
 
       if (registration) {
-        // Get cache information
         const cacheNames = await caches.keys();
         const cacheInfos: CacheInfo[] = [];
         let totalSize = 0;
@@ -81,9 +87,8 @@ const ServiceWorkerDebugPanel: React.FC = () => {
             const keys = await cache.keys();
             const entryCount = keys.length;
 
-            // Estimate cache size (this is approximate)
             let size = 0;
-            for (const request of keys.slice(0, 10)) { // Sample first 10 entries
+            for (const request of keys.slice(0, 10)) {
               const response = await cache.match(request);
               if (response) {
                 const blob = await response.blob();
