@@ -127,6 +127,25 @@
   --gradient-to-rgb: 18 18 38;
 }
 
+/* ── Cyberpunk Theme ── */
+:root.theme-cyberpunk {
+  --color-bg-rgb: 13 13 26;
+  --color-card-rgb: 18 18 31;
+  --color-card-muted-rgb: 26 26 46;
+  --color-text-rgb: 232 232 240;
+  --color-text-muted-rgb: 136 136 170;
+  --color-border-rgb: 42 42 74;
+  --color-primary-rgb: 245 230 66;
+  --color-primary-hover-rgb: 255 243 110;
+  --color-primary-text-rgb: 13 13 26;
+  --color-primary-subtle-text-rgb: 0 245 255;
+  --gradient-from-rgb: 26 26 46;
+  --gradient-to-rgb: 18 18 31;
+}
+
+/* Load theme fonts */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
 /* Pixel theme: Press Start 2P font + hard pixel borders */
 :root.theme-pixel body,
 :root.theme-pixel * {
@@ -134,8 +153,23 @@
   image-rendering: pixelated;
 }
 
-/* Load pixel font */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+/* Cyberpunk theme fonts */
+:root.theme-cyberpunk body {
+  font-family: 'Share Tech Mono', monospace !important;
+}
+:root.theme-cyberpunk h1,
+:root.theme-cyberpunk h2,
+:root.theme-cyberpunk h3,
+:root.theme-cyberpunk h4,
+:root.theme-cyberpunk .text-2xl,
+:root.theme-cyberpunk .text-3xl,
+:root.theme-cyberpunk .text-4xl,
+:root.theme-cyberpunk .text-5xl,
+:root.theme-cyberpunk .font-bold,
+:root.theme-cyberpunk .font-extrabold {
+  font-family: 'Orbitron', sans-serif !important;
+  letter-spacing: 0.04em;
+}
 
 /* Pixel theme: grid background + scanlines */
 :root.theme-pixel body {
@@ -143,6 +177,15 @@
     linear-gradient(rgba(0,255,136,0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0,255,136,0.05) 1px, transparent 1px) !important;
   background-size: 16px 16px !important;
+}
+
+/* Cyberpunk theme: neon grid background */
+:root.theme-cyberpunk body {
+  background-color: rgb(var(--color-bg-rgb)) !important;
+  background-image:
+    linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px) !important;
+  background-size: 40px 40px !important;
 }
 
 /* CRT scanline overlay */
@@ -161,7 +204,47 @@
   );
 }
 
-/* Pixel cards: hard box-shadow offset, no blur */
+/* Cyberpunk scanline overlay */
+:root.theme-cyberpunk body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255,255,255,0.015) 0px,
+    rgba(255,255,255,0.015) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+/* Cyberpunk moving scanline */
+:root.theme-cyberpunk body::before {
+  content: '';
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 3px;
+  pointer-events: none;
+  z-index: 9999;
+  background: linear-gradient(90deg, transparent, rgba(0,245,255,0.45), transparent);
+  animation: cyberpunk-scanline 4s linear infinite;
+}
+
+@keyframes cyberpunk-scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes cyberpunk-flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: 0.65; }
+}
+
+/* Pixel cards */
 :root.theme-pixel .card-base {
   border-radius: 0 !important;
   border: 2px solid rgb(var(--color-border-rgb)) !important;
@@ -173,10 +256,49 @@
   transform: translate(-1px, -1px);
 }
 
+/* Cyberpunk cards */
+:root.theme-cyberpunk .card-base {
+  background: linear-gradient(180deg, rgba(18,18,31,0.96), rgba(26,26,46,0.92)) !important;
+  border: 1px solid rgba(0,245,255,0.14) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.02),
+    0 0 0 1px rgba(42,42,74,0.5),
+    0 8px 24px rgba(0,0,0,0.35) !important;
+  position: relative;
+  overflow: hidden;
+}
+:root.theme-cyberpunk .card-base::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(0,245,255,0.05), transparent 35%, transparent 65%, rgba(255,45,120,0.05));
+}
+:root.theme-cyberpunk .card-base:hover {
+  border-color: rgba(245,230,66,0.35) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.03),
+    0 0 18px rgba(0,245,255,0.08),
+    0 0 28px rgba(255,45,120,0.05),
+    0 12px 32px rgba(0,0,0,0.42) !important;
+  transform: translateY(-1px);
+}
+
 /* Pixel buttons */
 :root.theme-pixel button,
 :root.theme-pixel [role="button"] {
   border-radius: 0 !important;
+}
+
+/* Cyberpunk buttons */
+:root.theme-cyberpunk button,
+:root.theme-cyberpunk [role="button"] {
+  border-radius: 0.9rem !important;
+}
+:root.theme-cyberpunk .atm-btn-submit,
+:root.theme-cyberpunk button.bg-blue-600,
+:root.theme-cyberpunk button[class*="bg-"] {
+  box-shadow: 0 0 18px rgba(245,230,66,0.18);
 }
 
 /* Pixel inputs */
@@ -188,10 +310,32 @@
   caret-color: rgb(var(--color-primary-rgb));
 }
 
-/* Pixel scrollbar */
+/* Cyberpunk inputs */
+:root.theme-cyberpunk input,
+:root.theme-cyberpunk select,
+:root.theme-cyberpunk textarea {
+  background: rgba(12, 12, 24, 0.92) !important;
+  border: 1px solid rgba(0,245,255,0.16) !important;
+  color: rgb(var(--color-text-rgb)) !important;
+  caret-color: rgb(var(--color-primary-rgb));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.01);
+}
+:root.theme-cyberpunk input:focus,
+:root.theme-cyberpunk select:focus,
+:root.theme-cyberpunk textarea:focus {
+  border-color: rgba(0,245,255,0.45) !important;
+  box-shadow: 0 0 0 3px rgba(0,245,255,0.12), 0 0 16px rgba(0,245,255,0.08) !important;
+  outline: none;
+}
+
+/* Scrollbars */
 :root.theme-pixel ::-webkit-scrollbar-thumb {
   border-radius: 0;
   background: rgb(var(--color-primary-rgb));
+}
+:root.theme-cyberpunk ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(0,245,255,0.9), rgba(255,45,120,0.9));
+  border-radius: 999px;
 }
 
 body {
@@ -312,6 +456,16 @@ body.modal-open {
   border-radius: 0 !important;
   border: 2px solid rgb(var(--color-border-rgb));
   box-shadow: 6px 6px 0px rgb(var(--color-border-rgb)) !important;
+}
+
+/* Cyberpunk modal overrides */
+:root.theme-cyberpunk .modal-content {
+  background: linear-gradient(180deg, rgba(18,18,31,0.98), rgba(26,26,46,0.96)) !important;
+  border: 1px solid rgba(0,245,255,0.22) !important;
+  box-shadow:
+    0 0 0 1px rgba(42,42,74,0.55),
+    0 0 20px rgba(0,245,255,0.08),
+    0 18px 42px rgba(0,0,0,0.46) !important;
 }
 
 @media (min-width: 768px) {
