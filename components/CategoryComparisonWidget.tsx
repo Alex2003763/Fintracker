@@ -126,7 +126,7 @@ const CategoryComparisonWidget: React.FC<CategoryComparisonWidgetProps> = React.
                         tick={{ fill: 'rgb(var(--color-text-muted-rgb))', fontSize: 10 }}
                         tickFormatter={(val) => `${val >= 1000 ? (val/1000).toFixed(0) + 'k' : val}`}
                     />
-                    <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(var(--color-primary-rgb), 0.05)'}} />
+                    <Tooltip wrapperStyle={{ zIndex: 9999 }} content={<CustomTooltip />} cursor={{fill: 'rgba(var(--color-primary-rgb), 0.05)'}} />
                     <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Bar name={comparisonPeriod === 'month' ? 'This Month' : 'This Year'} dataKey="current" fill="#8884d8" radius={[4, 4, 0, 0]} />
                     <Bar name={comparisonPeriod === 'month' ? 'Last Month' : 'Last Year'} dataKey="prev" fill="#82ca9d" radius={[4, 4, 0, 0]} />

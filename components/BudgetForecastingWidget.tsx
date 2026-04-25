@@ -162,7 +162,7 @@ const BudgetForecastingWidget: React.FC<BudgetForecastingWidgetProps> = React.me
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgb(var(--color-border-rgb) / 0.1)'}} />
+              <Tooltip wrapperStyle={{ zIndex: 9999 }} content={<CustomTooltip />} cursor={{fill: 'rgb(var(--color-border-rgb) / 0.1)'}} />
               {/* Background bar for budget limit */}
               <Bar dataKey="budget" barSize={barSize} fill="rgb(var(--color-border-rgb) / 0.2)" radius={[0, 4, 4, 0]} isAnimationActive={false} />
               {/* Projected spending bar */}

@@ -89,11 +89,11 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     thisMonthTx
       .filter((t) => t.type === 'expense')
       .forEach((t) => {
-        const cat = t.categoryId || 'Uncategorized';
+        const cat = t.category || 'Uncategorized';
         categoryTotals[cat] = (categoryTotals[cat] || 0) + t.amount;
       });
     const topCatId = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0]?.[0];
-    const topCategory = categories.find((c) => c.id === topCatId)?.name || topCatId || 'None';
+    const topCategory = categories.find((c) => c.id === topCatId || c.name === topCatId)?.name || topCatId || 'None';
     const pctChange = (curr: number, prev: number) =>
       prev === 0 ? null : ((curr - prev) / prev) * 100;
 
@@ -331,6 +331,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                           width={48}
                         />
                         <Tooltip
+                          wrapperStyle={{ zIndex: 9999 }}
                           contentStyle={tooltipStyle}
                           formatter={(value: number, name: string) => [formatCurrency(value, user.currency), name]}
                         />
@@ -388,6 +389,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                         width={56}
                       />
                       <Tooltip
+                        wrapperStyle={{ zIndex: 9999 }}
                         contentStyle={tooltipStyle}
                         formatter={(value: number) => [formatCurrency(value, user.currency), 'Net Worth']}
                       />

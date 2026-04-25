@@ -141,7 +141,7 @@ const SpendingTrendsWidget: React.FC<SpendingTrendsWidgetProps> = React.memo(({ 
                   tick={{ fill: 'rgb(var(--color-text-muted-rgb))', fontSize: 11 }}
                   tickFormatter={(val) => `${val >= 1000 ? (val/1000).toFixed(0) + 'k' : val}`}
                />
-               <Tooltip content={<CustomTooltip />} />
+               <Tooltip wrapperStyle={{ zIndex: 9999 }} content={<CustomTooltip />} />
                <Area 
                   type="monotone" 
                   dataKey="income" 

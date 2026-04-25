@@ -224,12 +224,12 @@ const PieTooltip = ({ active, payload }: any) => {
       <div className="bg-[rgb(var(--color-card-rgb))] p-3 border border-[rgb(var(--color-border-rgb))] rounded-lg shadow-lg z-50">
         <p className="font-bold text-[rgb(var(--color-text-rgb))]">{data.name}</p>
         <div className="flex justify-between gap-4 mt-1">
-          <span className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Amount:</span>
-          <span className="text-sm font-mono">{formatCurrency(data.value)}</span>
+          <span className="text-sm text-[rgb(var(--color-text-rgb))] opacity-75">Amount:</span>
+          <span className="text-sm font-mono font-semibold text-[rgb(var(--color-text-rgb))]">{formatCurrency(data.value)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Share:</span>
-          <span className="text-sm font-mono">{data.percentage}%</span>
+          <span className="text-sm text-[rgb(var(--color-text-rgb))] opacity-75">Share:</span>
+          <span className="text-sm font-mono text-[rgb(var(--color-text-rgb))]">{data.percentage}%</span>
         </div>
       </div>
     );
@@ -746,7 +746,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
                          tick={{ fill: 'rgb(var(--color-text-muted-rgb))', fontSize: 11 }} 
                          tickFormatter={(value) => `$${value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}`}
                        />
-                       <Tooltip content={<CustomBarTooltip />} cursor={{ fill: 'rgba(var(--color-primary-rgb), 0.05)' }} />
+                       <Tooltip wrapperStyle={{ zIndex: 9999 }} content={<CustomBarTooltip />} cursor={{ fill: 'rgba(var(--color-primary-rgb), 0.05)' }} />
                        <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: '20px' }} />
                        <Bar 
                          dataKey="income" 
@@ -816,11 +816,11 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
                             />
                           ))}
                         </Pie>
-                        <Tooltip content={<PieTooltip />} />
+                        <Tooltip wrapperStyle={{ zIndex: 9999 }} content={<PieTooltip />} />
                       </PieChart>
                     </ResponsiveContainer>
                     {/* Centered Total Text */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-0">
                       <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] font-medium uppercase tracking-wider">Total</p>
                       <p className="text-lg font-bold text-[rgb(var(--color-text-rgb))]">{formatCurrency(totalSpending)}</p>
                     </div>

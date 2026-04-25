@@ -70,11 +70,11 @@ const SavingsRateWidget: React.FC<SavingsRateWidgetProps> = React.memo(({ transa
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <Tooltip wrapperStyle={{ zIndex: 9999 }} formatter={(value: number) => formatCurrency(value)} />
             </PieChart>
           </ResponsiveContainer> 
           {/* Centered Rate Text */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-0">
             <span className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">
               {savingsData.rate}%
             </span>

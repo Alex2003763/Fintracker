@@ -47,13 +47,15 @@ const THEME_COLORS: Record<string, { bg: string; card: string; primary: string; 
   'theme-sunset-orange':  { bg: '#faf5eb', card: '#f5ebdc',  primary: '#be8264', isLight: true },
   'theme-purple':         { bg: '#231e2d', card: '#2d283a',  primary: '#8c78a5', isLight: false },
   'theme-midnight-black': { bg: '#121214', card: '#1c1c20',  primary: '#788ca0', isLight: false },
+  'theme-pixel':          { bg: '#0a0a14', card: '#121226',  primary: '#ffdc00', isLight: false },
+  'theme-cyberpunk':     { bg: '#0d0d1a', card: '#12121f',  primary: '#f5e642', isLight: false },
 };
 
 const ThemePreview: React.FC<{ themeId: string }> = ({ themeId }) => {
   const colors = THEME_COLORS[themeId] || THEME_COLORS['theme-light'];
   return (
     <div
-      className="w-full aspect-video rounded-xl shadow-lg border border-[rgb(var(--color-border-rgb))] overflow-hidden flex flex-col"
+      className="w-full aspect-video rounded-xl shadow-lg border border-[rgb(var(--color-border-rgb))] overflow-hidden flex flex-col relative"
       style={{ backgroundColor: colors.bg }}
     >
       {/* Mock header */}
@@ -73,6 +75,29 @@ const ThemePreview: React.FC<{ themeId: string }> = ({ themeId }) => {
         </div>
       </div>
       {/* Accent ring */}
+      {/* Theme-specific subtle overlays for preview */}
+      {themeId === 'theme-pixel' && (
+        <div
+          className="absolute inset-0 pointer-events-none rounded-xl"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(0,255,136,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.06) 1px, transparent 1px)',
+            backgroundSize: '8px 8px',
+            mixBlendMode: 'overlay'
+          }}
+        />
+      )}
+      {themeId === 'theme-cyberpunk' && (
+        <>
+          <div
+            className="absolute inset-0 pointer-events-none rounded-xl"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 4px)'
+            }}
+          />
+          <div className="absolute left-0 top-0 w-full h-1 pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,245,255,0.30), transparent)' }} />
+        </>
+      )}
+
       <div
         className="absolute inset-0 rounded-xl pointer-events-none"
         style={{ boxShadow: `inset 0 0 0 2px ${colors.primary}20` }}

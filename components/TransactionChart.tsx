@@ -75,6 +75,7 @@ const TransactionChart: React.FC<TransactionChartProps> = ({ transactions }) => 
             hide={true}
           />
           <Tooltip
+            wrapperStyle={{ zIndex: 9999 }}
             contentStyle={{
               backgroundColor: 'rgb(var(--color-card-rgb))',
               border: '1px solid rgb(var(--color-border-rgb))',

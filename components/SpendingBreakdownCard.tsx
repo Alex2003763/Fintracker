@@ -147,7 +147,7 @@ const SpendingBreakdownCard: React.FC<SpendingBreakdownCardProps> = ({ transacti
                     <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                   ))}
                 </Pie>
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip wrapperStyle={{ zIndex: 9999 }} content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
             <div className="w-full px-4 mt-4 space-y-2">
