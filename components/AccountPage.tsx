@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { User, FinancialAccount, AccountType, ACCOUNT_TYPE_META, CurrencyCode, CurrencyOption, NotificationSettings, Transaction, NetWorthEntry } from '../types';
 import { UserIcon, SettingsIcon } from './icons';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
+import Button from './Button';
 
 const APP_VERSION = '1.0.0';
 
@@ -90,9 +91,9 @@ const TransferModal: React.FC<TransferModalProps> = ({ accounts, currencySymbol,
       <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-[rgb(var(--color-text-rgb))]">Transfer Between Accounts</h3>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-[rgb(var(--color-border-rgb))] transition-colors">
+          <Button onClick={onClose} variant="ghost" size="sm" className="p-1 text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))]" aria-label="Close">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -138,10 +139,12 @@ const TransferModal: React.FC<TransferModalProps> = ({ accounts, currencySymbol,
           {error && <p className="text-sm text-red-500">{error}</p>}
 
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-[rgb(var(--color-border-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))]/30 transition-colors font-medium text-[rgb(var(--color-text-rgb))]">Cancel</button>
-            <button type="submit" className="flex-1 px-4 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
+            <Button type="button" onClick={onClose} variant="ghost" size="md" className="flex-1 border border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-border-rgb))]/30">
+              Cancel
+            </Button>
+            <Button type="submit" size="md" className="flex-1">
               Transfer
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -190,9 +193,9 @@ const FinancialAccountModal: React.FC<{
       <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-[rgb(var(--color-text-rgb))]">{account ? 'Edit Account' : 'New Account'}</h3>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-[rgb(var(--color-border-rgb))] transition-colors">
+          <Button onClick={onClose} variant="ghost" size="sm" className="p-1 text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))]" aria-label="Close">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -254,10 +257,12 @@ const FinancialAccountModal: React.FC<{
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-[rgb(var(--color-border-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))]/30 transition-colors font-medium text-[rgb(var(--color-text-rgb))]">Cancel</button>
-            <button type="submit" className="flex-1 px-4 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
+            <Button type="button" onClick={onClose} variant="ghost" size="md" className="flex-1 border border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-border-rgb))]/30">
+              Cancel
+            </Button>
+            <Button type="submit" size="md" className="flex-1">
               {account ? 'Save Changes' : 'Add Account'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -600,14 +605,12 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
                     ? <img src={avatar} alt="User Avatar" className="w-full h-full object-cover" />
                     : <div className="w-full h-full flex items-center justify-center"><UserIcon className="w-14 h-14 text-[rgb(var(--color-text-muted-rgb))]" /></div>}
                 </div>
-                <button onClick={() => fileInputRef.current?.click()} disabled={isLoading.avatar}
-                  className="absolute bottom-0 right-0 p-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-full shadow-md hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors disabled:opacity-50"
-                  aria-label="Upload new profile picture">
+                <Button onClick={() => fileInputRef.current?.click()} variant="primary" size="sm" className="absolute bottom-0 right-0 p-2 rounded-full shadow-md" disabled={isLoading.avatar} aria-label="Upload new profile picture">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                </button>
+                </Button>
                 <input type="file" accept="image/*" ref={fileInputRef} onChange={handleAvatarUpload} className="hidden" />
               </div>
               {isLoading.avatar && <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Uploading...</p>}
@@ -629,10 +632,9 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
               {usernameMessage.text && (
                 <p className={`text-sm ${usernameMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`} role="alert">{usernameMessage.text}</p>
               )}
-              <button type="submit" disabled={isLoading.username}
-                className="w-full px-4 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] disabled:opacity-50 transition-colors font-medium">
+              <Button type="submit" disabled={isLoading.username} className="w-full">
                 {isLoading.username ? 'Updating...' : 'Update Username'}
-              </button>
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -668,10 +670,9 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
                 {passwordMessage.text && (
                   <p className={`text-sm ${passwordMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`} role="alert">{passwordMessage.text}</p>
                 )}
-                <button type="submit" disabled={isLoading.password}
-                  className="w-full px-4 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] disabled:opacity-50 transition-colors font-medium">
+                <Button type="submit" disabled={isLoading.password} className="w-full">
                   {isLoading.password ? 'Changing...' : 'Change Password'}
-                </button>
+                </Button>
               </form>
             </CardContent>
           </Card>
@@ -709,10 +710,9 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={handleSaveCurrency}
-              className="px-6 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
+            <Button onClick={handleSaveCurrency} className="px-6">
               Save Currency
-            </button>
+            </Button>
             {currencyMessage && <span className="text-sm text-green-600">{currencyMessage}</span>}
           </div>
         </CardContent>
@@ -725,17 +725,15 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
             <CardTitle>Financial Accounts</CardTitle>
             <div className="flex items-center gap-2">
               {activeAccounts.length >= 2 && (
-                <button onClick={() => setShowTransferModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 border border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-rgb))] rounded-lg hover:border-[rgb(var(--color-primary-rgb))] transition-colors text-sm font-medium">
+                <Button onClick={() => setShowTransferModal(true)} variant="ghost" size="sm" className="border border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
                   Transfer
-                </button>
+                </Button>
               )}
-              <button onClick={() => { setEditingAccount(null); setShowAccountModal(true); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors text-sm font-medium">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                Add Account
-              </button>
+               <Button onClick={() => { setEditingAccount(null); setShowAccountModal(true); }} size="sm" className="gap-1.5">
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                 Add Account
+               </Button>
             </div>
           </div>
         </CardHeader>
@@ -822,25 +820,22 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
                       )}
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => { setEditingAccount(acc); setShowAccountModal(true); }} title="Edit"
-                        className="p-1.5 rounded-lg hover:bg-[rgb(var(--color-border-rgb))] transition-colors text-[rgb(var(--color-text-muted-rgb))]">
+                      <Button onClick={() => { setEditingAccount(acc); setShowAccountModal(true); }} variant="ghost" size="sm" title="Edit" className="p-1.5 text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))]">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                      </button>
-                      <button onClick={() => handleToggleArchive(acc.id)} title={acc.isArchived ? 'Unarchive' : 'Archive'}
-                        className="p-1.5 rounded-lg hover:bg-[rgb(var(--color-border-rgb))] transition-colors text-[rgb(var(--color-text-muted-rgb))]">
+                      </Button>
+                      <Button onClick={() => handleToggleArchive(acc.id)} variant="ghost" size="sm" title={acc.isArchived ? 'Unarchive' : 'Archive'} className="p-1.5 text-[rgb(var(--color-text-muted-rgb))] hover:bg-[rgb(var(--color-border-rgb))]">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
-                      </button>
+                      </Button>
                       {deleteConfirmId === acc.id ? (
                         <div className="flex items-center gap-1">
-                          <button onClick={() => handleDeleteAccount(acc.id)} className="px-2 py-1 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">Delete</button>
-                          <button onClick={() => setDeleteConfirmId(null)} className="px-2 py-1 text-xs bg-[rgb(var(--color-border-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))]/70 transition-colors">Cancel</button>
+                          <Button onClick={() => handleDeleteAccount(acc.id)} variant="danger" size="sm" className="px-2 py-1 text-xs active:scale-[0.98]">Delete</Button>
+                          <Button onClick={() => setDeleteConfirmId(null)} variant="secondary" size="sm" className="px-2 py-1 text-xs border border-[rgb(var(--color-border-rgb))] hover:bg-[rgb(var(--color-card-muted-rgb))] active:scale-[0.98]">Cancel</Button>
                         </div>
                       ) : (
-                        <button onClick={() => setDeleteConfirmId(acc.id)} title="Delete"
-                          className="p-1.5 rounded-lg hover:bg-red-100 hover:text-red-600 transition-colors text-[rgb(var(--color-text-muted-rgb))]">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      )}
+                         <Button onClick={() => setDeleteConfirmId(acc.id)} variant="ghost" size="sm" title="Delete" className="p-1.5 text-[rgb(var(--color-text-muted-rgb))] hover:bg-red-100 hover:text-red-600">
+                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                         </Button>
+                       )}
                     </div>
                   </div>
                 );
@@ -874,10 +869,9 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
           </div>
 
           <div className="flex items-center gap-3">
-            <button onClick={handleSaveSmartFeatures}
-              className="px-6 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
+            <Button onClick={handleSaveSmartFeatures} className="px-6">
               Save Smart Features
-            </button>
+            </Button>
             {smartMessage && <span className="text-sm text-green-600">{smartMessage}</span>}
           </div>
         </CardContent>
@@ -1018,10 +1012,9 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
           </div>
 
           <div className="flex items-center gap-3">
-            <button onClick={handleSaveNotifSettings}
-              className="px-6 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
+            <Button onClick={handleSaveNotifSettings} className="px-6">
               Save Notifications
-            </button>
+            </Button>
             {notifMessage && <span className="text-sm text-green-600">{notifMessage}</span>}
           </div>
         </CardContent>
@@ -1059,10 +1052,9 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
             </select>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={handleSaveAiSettings}
-              className="px-6 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
+            <Button onClick={handleSaveAiSettings} className="px-6">
               Save AI Settings
-            </button>
+            </Button>
             {aiMessage && <span className="text-sm text-green-600">{aiMessage}</span>}
           </div>
         </CardContent>
@@ -1074,16 +1066,14 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
         <CardContent className="space-y-4">
           <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Export all your data as a JSON backup, or restore from a previous backup file.</p>
           <div className="grid sm:grid-cols-2 gap-3">
-            <button onClick={handleExport}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-[rgb(var(--color-primary-rgb))] text-white rounded-xl hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
+            <Button onClick={handleExport} variant="primary" className="flex items-center gap-2 py-3">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
               Export Backup
-            </button>
-            <button onClick={() => importFileRef.current?.click()}
-              className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[rgb(var(--color-border-rgb))] rounded-xl hover:border-[rgb(var(--color-primary-rgb))] transition-colors font-medium text-[rgb(var(--color-text-rgb))]">
+            </Button>
+            <Button onClick={() => importFileRef.current?.click()} variant="outline" className="flex items-center gap-2 py-3 border-dashed hover:border-[rgb(var(--color-primary-rgb))]">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
               Import Backup
-            </button>
+            </Button>
             <input type="file" accept=".json" ref={importFileRef} onChange={handleImport} className="hidden" />
           </div>
           {exportMessage && <p className="text-sm text-green-600">{exportMessage}</p>}
@@ -1152,14 +1142,12 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
                   className="w-full px-4 py-2 border-2 border-red-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none bg-[rgb(var(--color-bg-rgb))] font-mono"
                   placeholder="DELETE" autoFocus />
                 <div className="flex gap-3">
-                  <button onClick={() => { setDeleteStep(0); setDeleteConfirmText(''); }}
-                    className="flex-1 px-4 py-2 border border-[rgb(var(--color-border-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))]/30 transition-colors font-medium">
+                  <Button onClick={() => { setDeleteStep(0); setDeleteConfirmText(''); }} variant="ghost" size="md" className="flex-1 border border-[rgb(var(--color-border-rgb))]">
                     Cancel
-                  </button>
-                  <button onClick={handleDeleteAllData} disabled={deleteConfirmText !== 'DELETE'}
-                    className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium">
+                  </Button>
+                  <Button onClick={handleDeleteAllData} variant="danger" size="md" className="flex-1" disabled={deleteConfirmText !== 'DELETE'}>
                     Confirm Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

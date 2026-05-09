@@ -63,9 +63,11 @@ const SectionHeader: React.FC<{
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 const Dashboard: React.FC<DashboardProps> = memo(({
   transactions, bills, onAddTransaction, onEditTransaction,
-  setActiveItem, onPayBill, onManageBills, user, goals, 
+  setActiveItem, onPayBill, onManageBills, user, goals,
 }) => {
   injectCSS();
+
+  const accounts = user?.financialAccounts ?? [];
 
   const upcomingBills = bills
     .filter(b => !b.isPaid)
@@ -80,6 +82,7 @@ const Dashboard: React.FC<DashboardProps> = memo(({
       <div className="db-card" style={{ animationDelay: '0ms' }}>
         <PremiumBalanceCard
           transactions={transactions}
+          accounts={accounts}
           onAddTransaction={onAddTransaction}
           setActiveItem={setActiveItem}
           className="w-full"

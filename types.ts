@@ -15,6 +15,7 @@ export interface Transaction {
   type: 'income' | 'expense';
   category: string;
   emoji?: string; // Optional emoji for the transaction
+  accountId?: string; // The account this transaction belongs to
 }
 
 export interface CategoryEmoji {
@@ -171,6 +172,33 @@ export interface NetWorthEntry {
   updatedAt: string; // ISO date string
 }
 
+export type AccountType = 'cash' | 'checking' | 'savings' | 'credit_card' | 'investment' | 'loan' | 'mortgage' | 'property' | 'crypto' | 'other';
+
+export const ACCOUNT_TYPE_META: Record<AccountType, { label: string; emoji: string; color: string }> = {
+  cash: { label: 'Cash', emoji: '💵', color: '#10B981' },
+  checking: { label: 'Checking', emoji: '🏦', color: '#3B82F6' },
+  savings: { label: 'Savings', emoji: '🐷', color: '#8B5CF6' },
+  credit_card: { label: 'Credit Card', emoji: '💳', color: '#EF4444' },
+  investment: { label: 'Investment', emoji: '📈', color: '#8B5CF6' },
+  loan: { label: 'Loan', emoji: '📉', color: '#F59E0B' },
+  mortgage: { label: 'Mortgage', emoji: '🏠', color: '#F97316' },
+  property: { label: 'Property', emoji: '🏢', color: '#6366F1' },
+  crypto: { label: 'Crypto', emoji: '₿', color: '#EAB308' },
+  other: { label: 'Other', emoji: '📦', color: '#6B7280' },
+};
+
+export interface FinancialAccount {
+  id: string;
+  name: string;
+  type: AccountType;
+  balance: number;
+  creditLimit?: number; // Used for credit cards
+  note?: string;
+  includeInNetWorth: boolean;
+  isArchived: boolean;
+  createdAt: string; // ISO string
+}
+
 export interface User {
     username: string;
     salt: string; // Stored as base64
@@ -193,6 +221,7 @@ export interface User {
         income: { [key: string]: SubCategory[] };
     }; // User's custom category structure
     netWorthEntries?: NetWorthEntry[]; // User's assets and liabilities
+    financialAccounts?: FinancialAccount[];
 }
 
 export interface SubCategory {

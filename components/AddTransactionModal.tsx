@@ -4,6 +4,7 @@ import { TRANSACTION_CATEGORIES } from '../constants';
 import { suggestCategory } from '../utils/categoryAI';
 import { parseReceiptWithGemini } from '../utils/ocr';
 import { compressImage } from '../utils/imageProcessing';
+import { formatCurrency } from '../utils/formatters';
 import BaseModal from './BaseModal';
 import { FormField, Input, Select, Button, ToggleButton } from './ModalForm';
 import ConfirmationModal from './ConfirmationModal';
@@ -192,6 +193,13 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [type, setType]               = useState<'income' | 'expense'>(() => transactionToEdit?.type || initialData?.type || initialType);
   const [description, setDescription] = useState(() => transactionToEdit?.description || initialData?.description || '');
   const [amount, setAmount]           = useState(() => transactionToEdit?.amount?.toString() || initialData?.amount?.toString() || '');
+  const [accountId, setAccountId]     = useState<string>(() => {
+    if (transactionToEdit?.accountId) return transactionToEdit.accountId;
+    if (initialData?.accountId) return initialData.accountId;
+    // Default to first active account if available
+    const activeAccounts = user?.financialAccounts?.filter(a => !a.isArchived) || [];
+    return activeAccounts.length > 0 ? activeAccounts[0].id : '';
+  });
   const [category, setCategory]       = useState<string>(() => {
     if (transactionToEdit)    return transactionToEdit.category;
     if (initialData?.category) return initialData.category;
@@ -212,6 +220,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setDescription(transactionToEdit.description);
       setAmount(transactionToEdit.amount.toString());
       setCategory(transactionToEdit.category);
+      setAccountId(transactionToEdit.accountId || '');
       setSuggestedEmoji(transactionToEdit.emoji);
     } else {
       const t = initialData?.type || initialType;
@@ -220,9 +229,11 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setAmount(initialData?.amount?.toString() || '');
       setCategory(initialData?.category || getDefaultCategory(t));
       setSuggestedEmoji(initialData?.emoji);
+      const activeAccounts = user?.financialAccounts?.filter(a => !a.isArchived) || [];
+      setAccountId(initialData?.accountId || (activeAccounts.length > 0 ? activeAccounts[0].id : ''));
     }
     setErrors({});
-  }, [transactionToEdit, initialType, initialData]);
+  }, [transactionToEdit, initialType, initialData, user]);
 
   // ── AI suggestions ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -284,6 +295,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         amount: parseFloat(amount),
         type,
         category,
+        accountId: accountId,
         emoji: suggestedEmoji,
       });
       onClose();
@@ -450,6 +462,29 @@ const footer = (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+          )}
+
+          {/* Account Selector */}
+          {user?.financialAccounts && user.financialAccounts.filter(a => !a.isArchived).length > 0 && (
+            <div className="atm-in" style={{ animationDelay: '40ms' }}>
+              <FieldLabel htmlFor="accountId">{isExpense ? "From Account" : "To Account"}</FieldLabel>
+              <div className={`atm-glass px-3 py-2.5 ${errors.accountId ? 'has-error' : ''}`}>
+                <Select
+                  id="accountId"
+                  value={accountId}
+                  onChange={e => { setAccountId(e.target.value); clrErr('accountId'); }}
+                  error={!!errors.accountId}
+                  className="h-9 w-full bg-transparent outline-none text-sm !border-0 focus:!ring-0 pl-1 pr-8"
+                  style={{ fontSize: '13px' }}
+                >
+                  <option value="">-- No Account --</option>
+                  {user.financialAccounts.filter(a => !a.isArchived).map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name} ({formatCurrency(acc.balance)})</option>
+                  ))}
+                </Select>
+              </div>
+              <ErrMsg msg={errors.accountId} />
             </div>
           )}
 

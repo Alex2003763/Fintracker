@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Transaction } from '../types';
+import { Transaction, FinancialAccount } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { SalaryIcon, CartIcon } from './icons';
 import { useTheme } from './ThemeContext';
@@ -10,6 +10,7 @@ interface PremiumBalanceCardProps {
   onAddTransaction: (type?: 'income' | 'expense') => void;
   setActiveItem: (item: string) => void;
   className?: string;
+  accounts?: FinancialAccount[];
 }
 
 const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = React.memo(({
@@ -17,14 +18,25 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = React.memo(({
   onAddTransaction,
   setActiveItem,
   className = '',
+  accounts,
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const { customBackground } = useTheme();
 
   const { balance, dailyChange, dailyIncome, dailyExpense } = useMemo(() => {
-    const currentBalance = transactions.reduce(
+    // When accounts are provided, calculate balance from account balances,
+    // falling back to transaction-based balance for syncing
+    const accountBalance = accounts
+      ? accounts.filter(a => !a.isArchived && a.includeInNetWorth).reduce((sum, a) => {
+          return a.type === 'credit_card' ? sum - a.balance : sum + a.balance;
+        }, 0)
+      : null;
+
+    const transactionBalance = transactions.reduce(
       (sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0
     );
+
+    const currentBalance = accountBalance ?? transactionBalance;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -57,7 +69,7 @@ const PremiumBalanceCard: React.FC<PremiumBalanceCardProps> = React.memo(({
     }
 
     return { balance: currentBalance, dailyChange: percentageChange, dailyIncome: income, dailyExpense: expense };
-  }, [transactions]);
+  }, [transactions, accounts]);
 
   const isPositive = dailyChange >= 0;
   const sign = isPositive ? '+' : '';

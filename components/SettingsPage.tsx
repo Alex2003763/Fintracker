@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { User, NotificationSettings } from '../types';
 import { CURRENCIES } from '../utils/formatters';
 import { useTheme, THEMES } from './ThemeContext';
@@ -13,6 +13,9 @@ import { isWebAuthnSupported, registerWebAuthn } from '../utils/webauthn';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
 import Button from './Button';
 import ToggleButton from './ToggleButton';
+
+// Lazy load ManageCategoriesPage
+const ManageCategoriesPage = lazy(() => import('./ManageCategoriesPage'));
 
 
 interface SettingsPageProps {
@@ -33,6 +36,7 @@ interface SettingsPageProps {
   setProcessingType?: (type: 'transparent' | 'pattern') => void;
   onExportData: () => void;
   onChangePassword: (oldPw: string, newPw: string) => Promise<boolean>;
+  onDeleteAccount?: () => void;
 }
 
 
@@ -55,51 +59,59 @@ const ThemePreview: React.FC<{ themeId: string }> = ({ themeId }) => {
   const colors = THEME_COLORS[themeId] || THEME_COLORS['theme-light'];
   return (
     <div
-      className="w-full aspect-video rounded-xl shadow-lg border border-[rgb(var(--color-border-rgb))] overflow-hidden flex flex-col relative"
+      className="w-full aspect-video rounded-lg shadow-md overflow-hidden flex flex-col relative border border-black/5"
       style={{ backgroundColor: colors.bg }}
     >
-      {/* Mock header */}
+      {/* Mock status bar */}
       <div
-        className="h-8 border-b flex items-center px-3 justify-between shrink-0"
-        style={{ backgroundColor: colors.card, borderColor: 'rgba(0,0,0,0.1)' }}
+        className="h-5 flex items-center px-2 gap-1 shrink-0"
+        style={{ backgroundColor: colors.card, borderBottom: '1px solid rgba(0,0,0,0.06)' }}
       >
-        <div className="w-16 h-2 rounded-full bg-gray-200/50" />
-        <div className="w-5 h-5 rounded-full" style={{ backgroundColor: colors.primary }} />
-      </div>
-      {/* Mock content */}
-      <div className="flex-1 p-2 space-y-1.5">
-        <div className="w-full h-10 rounded-md" style={{ backgroundColor: colors.card }} />
-        <div className="flex gap-1.5">
-          <div className="w-1/2 h-8 rounded-md" style={{ backgroundColor: colors.card }} />
-          <div className="w-1/2 h-8 rounded-md" style={{ backgroundColor: colors.card }} />
+        <div className="flex gap-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
+          <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+          <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
         </div>
       </div>
-      {/* Theme-specific subtle overlays for preview */}
+
+      {/* Mock content */}
+      <div className="flex-1 p-2 space-y-1.5">
+        <div className="w-3/4 h-3 rounded-md opacity-60" style={{ backgroundColor: colors.primary }} />
+        <div className="w-full h-5 rounded-md" style={{ backgroundColor: colors.card }} />
+        <div className="flex gap-1.5">
+          <div className="flex-1 h-4 rounded-md" style={{ backgroundColor: colors.card, opacity: 0.6 }} />
+          <div className="flex-1 h-4 rounded-md" style={{ backgroundColor: colors.card, opacity: 0.6 }} />
+        </div>
+        <div className="flex gap-1.5 pt-1">
+          <div className="w-1/2 h-6 rounded-lg" style={{ backgroundColor: colors.primary, opacity: 0.8 }} />
+          <div className="flex-1 h-6 rounded-lg" style={{ backgroundColor: colors.card }} />
+        </div>
+      </div>
+
+      {/* Theme-specific subtle overlay */}
       {themeId === 'theme-pixel' && (
         <div
-          className="absolute inset-0 pointer-events-none rounded-xl"
+          className="absolute inset-0 pointer-events-none rounded-lg"
           style={{
-            backgroundImage: 'linear-gradient(rgba(0,255,136,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.06) 1px, transparent 1px)',
-            backgroundSize: '8px 8px',
+            backgroundImage: 'linear-gradient(rgba(0,255,136,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.04) 1px, transparent 1px)',
+            backgroundSize: '6px 6px',
             mixBlendMode: 'overlay'
           }}
         />
       )}
       {themeId === 'theme-cyberpunk' && (
-        <>
-          <div
-            className="absolute inset-0 pointer-events-none rounded-xl"
-            style={{
-              backgroundImage: 'repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 4px)'
-            }}
-          />
-          <div className="absolute left-0 top-0 w-full h-1 pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,245,255,0.30), transparent)' }} />
-        </>
+        <div
+          className="absolute inset-0 pointer-events-none rounded-lg"
+          style={{
+            background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,245,255,0.03) 3px)'
+          }}
+        />
       )}
 
+      {/* Selection ring */}
       <div
-        className="absolute inset-0 rounded-xl pointer-events-none"
-        style={{ boxShadow: `inset 0 0 0 2px ${colors.primary}20` }}
+        className="absolute inset-0 rounded-lg pointer-events-none transition-all"
+        style={{ boxShadow: `inset 0 0 0 2px ${colors.primary}40` }}
       />
     </div>
   );
@@ -160,27 +172,42 @@ const SettingsRow: React.FC<{
   right?: React.ReactNode;
   onClick?: () => void;
   hoverColor?: string;
-}> = ({ icon, iconBg, label, sublabel, right, onClick, hoverColor = 'rgb(var(--color-primary-rgb))' }) => {
+  danger?: boolean;
+}> = ({ icon, iconBg, label, sublabel, right, onClick, hoverColor = 'rgb(var(--color-primary-rgb))', danger }) => {
   const Wrapper = onClick ? 'button' : 'div';
+  const finalHoverColor = danger ? 'rgb(var(--color-error-rgb))' : hoverColor;
+  const [isHover, setIsHover] = useState(false);
+
   return (
     <Wrapper
       {...(onClick ? { type: 'button', onClick } : {})}
-      className="w-full flex items-center gap-4 p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/60 active:scale-[0.98] transition-all text-left min-h-[60px]"
-      style={{ cursor: onClick ? 'pointer' : 'default' }}
+      className="w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left min-h-[60px]"
+      style={{ 
+        cursor: onClick ? 'pointer' : 'default',
+        borderColor: isHover ? finalHoverColor : 'rgb(var(--color-border-rgb))',
+        backgroundColor: danger ? 'rgba(var(--color-error-rgb), 0.04)' : 'rgb(var(--color-card-muted-rgb))',
+      } as React.CSSProperties}
+      onMouseEnter={() => setIsHover(true)}
+      onMouseLeave={() => setIsHover(false)}
     >
       <div
-        className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-        style={{ backgroundColor: iconBg || `rgb(var(--color-primary-rgb), 0.12)`, color: `rgb(var(--color-primary-rgb))` }}
+        className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
+        style={{ 
+          backgroundColor: iconBg || (danger ? 'rgba(var(--color-error-rgb), 0.15)' : `rgba(var(--color-primary-rgb), 0.12)`), 
+          color: isHover ? finalHoverColor : (danger ? 'rgb(var(--color-error-rgb))' : `rgb(var(--color-primary-rgb))`) 
+        }}
       >
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-[rgb(var(--color-text-rgb))] text-sm leading-snug">{label}</p>
+        <p className="font-medium text-sm leading-snug" style={{ color: isHover ? finalHoverColor : (danger ? 'rgb(var(--color-error-rgb))' : 'rgb(var(--color-text-rgb))') }}>{label}</p>
         {sublabel && <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mt-0.5 leading-snug">{sublabel}</p>}
       </div>
       {right ?? (
         onClick && (
-          <svg className="w-4 h-4 text-[rgb(var(--color-text-muted-rgb))] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 shrink-0 transition-colors" 
+               style={{ color: isHover ? finalHoverColor : 'rgb(var(--color-text-muted-rgb))' }} 
+               fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         )
@@ -188,6 +215,7 @@ const SettingsRow: React.FC<{
     </Wrapper>
   );
 };
+SettingsRow.displayName = 'SettingsRow';
 
 
 // ─── Profile Section ──────────────────────────────────────────────────────────
@@ -402,30 +430,32 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   setProcessingType,
   onExportData,
   onChangePassword,
+  onDeleteAccount,
 }) => {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, customBackground, setCustomBackground } = useTheme();
   const [activeTab, setActiveTab] = useState<'account' | 'appearance' | 'data' | 'notifications' | 'advanced'>('account');
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backgroundInputRef = useRef<HTMLInputElement>(null);
 
   // ── Background image handling ──
-  const handleBackgroundUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 20 * 1024 * 1024) {
-      alert('File size must be less than 20 MB.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const dataUrl = reader.result as string;
-      if (onOpenCropModal) {
-        onOpenCropModal(dataUrl, processingType || 'transparent');
-      }
-    };
-    reader.readAsDataURL(file);
-  };
+   const handleBackgroundUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+     const file = e.target.files?.[0];
+     if (!file) return;
+     if (file.size > 20 * 1024 * 1024) {
+       alert('File size must be less than 20 MB.');
+       return;
+     }
+     const reader = new FileReader();
+     reader.onloadend = async () => {
+       const dataUrl = reader.result as string;
+       if (onOpenCropModal) {
+         onOpenCropModal(dataUrl, processingType || 'transparent');
+       }
+       e.target.value = '';
+     };
+     reader.readAsDataURL(file);
+   };
 
   // Listen for crop completion from App.tsx
   useEffect(() => {
@@ -438,7 +468,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         } else {
           processedImage = await processImageForBackground(croppedImageUrl);
         }
-        onUpdateUser({ ...user, backgroundImage: processedImage });
+        setCustomBackground(processedImage);
       } catch (error) {
         console.error('Error processing image:', error);
         alert('Failed to process image. Please try again.');
@@ -498,6 +528,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           />
         </CardContent>
       </Card>
+
+      {/* ── Sign Out ── */}
+      <Card>
+        <CardHeader><CardTitle>Session</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <SettingsRow
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            }
+            iconBg="rgba(var(--color-text-muted-rgb), 0.12)"
+            label="Sign Out"
+            sublabel="You will need to sign in again"
+            onClick={() => onOpenConfirmModal('Sign Out', 'Are you sure you want to sign out?', onSignOut, { confirmText: 'Sign Out', variant: 'danger' })}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 
@@ -506,43 +555,49 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       <Card>
         <CardHeader><CardTitle>Theme</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            {THEMES.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTheme(t.id)}
-                className={`relative rounded-2xl overflow-hidden border-2 transition-all active:scale-[0.97] ${
-                  theme === t.id
-                    ? 'border-[rgb(var(--color-primary-rgb))] shadow-md'
-                    : 'border-transparent hover:border-[rgb(var(--color-border-rgb))]'
-                }`}
-              >
-                <ThemePreview themeId={t.id} />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                  <p className="text-white text-xs font-medium text-center">{t.name}</p>
-                </div>
-                {theme === t.id && (
-                  <div className="absolute top-2 right-2 w-5 h-5 bg-[rgb(var(--color-primary-rgb))] rounded-full flex items-center justify-center shadow">
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-            ))}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Select Theme</label>
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              className="w-full px-4 py-3 bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none appearance-none cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'right 1rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em',
+                paddingRight: '2.5rem'
+              }}
+            >
+              {THEMES.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Live preview */}
+          <div className="mt-3">
+            <ThemePreview themeId={theme} />
           </div>
         </CardContent>
       </Card>
 
       {/* Background Image */}
       <Card>
-        <CardHeader><CardTitle>Background Image</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Card Background</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          {user.backgroundImage && (
+          {customBackground ? (
             <div className="relative w-full h-32 rounded-xl overflow-hidden border border-[rgb(var(--color-border-rgb))]">
-              <img src={user.backgroundImage} alt="Background" className="w-full h-full object-cover" />
+              <div
+                className="w-full h-full rounded-xl"
+                style={{
+                  backgroundImage: `url('${customBackground}')`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
+              />
               <button
-                onClick={() => onUpdateUser({ ...user, backgroundImage: undefined })}
+                onClick={() => setCustomBackground(null)}
                 className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-lg flex items-center justify-center hover:bg-black/70 transition-colors"
                 aria-label="Remove background"
               >
@@ -551,36 +606,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 </svg>
               </button>
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => backgroundInputRef.current?.click()}
+              className="w-full p-6 border-2 border-dashed border-[rgb(var(--color-border-rgb))] rounded-xl flex flex-col items-center gap-2 text-[rgb(var(--color-text-muted-rgb))] hover:border-[rgb(var(--color-primary-rgb))] hover:text-[rgb(var(--color-primary-rgb))] transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="text-sm font-medium">Upload Background</span>
+            </button>
           )}
-
-          {/* Processing type selector */}
-          <div className="flex gap-2">
-            {(['transparent', 'pattern'] as const).map(type => (
-              <button
-                key={type}
-                onClick={() => setProcessingType?.(type)}
-                className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium border transition-all ${
-                  processingType === type
-                    ? 'border-[rgb(var(--color-primary-rgb))] bg-[rgba(var(--color-primary-rgb),0.1)] text-[rgb(var(--color-primary-rgb))]'
-                    : 'border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-muted-rgb))]'
-                }`}
-              >
-                {type === 'transparent' ? '🎨 Transparent' : '🔲 Pattern'}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => backgroundInputRef.current?.click()}
-            disabled={isProcessingImage}
-            className="w-full py-3 rounded-xl border-2 border-dashed border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-muted-rgb))] hover:border-[rgb(var(--color-primary-rgb))] hover:text-[rgb(var(--color-primary-rgb))] transition-all text-sm font-medium disabled:opacity-50"
-          >
-            {isProcessingImage ? '⏳ Processing…' : '📁 Upload Background Image'}
-          </button>
-          <input type="file" accept="image/*" ref={backgroundInputRef} onChange={handleBackgroundUpload} className="hidden" />
-          <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] text-center">
-            Max 20 MB · PNG, JPG, WebP
-          </p>
+          <input
+            type="file"
+            accept="image/*"
+            ref={backgroundInputRef}
+            onChange={handleBackgroundUpload}
+            className="hidden"
+          />
         </CardContent>
       </Card>
 
@@ -588,24 +632,26 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       <Card>
         <CardHeader><CardTitle>Currency</CardTitle></CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-2">
-            {CURRENCIES.map(c => (
-              <button
-                key={c.code}
-                onClick={() => onUpdateUser({ ...user, currency: c.code })}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-left transition-all active:scale-[0.97] ${
-                  user.currency === c.code
-                    ? 'border-[rgb(var(--color-primary-rgb))] bg-[rgba(var(--color-primary-rgb),0.08)]'
-                    : 'border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/50'
-                }`}
-              >
-                <span className="text-lg">{c.symbol}</span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[rgb(var(--color-text-rgb))] leading-tight">{c.code}</p>
-                  <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] leading-tight truncate">{c.name}</p>
-                </div>
-              </button>
-            ))}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Select Currency</label>
+            <select
+              value={user.currency || 'USD'}
+              onChange={(e) => onUpdateUser({ ...user, currency: e.target.value as any })}
+              className="w-full px-4 py-3 bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none appearance-none cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'right 1rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em',
+                paddingRight: '2.5rem'
+              }}
+            >
+              {CURRENCIES.map(c => (
+                <option key={c.code} value={c.code}>
+                  {c.symbol} {c.code} - {c.name}
+                </option>
+              ))}
+            </select>
           </div>
         </CardContent>
       </Card>
@@ -642,29 +688,71 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             }
-            iconBg="rgba(var(--color-error-rgb), 0.12)"
-            label="Sign Out"
-            sublabel="You will need to sign in again"
-            onClick={() => onOpenConfirmModal('Sign Out', 'Are you sure you want to sign out?', onSignOut, { confirmText: 'Sign Out', variant: 'danger' })}
+            iconBg="rgba(var(--color-error-rgb), 0.15)"
+            label="Delete Account"
+            sublabel="Permanently erase all your data"
+            hoverColor="rgb(var(--color-error-rgb))"
+            onClick={() => onOpenConfirmModal('Delete Account', 'Are you sure you want to delete your account? This will permanently erase all your data including transactions and balances. This action is irreversible!', () => {
+                if (onDeleteAccount) onDeleteAccount();
+            }, { confirmText: 'Delete Everything', variant: 'danger' })}
           />
         </CardContent>
       </Card>
     </div>
   );
 
-  const renderNotificationsTab = () => (
-    <div className="animate-fade-in">
-      <NotificationSettingsPage user={user} onUpdateUser={onUpdateUser} />
-    </div>
-  );
+   const renderNotificationsTab = () => (
+     <div className="animate-fade-in">
+       <NotificationSettingsPage user={user} onUpdateUser={onUpdateUser} />
+     </div>
+   );
 
-  const renderAdvancedTab = () => (
+   const renderCategoriesTab = () => (
+     <div className="animate-fade-in">
+       <Suspense fallback={
+         <div className="flex items-center justify-center p-12">
+           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--color-primary-rgb))]"></div>
+         </div>
+       }>
+         <ManageCategoriesPage
+           user={user}
+           onUpdateCategories={(categories) => onUpdateUser({ ...user, customCategories: categories })}
+           setActiveItem={setActiveItem}
+         />
+       </Suspense>
+     </div>
+   );
+
+   const renderAdvancedTab = () => (
     <div className="space-y-4 animate-fade-in">
       <Card>
-        <CardHeader><CardTitle>Advanced</CardTitle></CardHeader>
+        <CardHeader><CardTitle>AI Features</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Gemini API Key</label>
+            <input
+              type="password"
+              placeholder="AI API Key (e.g. AIzaSy...)"
+              value={user.aiSettings?.apiKey || ''}
+              onChange={(e) => onUpdateUser({
+                ...user,
+                aiSettings: {
+                  ...(user.aiSettings || { model: 'gemini-1.5-flash' }),
+                  apiKey: e.target.value
+                }
+              })}
+              className="w-full px-4 py-3 bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none text-base"
+            />
+            <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mt-1">Used for receipt scanning and intelligent transactions.</p>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader><CardTitle>Developer</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <SettingsRow
             icon={
@@ -693,43 +781,45 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     </div>
   );
 
-  // ── Tab bar ──
-  const tabs = [
-    { key: 'account',       label: 'Account',       icon: <UserIcon className="w-4 h-4" /> },
-    { key: 'appearance',    label: 'Appearance',    icon: <SparklesIcon className="w-4 h-4" /> },
-    { key: 'notifications', label: 'Alerts',        icon: <BellIcon className="w-4 h-4" /> },
-    { key: 'data',          label: 'Data',          icon: <BackupIcon className="w-4 h-4" /> },
-    { key: 'advanced',      label: 'Advanced',      icon: <SettingsIcon className="w-4 h-4" /> },
-  ] as const;
+   // ── Tab bar ──
+   const tabs = [
+     { key: 'account',       label: 'Account',       icon: <UserIcon className="w-4 h-4" /> },
+     { key: 'categories',    label: 'Categories',    icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg> },
+     { key: 'appearance',    label: 'Appearance',    icon: <SparklesIcon className="w-4 h-4" /> },
+     { key: 'notifications', label: 'Alerts',        icon: <BellIcon className="w-4 h-4" /> },
+     { key: 'data',          label: 'Data',          icon: <BackupIcon className="w-4 h-4" /> },
+     { key: 'advanced',      label: 'Advanced',      icon: <SettingsIcon className="w-4 h-4" /> },
+   ] as const;
 
-  return (
-    <div className="max-w-2xl mx-auto pb-8">
-      {/* Tab Bar */}
-      <div className="flex gap-1 p-1 bg-[rgb(var(--color-card-muted-rgb))] rounded-2xl mb-6 overflow-x-auto scrollbar-hide">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-              activeTab === tab.key
-                ? 'bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))] shadow-sm'
-                : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+   return (
+     <div className="max-w-2xl mx-auto pb-8">
+       {/* Tab Bar */}
+       <div className="flex gap-1.5 p-1 bg-[rgb(var(--color-card-muted-rgb))]/50 rounded-2xl mb-8 overflow-x-auto scrollbar-hide backdrop-blur-sm">
+         {tabs.map(tab => (
+           <button
+             key={tab.key}
+             onClick={() => setActiveTab(tab.key)}
+             className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 min-w-[5rem] justify-center ${
+               activeTab === tab.key
+                 ? 'bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))] shadow-sm ring-1 ring-[rgb(var(--color-border-rgb))]'
+                 : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] hover:bg-[rgb(var(--color-card-rgb))]/50'
+             }`}
+           >
+             {React.cloneElement(tab.icon, { className: 'w-4 h-4' })}
+             <span className="hidden sm:inline">{tab.label}</span>
+           </button>
+         ))}
+       </div>
 
-      {/* Tab Content */}
-      {activeTab === 'account'       && renderAccountTab()}
-      {activeTab === 'appearance'    && renderAppearanceTab()}
-      {activeTab === 'notifications' && renderNotificationsTab()}
-      {activeTab === 'data'          && renderDataTab()}
-      {activeTab === 'advanced'      && renderAdvancedTab()}
-    </div>
-  );
+        {/* Tab Content */}
+        {activeTab === 'account'       && renderAccountTab()}
+        {activeTab === 'categories'    && renderCategoriesTab()}
+        {activeTab === 'appearance'    && renderAppearanceTab()}
+        {activeTab === 'notifications' && renderNotificationsTab()}
+        {activeTab === 'data'          && renderDataTab()}
+        {activeTab === 'advanced'      && renderAdvancedTab()}
+     </div>
+   );
 };
 
 export default SettingsPage;

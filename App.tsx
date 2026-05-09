@@ -43,7 +43,7 @@ const ManageBillsModal = React.lazy(() => import('./components/ManageBillsModal'
 const ManageRecurringModal = React.lazy(() => import('./components/ManageRecurringModal'));
 const ManageBudgetsModal = React.lazy(() => import('./components/ManageBudgetsModal'));
 const ImageCropModal = React.lazy(() => import('./components/ImageCropModal'));
-const FinancialAccountsPage = React.lazy(() => import('./components/FinancialAccountsPage'));
+const ManageAccountsPage = React.lazy(() => import('./components/ManageAccountsPage'));
 const App: React.FC = () => {
   const {
     offlineReady: [offlineReady, setOfflineReady],
@@ -649,6 +649,8 @@ const App: React.FC = () => {
     saveUser();
   }, [user]);
 
+
+
   const handleAuth = (authedUser: User, key: CryptoKey) => {
     // Initialize or migrate customCategories
     if (!authedUser.customCategories) {
@@ -709,6 +711,18 @@ const App: React.FC = () => {
     setActiveItem('Home');
     setConfirmationModalState(prev => ({ ...prev, isOpen: false }));
     
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await dbUtils.clearAll();
+      clearBiometricSession();
+      setUser(null);
+      setSessionKey(null);
+      window.location.reload();
+    } catch (e) {
+      console.error("Failed to delete account", e);
+    }
   };
   
   const handleExportData = () => {
@@ -792,18 +806,51 @@ const App: React.FC = () => {
   };
   
 
-  const handleSaveTransaction = async (transactionData: Omit<Transaction, 'id' | 'date'> & { id?: string }) => {
-    let newContributions: GoalContribution[] = [];
-    let savedTransaction: Transaction;
+ const handleSaveTransaction = async (transactionData: Omit<Transaction, 'id' | 'date'> & { id?: string }) => {
+ 	let newContributions: GoalContribution[] = [];
+ 	let savedTransaction: Transaction;
 
-    if (transactionData.id) {
-      // Editing existing transaction
-      const existingTx = transactions.find(t => t.id === transactionData.id);
-      if (!existingTx) return;
+ 	if (transactionData.id) {
+ 		// Editing existing transaction
+ 		const existingTx = transactions.find(t => t.id === transactionData.id);
+ 		if (!existingTx) return;
 
-      const updatedTx = { ...existingTx, ...transactionData };
-      await dbMutations.updateTransaction(transactionData.id, transactionData);
-      savedTransaction = updatedTx;
+ 		const updatedTx = { ...existingTx, ...transactionData };
+ 		await dbMutations.updateTransaction(transactionData.id, transactionData);
+ 		savedTransaction = updatedTx;
+
+ 		// Update account balance if accountId changed or amount changed
+ 		if (existingTx.accountId && transactionData.accountId && user?.financialAccounts) {
+ 			const accounts = user.financialAccounts;
+ 			const oldAccount = accounts.find(a => a.id === existingTx.accountId);
+ 			const newAccount = accounts.find(a => a.id === transactionData.accountId);
+
+ 			if (oldAccount && newAccount && oldAccount.id === newAccount.id) {
+ 				// Same account - just update the balance difference
+ 				const amountDiff = existingTx.type === 'income' ? -existingTx.amount : existingTx.amount;
+ 				const newAmountDiff = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
+ 				const balanceChange = amountDiff + newAmountDiff;
+ 				if (balanceChange !== 0) {
+ 					const updatedAccount = { ...oldAccount, balance: oldAccount.balance + balanceChange };
+ 					const updatedAccounts = accounts.map(a => a.id === oldAccount.id ? updatedAccount : a);
+ 					setUser({ ...user, financialAccounts: updatedAccounts });
+ 				}
+ 			} else {
+ 				// Account changed - revert old and update new
+ 				if (oldAccount) {
+ 					const revertAmount = existingTx.type === 'income' ? -existingTx.amount : existingTx.amount;
+ 					const updatedOldAccount = { ...oldAccount, balance: oldAccount.balance + revertAmount };
+ 					const updatedAccounts = accounts.map(a => a.id === oldAccount.id ? updatedOldAccount : a);
+ 					setUser({ ...user, financialAccounts: updatedAccounts });
+ 				}
+ 				if (newAccount) {
+ 					const addAmount = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
+ 					const updatedNewAccount = { ...newAccount, balance: newAccount.balance + addAmount };
+ 					const updatedAccounts = user.financialAccounts.map(a => a.id === newAccount.id ? updatedNewAccount : a);
+ 					setUser({ ...user, financialAccounts: updatedAccounts });
+ 				}
+ 			}
+ 		}
 
       // Handle Goal Contributions Logic for Edit
       // 1. Remove old contributions linked to this transaction
@@ -853,37 +900,49 @@ const App: React.FC = () => {
       
       // For now: Just update the transaction.
       
-    } else {
-      // Adding new transaction
-      savedTransaction = {
-        ...transactionData,
-        id: uuidv4(),
-        date: new Date().toISOString(),
-      };
-      await dbMutations.addTransaction(savedTransaction);
-      
-      // Process transaction for goal contributions
-      const { contributions, updatedGoals } = processTransactionForGoals(savedTransaction, goals);
-      newContributions = contributions;
+ 	} else {
+ 		// Adding new transaction
+ 		savedTransaction = {
+ 			...transactionData,
+ 			id: uuidv4(),
+ 			date: new Date().toISOString(),
+ 		};
+ 		await dbMutations.addTransaction(savedTransaction);
 
-      for (const contrib of contributions) {
-          await dbMutations.addGoalContribution(contrib);
-      }
-      
-      for (const uniqueGoal of updatedGoals) {
-          // updatedGoals contains the goals with new amounts.
-          // We only need to update the `currentAmount` and `progressHistory`
-          await dbMutations.updateGoal(uniqueGoal.id, {
-              currentAmount: uniqueGoal.currentAmount,
-              progressHistory: uniqueGoal.progressHistory
-          });
-      }
+ 		// Update account balance if accountId is provided
+ 		if (transactionData.accountId && user?.financialAccounts) {
+ 			const accounts = user.financialAccounts;
+ 			const account = accounts.find(a => a.id === transactionData.accountId);
+ 			if (account) {
+ 				const balanceChange = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
+ 				const updatedAccount = { ...account, balance: account.balance + balanceChange };
+ 				const updatedAccounts = accounts.map(a => a.id === account.id ? updatedAccount : a);
+ 				setUser({ ...user, financialAccounts: updatedAccounts });
+ 			}
+ 		}
 
-      // Check budget and goal notifications
-      // We pass the new list manually constructed for the check to avoid waiting for hook update
-      checkBudgetNotifications(savedTransaction, [savedTransaction, ...transactions]);
-      checkGoalProgressNotifications(savedTransaction, [savedTransaction, ...transactions]);
-    }
+ 		// Process transaction for goal contributions
+ 		const { contributions, updatedGoals } = processTransactionForGoals(savedTransaction, goals);
+ 		newContributions = contributions;
+
+ 		for (const contrib of contributions) {
+ 			await dbMutations.addGoalContribution(contrib);
+ 		}
+
+ 		for (const uniqueGoal of updatedGoals) {
+ 			// updatedGoals contains the goals with new amounts.
+ 			// We only need to update the `currentAmount` and `progressHistory`
+ 			await dbMutations.updateGoal(uniqueGoal.id, {
+ 				currentAmount: uniqueGoal.currentAmount,
+ 				progressHistory: uniqueGoal.progressHistory
+ 			});
+ 		}
+
+ 		// Check budget and goal notifications
+ 		// We pass the new list manually constructed for the check to avoid waiting for hook update
+ 		checkBudgetNotifications(savedTransaction, [savedTransaction, ...transactions]);
+ 		checkGoalProgressNotifications(savedTransaction, [savedTransaction, ...transactions]);
+ 	}
 
     // Create notifications for goal contributions
     if (newContributions.length > 0) {
@@ -903,56 +962,69 @@ const App: React.FC = () => {
     setTransactionToEdit(null);
   };
 
-  const handleDeleteTransaction = async (transactionId: string) => {
-    if (!transactionId) return;
+ const handleDeleteTransaction = async (transactionId: string) => {
+ 	if (!transactionId) return;
 
-    const deletedTransaction = transactions.find(t => t.id === transactionId);
+ 	const deletedTransaction = transactions.find(t => t.id === transactionId);
 
-    // Remove the transaction
-    await dbMutations.deleteTransaction(transactionId);
+ 	// Revert account balance change
+ 	if (deletedTransaction?.accountId && user?.financialAccounts) {
+ 		const accounts = user.financialAccounts;
+ 		const account = accounts.find(a => a.id === deletedTransaction.accountId);
+ 		if (account) {
+ 			// Reverse the transaction effect: income adds, expense subtracts
+ 			const balanceChange = deletedTransaction.type === 'income' ? -deletedTransaction.amount : deletedTransaction.amount;
+ 			const updatedAccount = { ...account, balance: account.balance + balanceChange };
+ 			const updatedAccounts = accounts.map(a => a.id === account.id ? updatedAccount : a);
+ 			setUser({ ...user, financialAccounts: updatedAccounts });
+ 		}
+ 	}
 
-    // Handle Goal Contributions removal
-    const relatedContributions = goalContributions.filter(gc => gc.transactionId === transactionId);
-    
-    // We need to revert the amounts on the goals
-    // Group by goalId to minimize DB updates
-    const impactMap = new Map<string, number>();
-    
-    for (const contrib of relatedContributions) {
-        await dbMutations.deleteGoalContribution(contrib.id);
-        const currentImpact = impactMap.get(contrib.goalId) || 0;
-        impactMap.set(contrib.goalId, currentImpact + contrib.amount);
-    }
+ 	// Remove the transaction
+ 	await dbMutations.deleteTransaction(transactionId);
 
-    // Now update each affected goal
-    for (const [goalId, amountToRemove] of impactMap.entries()) {
-        const goal = goals.find(g => g.id === goalId);
-        if (goal) {
-            await dbMutations.updateGoal(goalId, {
-                currentAmount: Math.max(0, goal.currentAmount - amountToRemove)
-            });
-            // Note: properly updating progressHistory to remove references or mark as adjusted
-            // is complex without the full object rewrite.
-            // For now, updating the amount is the critical part.
-        }
-    }
+ 	// Handle Goal Contributions removal
+ 	const relatedContributions = goalContributions.filter(gc => gc.transactionId === transactionId);
 
-    // Create notification about deletion
-    if (deletedTransaction) {
-      const deleteNotification: Notification = {
-        id: uuidv4(),
-        title: '🗑️ Transaction Deleted',
-        message: `Deleted "${deletedTransaction.description}" transaction of ${formatCurrency(deletedTransaction.amount)}.`,
-        date: new Date().toISOString(),
-        read: false,
-        type: 'standard',
-      };
-      await dbMutations.addNotification(deleteNotification);
-    }
+ 	// We need to revert the amounts on the goals
+ 	// Group by goalId to minimize DB updates
+ 	const impactMap = new Map<string, number>();
 
-    setIsAddTransactionModalOpen(false);
-    setTransactionToEdit(null);
-  };
+ 	for (const contrib of relatedContributions) {
+ 		await dbMutations.deleteGoalContribution(contrib.id);
+ 		const currentImpact = impactMap.get(contrib.goalId) || 0;
+ 		impactMap.set(contrib.goalId, currentImpact + contrib.amount);
+ 	}
+
+ 	// Now update each affected goal
+ 	for (const [goalId, amountToRemove] of impactMap.entries()) {
+ 		const goal = goals.find(g => g.id === goalId);
+ 		if (goal) {
+ 			await dbMutations.updateGoal(goalId, {
+ 				currentAmount: Math.max(0, goal.currentAmount - amountToRemove)
+ 			});
+ 			// Note: properly updating progressHistory to remove references or mark as adjusted
+ 			// is complex without the full object rewrite.
+ 			// For now, updating the amount is the critical part.
+ 		}
+ 	}
+
+ 	// Create notification about deletion
+ 	if (deletedTransaction) {
+ 		const deleteNotification: Notification = {
+ 			id: uuidv4(),
+ 			title: '🗑️ Transaction Deleted',
+ 			message: `Deleted "${deletedTransaction.description}" transaction of ${formatCurrency(deletedTransaction.amount)}.`,
+ 			date: new Date().toISOString(),
+ 			read: false,
+ 			type: 'standard',
+ 		};
+ 		await dbMutations.addNotification(deleteNotification);
+ 	}
+
+ 	setIsAddTransactionModalOpen(false);
+ 	setTransactionToEdit(null);
+ };
 
   const checkBudgetNotifications = (newTransaction?: Transaction, allTransactions?: Transaction[], forceRecheck = false) => {
     // Prevent multiple simultaneous calls
@@ -1429,21 +1501,17 @@ const handleOpenConfirmModal = useCallback((
                     processingType={processingType}
                     setProcessingType={setProcessingType}
                     onChangePassword={handleChangePassword}
+                    onDeleteAccount={handleDeleteAccount}
                   />
                 </ErrorBoundary>
               );
               case 'Accounts':
               return (
-                <FinancialAccountsPage
-                  user={user}
+                <ManageAccountsPage
+                  user={user!}
                   transactions={sortedTransactions}
-                  budgets={budgets}
-                  goals={goals}
-                  debts={debts}
                   onUpdateUser={handleUpdateUser}
-                  onOpenConfirmModal={handleOpenConfirmModal}
-                  onExportData={handleExportData}
-                  onImportData={handleImportData}
+                  onAddTransaction={handleOpenAddTransactionModal}
                   setActiveItem={setActiveItem}
                 />
               );
