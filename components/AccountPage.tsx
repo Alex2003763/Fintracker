@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { User, FinancialAccount, AccountType, ACCOUNT_TYPE_META, CurrencyCode, CurrencyOption, NotificationSettings } from '../types';
+import React, { useState, useRef, useMemo } from 'react';
+import { User, FinancialAccount, AccountType, ACCOUNT_TYPE_META, CurrencyCode, CurrencyOption, NotificationSettings, Transaction, NetWorthEntry } from '../types';
 import { UserIcon, SettingsIcon } from './icons';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
+
+const APP_VERSION = '1.0.0';
 
 // ─── Currency Options ─────────────────────────────────────────────────────────
 const CURRENCY_OPTIONS: CurrencyOption[] = [
@@ -26,11 +28,20 @@ const CURRENCY_OPTIONS: CurrencyOption[] = [
 ];
 
 const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
-  goalProgress: { enabled: true, milestones: [25, 50, 75, 100] },
-  billReminders: { enabled: true, advanceDays: 3 },
-  budgetAlerts: { enabled: true, thresholds: [80, 100] },
-  monthlyReports: { enabled: true, frequency: 'monthly' },
+  goalProgress:      { enabled: true,  milestones: [25, 50, 75, 100] },
+  billReminders:     { enabled: true,  advanceDays: 3 },
+  budgetAlerts:      { enabled: true,  thresholds: [80, 100] },
+  monthlyReports:    { enabled: true,  frequency: 'monthly' },
   pushNotifications: { enabled: false, quietHours: { start: '22:00', end: '08:00' } },
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const fmtAmount = (amount: number, symbol: string) =>
+  `${symbol}${Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const getCurrentMonthKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -47,15 +58,96 @@ const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void; disab
   </button>
 );
 
-const SectionHeader: React.FC<{ icon: React.ReactNode; title: string; subtitle?: string }> = ({ icon, title, subtitle }) => (
-  <div className="flex items-center gap-3 mb-4">
-    <div className="p-2 bg-primary-subtle rounded-lg text-[rgb(var(--color-primary-rgb))]">{icon}</div>
-    <div>
-      <h3 className="font-semibold text-[rgb(var(--color-text-rgb))]">{title}</h3>
-      {subtitle && <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">{subtitle}</p>}
+// ─── Transfer Modal ───────────────────────────────────────────────────────────
+interface TransferModalProps {
+  accounts: FinancialAccount[];
+  currencySymbol: string;
+  onTransfer: (fromId: string, toId: string, amount: number, note: string) => void;
+  onClose: () => void;
+}
+
+const TransferModal: React.FC<TransferModalProps> = ({ accounts, currencySymbol, onTransfer, onClose }) => {
+  const active = accounts.filter(a => !a.isArchived);
+  const [fromId, setFromId] = useState(active[0]?.id ?? '');
+  const [toId,   setToId]   = useState(active[1]?.id ?? '');
+  const [amount, setAmount] = useState('');
+  const [note,   setNote]   = useState('');
+  const [error,  setError]  = useState('');
+
+  const fromAcc = active.find(a => a.id === fromId);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    const amt = parseFloat(amount);
+    if (!amt || amt <= 0) { setError('Enter a valid amount.'); return; }
+    if (fromId === toId)  { setError('Source and destination must differ.'); return; }
+    onTransfer(fromId, toId, amt, note.trim());
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-[rgb(var(--color-card-rgb))] rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-[rgb(var(--color-text-rgb))]">Transfer Between Accounts</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-[rgb(var(--color-border-rgb))] transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">From</label>
+              <select value={fromId} onChange={e => setFromId(e.target.value)}
+                className="w-full px-3 py-2 bg-[rgb(var(--color-bg-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] text-sm">
+                {active.map(a => <option key={a.id} value={a.id}>{ACCOUNT_TYPE_META[a.type].emoji} {a.name}</option>)}
+              </select>
+              {fromAcc && (
+                <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
+                  Balance: {fmtAmount(fromAcc.balance, currencySymbol)}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">To</label>
+              <select value={toId} onChange={e => setToId(e.target.value)}
+                className="w-full px-3 py-2 bg-[rgb(var(--color-bg-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] text-sm">
+                {active.map(a => <option key={a.id} value={a.id}>{ACCOUNT_TYPE_META[a.type].emoji} {a.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Amount</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--color-text-muted-rgb))] text-sm font-mono">{currencySymbol}</span>
+              <input type="number" value={amount} onChange={e => setAmount(e.target.value)} step="0.01" min="0.01" required
+                className="w-full pl-10 pr-4 py-2 bg-[rgb(var(--color-bg-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent outline-none"
+                placeholder="0.00" />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Note (optional)</label>
+            <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={60}
+              className="w-full px-4 py-2 bg-[rgb(var(--color-bg-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] focus:border-transparent outline-none"
+              placeholder="e.g. Monthly savings" />
+          </div>
+
+          {error && <p className="text-sm text-red-500">{error}</p>}
+
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-[rgb(var(--color-border-rgb))] rounded-lg hover:bg-[rgb(var(--color-border-rgb))]/30 transition-colors font-medium text-[rgb(var(--color-text-rgb))]">Cancel</button>
+            <button type="submit" className="flex-1 px-4 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
+              Transfer
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Account Form Modal ───────────────────────────────────────────────────────
 interface AccountFormData {
@@ -134,7 +226,7 @@ const FinancialAccountModal: React.FC<{
               placeholder="0.00" />
           </div>
 
-          {/* Credit Limit (credit card only) */}
+          {/* Credit Limit */}
           {form.type === 'credit_card' && (
             <div className="space-y-1">
               <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Credit Limit</label>
@@ -179,9 +271,10 @@ interface AccountPageProps {
   onUpdateUser: (updatedUser: User) => void;
   onChangePassword: (oldPw: string, newPw: string) => Promise<boolean>;
   setActiveItem: (item: string) => void;
+  transactions?: Transaction[];
 }
 
-const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangePassword, setActiveItem }) => {
+const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangePassword, setActiveItem, transactions = [] }) => {
   // ── Profile states ──
   const [username, setUsername] = useState(user.username);
   const [avatar, setAvatar] = useState(user.avatar);
@@ -205,12 +298,20 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [editingAccount, setEditingAccount] = useState<FinancialAccount | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferMessage, setTransferMessage] = useState('');
 
   // ── Notification Settings ──
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>(
     user.notificationSettings ?? DEFAULT_NOTIFICATION_SETTINGS
   );
   const [notifMessage, setNotifMessage] = useState('');
+
+  // ── Smart Features ──
+  const [smartCategorySuggestions, setSmartCategorySuggestions] = useState(
+    user.smartFeatures?.categorySuggestions ?? true
+  );
+  const [smartMessage, setSmartMessage] = useState('');
 
   // ── AI Settings ──
   const [aiApiKey, setAiApiKey] = useState(user.aiSettings?.apiKey ?? '');
@@ -232,6 +333,25 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
     setter(msg);
     setTimeout(() => setter(''), delay);
   };
+
+  // ─── Monthly Summary (computed from passed transactions) ──────────────────
+  const monthlySummary = useMemo(() => {
+    const key = getCurrentMonthKey();
+    const monthTx = transactions.filter(t => t.date.startsWith(key));
+    const income  = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const balance = income - expense;
+    const topCategories: { name: string; amount: number }[] = [];
+    const catMap: Record<string, number> = {};
+    monthTx.filter(t => t.type === 'expense').forEach(t => {
+      catMap[t.category] = (catMap[t.category] ?? 0) + t.amount;
+    });
+    Object.entries(catMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .forEach(([name, amount]) => topCategories.push({ name, amount }));
+    return { income, expense, balance, topCategories, txCount: monthTx.length };
+  }, [transactions]);
 
   // ─── Avatar ─────────────────────────────────────────────────────────────────
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -325,10 +445,29 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
     onUpdateUser({ ...user, financialAccounts: updated });
   };
 
+  // ─── Transfer ────────────────────────────────────────────────────────────────
+  const handleTransfer = (fromId: string, toId: string, amount: number, note: string) => {
+    const updated = accounts.map(a => {
+      if (a.id === fromId) return { ...a, balance: Math.max(0, a.balance - amount) };
+      if (a.id === toId)   return { ...a, balance: a.balance + amount };
+      return a;
+    });
+    setAccounts(updated);
+    onUpdateUser({ ...user, financialAccounts: updated });
+    setShowTransferModal(false);
+    flash(setTransferMessage, `✓ Transferred ${fmtAmount(amount, currencySymbol)}${note ? ` · ${note}` : ''}`);
+  };
+
   // ─── Notification Settings ───────────────────────────────────────────────────
   const handleSaveNotifSettings = () => {
     onUpdateUser({ ...user, notificationSettings: notifSettings });
     flash(setNotifMessage, '✓ Notification settings saved');
+  };
+
+  // ─── Smart Features ──────────────────────────────────────────────────────────
+  const handleSaveSmartFeatures = () => {
+    onUpdateUser({ ...user, smartFeatures: { categorySuggestions: smartCategorySuggestions } });
+    flash(setSmartMessage, '✓ Smart features saved');
   };
 
   // ─── AI Settings ─────────────────────────────────────────────────────────────
@@ -378,13 +517,15 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
   };
 
   // ─── Computed ────────────────────────────────────────────────────────────────
-  const activeAccounts = accounts.filter(a => !a.isArchived);
+  const activeAccounts  = accounts.filter(a => !a.isArchived);
   const archivedAccounts = accounts.filter(a => a.isArchived);
-  const totalBalance = activeAccounts.reduce((sum, a) => {
-    const meta = ACCOUNT_TYPE_META[a.type];
-    return sum + (a.type === 'credit_card' ? -a.balance : a.balance);
-  }, 0);
+  const totalBalance = activeAccounts
+    .filter(a => a.includeInNetWorth !== false)
+    .reduce((sum, a) => sum + (a.type === 'credit_card' ? -a.balance : a.balance), 0);
   const currencySymbol = CURRENCY_OPTIONS.find(c => c.code === currency)?.symbol ?? currency;
+
+  const now = new Date();
+  const monthName = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -397,6 +538,54 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
         <h1 className="text-3xl font-bold text-[rgb(var(--color-text-rgb))]">Account Settings</h1>
         <p className="text-[rgb(var(--color-text-muted-rgb))] mt-2">Manage your profile, accounts, and preferences</p>
       </header>
+
+      {/* ── NEW: Monthly Financial Summary ── */}
+      {transactions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>{monthName} Summary</CardTitle>
+              <span className="text-xs text-[rgb(var(--color-text-muted-rgb))]">{monthlySummary.txCount} transactions</span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[
+                { label: 'Income',  value: monthlySummary.income,  color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/20',  sign: '+' },
+                { label: 'Expense', value: monthlySummary.expense, color: 'text-red-500',    bg: 'bg-red-50 dark:bg-red-900/20',      sign: '-' },
+                { label: 'Balance', value: monthlySummary.balance, color: monthlySummary.balance >= 0 ? 'text-[rgb(var(--color-primary-rgb))]' : 'text-red-500', bg: 'bg-[rgb(var(--color-bg-rgb))]', sign: monthlySummary.balance >= 0 ? '+' : '-' },
+              ].map(({ label, value, color, bg, sign }) => (
+                <div key={label} className={`${bg} rounded-xl p-3 text-center`}>
+                  <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] font-medium mb-1">{label}</p>
+                  <p className={`text-base font-bold ${color} tabular-nums`}>
+                    {sign}{fmtAmount(value, currencySymbol)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {monthlySummary.topCategories.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-[rgb(var(--color-text-muted-rgb))] uppercase tracking-wide">Top Expenses</p>
+                {monthlySummary.topCategories.map(cat => {
+                  const pct = monthlySummary.expense > 0 ? (cat.amount / monthlySummary.expense) * 100 : 0;
+                  return (
+                    <div key={cat.name} className="flex items-center gap-3">
+                      <p className="text-sm text-[rgb(var(--color-text-rgb))] w-28 truncate capitalize">{cat.name}</p>
+                      <div className="flex-1 bg-[rgb(var(--color-border-rgb))] rounded-full h-1.5 overflow-hidden">
+                        <div className="h-1.5 rounded-full bg-[rgb(var(--color-primary-rgb))] transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <p className="text-sm font-medium text-[rgb(var(--color-text-rgb))] tabular-nums w-20 text-right">
+                        {fmtAmount(cat.amount, currencySymbol)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Section 1: Profile + Security ── */}
       <div className="grid gap-6 md:grid-cols-2">
@@ -507,9 +696,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
 
       {/* ── Section 2: Currency ── */}
       <Card>
-        <CardHeader>
-          <CardTitle>Currency</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Currency</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Select the currency used throughout the app for displaying balances and transactions.</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -534,27 +721,65 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
       {/* ── Section 3: Financial Accounts ── */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle>Financial Accounts</CardTitle>
-            <button onClick={() => { setEditingAccount(null); setShowAccountModal(true); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors text-sm font-medium">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-              Add Account
-            </button>
+            <div className="flex items-center gap-2">
+              {activeAccounts.length >= 2 && (
+                <button onClick={() => setShowTransferModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-rgb))] rounded-lg hover:border-[rgb(var(--color-primary-rgb))] transition-colors text-sm font-medium">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                  Transfer
+                </button>
+              )}
+              <button onClick={() => { setEditingAccount(null); setShowAccountModal(true); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors text-sm font-medium">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                Add Account
+              </button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           {/* Net Worth Summary */}
           {activeAccounts.length > 0 && (
-            <div className="mb-4 p-4 bg-[rgb(var(--color-bg-rgb))] rounded-xl flex items-center justify-between">
-              <div>
-                <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] font-medium uppercase tracking-wide">Total Balance</p>
-                <p className={`text-2xl font-bold ${totalBalance >= 0 ? 'text-[rgb(var(--color-primary-rgb))]' : 'text-red-500'}`}>
-                  {totalBalance < 0 ? '-' : ''}{currencySymbol}{Math.abs(totalBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
+            <div className="mb-4 p-4 bg-[rgb(var(--color-bg-rgb))] rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] font-medium uppercase tracking-wide">Net Balance</p>
+                  <p className={`text-2xl font-bold tabular-nums ${totalBalance >= 0 ? 'text-[rgb(var(--color-primary-rgb))]' : 'text-red-500'}`}>
+                    {totalBalance < 0 ? '-' : ''}{fmtAmount(totalBalance, currencySymbol)}
+                  </p>
+                </div>
+                <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">{activeAccounts.length} active account{activeAccounts.length !== 1 ? 's' : ''}</p>
               </div>
-              <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">{activeAccounts.length} active account{activeAccounts.length !== 1 ? 's' : ''}</p>
+              {/* Per-account mini bars */}
+              <div className="space-y-1.5">
+                {activeAccounts.slice(0, 4).map(acc => {
+                  const meta = ACCOUNT_TYPE_META[acc.type];
+                  const maxBal = Math.max(...activeAccounts.map(a => a.balance), 1);
+                  const pct = Math.min((acc.balance / maxBal) * 100, 100);
+                  return (
+                    <div key={acc.id} className="flex items-center gap-2 text-xs">
+                      <span className="w-4">{meta.emoji}</span>
+                      <span className="w-24 truncate text-[rgb(var(--color-text-muted-rgb))]">{acc.name}</span>
+                      <div className="flex-1 bg-[rgb(var(--color-border-rgb))] rounded-full h-1.5 overflow-hidden">
+                        <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: meta.color }} />
+                      </div>
+                      <span className="w-20 text-right font-medium text-[rgb(var(--color-text-rgb))] tabular-nums">
+                        {fmtAmount(acc.balance, currencySymbol)}
+                      </span>
+                    </div>
+                  );
+                })}
+                {activeAccounts.length > 4 && (
+                  <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] pl-6">+ {activeAccounts.length - 4} more accounts</p>
+                )}
+              </div>
             </div>
+          )}
+
+          {transferMessage && (
+            <p className="mb-3 text-sm text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg">{transferMessage}</p>
           )}
 
           {accounts.length === 0 ? (
@@ -576,6 +801,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-[rgb(var(--color-text-rgb))] truncate">{acc.name}</p>
                         {acc.isArchived && <span className="text-xs bg-[rgb(var(--color-border-rgb))] px-1.5 py-0.5 rounded text-[rgb(var(--color-text-muted-rgb))]">Archived</span>}
+                        {acc.includeInNetWorth === false && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded">Excluded</span>}
                       </div>
                       <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">{meta.label}{acc.note ? ` · ${acc.note}` : ''}</p>
                       {utilization !== null && (
@@ -585,10 +811,15 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
                       )}
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className={`font-semibold ${isCredit ? 'text-red-500' : 'text-[rgb(var(--color-text-rgb))]'}`}>
-                        {isCredit ? '-' : ''}{currencySymbol}{acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <p className={`font-semibold tabular-nums ${isCredit ? 'text-red-500' : 'text-[rgb(var(--color-text-rgb))]'}`}>
+                        {isCredit ? '-' : ''}{fmtAmount(acc.balance, currencySymbol)}
                       </p>
-                      {acc.creditLimit && <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">Limit: {currencySymbol}{acc.creditLimit.toLocaleString()}</p>}
+                      {acc.creditLimit && (
+                        <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">
+                          Limit: {fmtAmount(acc.creditLimit, currencySymbol)}
+                          {utilization !== null && <span className={` ml-1 font-medium ${utilization > 80 ? 'text-red-500' : 'text-[rgb(var(--color-text-muted-rgb))]'}`}>({utilization.toFixed(0)}%)</span>}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button onClick={() => { setEditingAccount(acc); setShowAccountModal(true); }} title="Edit"
@@ -619,7 +850,40 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
         </CardContent>
       </Card>
 
-      {/* ── Section 4: Notification Settings ── */}
+      {/* ── NEW: Section 4: Smart Features ── */}
+      <Card>
+        <CardHeader><CardTitle>Smart Features</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">
+            AI-powered features to make tracking faster and smarter.
+          </p>
+
+          <div className="p-4 bg-[rgb(var(--color-bg-rgb))] rounded-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-[rgb(var(--color-text-rgb))]">Auto Category Suggestions</p>
+                <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] mt-0.5">
+                  Suggest categories based on transaction description using AI
+                </p>
+              </div>
+              <Toggle
+                checked={smartCategorySuggestions}
+                onChange={setSmartCategorySuggestions}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button onClick={handleSaveSmartFeatures}
+              className="px-6 py-2 bg-[rgb(var(--color-primary-rgb))] text-white rounded-lg hover:bg-[rgb(var(--color-primary-hover-rgb))] transition-colors font-medium">
+              Save Smart Features
+            </button>
+            {smartMessage && <span className="text-sm text-green-600">{smartMessage}</span>}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Section 5: Notification Settings ── */}
       <Card>
         <CardHeader><CardTitle>Notification Settings</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -632,6 +896,22 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
               </div>
               <Toggle checked={notifSettings.goalProgress.enabled} onChange={v => setNotifSettings(p => ({ ...p, goalProgress: { ...p.goalProgress, enabled: v } }))} />
             </div>
+            {notifSettings.goalProgress.enabled && (
+              <div className="flex gap-2 flex-wrap">
+                {[25, 50, 75, 100].map(m => (
+                  <button key={m} type="button"
+                    onClick={() => setNotifSettings(p => {
+                      const milestones = p.goalProgress.milestones.includes(m)
+                        ? p.goalProgress.milestones.filter(x => x !== m)
+                        : [...p.goalProgress.milestones, m].sort((a, b) => a - b);
+                      return { ...p, goalProgress: { ...p.goalProgress, milestones } };
+                    })}
+                    className={`px-3 py-1 rounded-full text-sm font-medium border transition-all ${notifSettings.goalProgress.milestones.includes(m) ? 'bg-[rgb(var(--color-primary-rgb))] text-white border-transparent' : 'border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-muted-rgb))]'}`}>
+                    {m}%
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Bill Reminders */}
@@ -683,7 +963,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
           </div>
 
           {/* Monthly Reports */}
-          <div className="p-4 bg-[rgb(var(--color-bg-rgb))] rounded-xl">
+          <div className="p-4 bg-[rgb(var(--color-bg-rgb))] rounded-xl space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-[rgb(var(--color-text-rgb))]">Monthly Reports</p>
@@ -691,6 +971,50 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
               </div>
               <Toggle checked={notifSettings.monthlyReports.enabled} onChange={v => setNotifSettings(p => ({ ...p, monthlyReports: { ...p.monthlyReports, enabled: v } }))} />
             </div>
+            {notifSettings.monthlyReports.enabled && (
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-[rgb(var(--color-text-muted-rgb))] whitespace-nowrap">Frequency</label>
+                <select value={notifSettings.monthlyReports.frequency}
+                  onChange={e => setNotifSettings(p => ({ ...p, monthlyReports: { ...p.monthlyReports, frequency: e.target.value as 'weekly' | 'monthly' } }))}
+                  className="flex-1 px-3 py-1.5 bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))]">
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* NEW: Push Notifications + Quiet Hours */}
+          <div className="p-4 bg-[rgb(var(--color-bg-rgb))] rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-[rgb(var(--color-text-rgb))]">Push Notifications</p>
+                <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">Enable browser push notifications</p>
+              </div>
+              <Toggle checked={notifSettings.pushNotifications.enabled} onChange={v => setNotifSettings(p => ({ ...p, pushNotifications: { ...p.pushNotifications, enabled: v } }))} />
+            </div>
+            {notifSettings.pushNotifications.enabled && (
+              <div className="space-y-2 pt-1 border-t border-[rgb(var(--color-border-rgb))]">
+                <p className="text-xs font-medium text-[rgb(var(--color-text-muted-rgb))] uppercase tracking-wide">Quiet Hours</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-[rgb(var(--color-text-muted-rgb))]">From</label>
+                    <input type="time"
+                      value={notifSettings.pushNotifications.quietHours.start}
+                      onChange={e => setNotifSettings(p => ({ ...p, pushNotifications: { ...p.pushNotifications, quietHours: { ...p.pushNotifications.quietHours, start: e.target.value } } }))}
+                      className="w-full px-3 py-1.5 bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))]" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-[rgb(var(--color-text-muted-rgb))]">To</label>
+                    <input type="time"
+                      value={notifSettings.pushNotifications.quietHours.end}
+                      onChange={e => setNotifSettings(p => ({ ...p, pushNotifications: { ...p.pushNotifications, quietHours: { ...p.pushNotifications.quietHours, end: e.target.value } } }))}
+                      className="w-full px-3 py-1.5 bg-[rgb(var(--color-card-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-lg text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))]" />
+                  </div>
+                </div>
+                <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">No notifications will be sent during quiet hours.</p>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -703,7 +1027,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
         </CardContent>
       </Card>
 
-      {/* ── Section 5: AI Settings ── */}
+      {/* ── Section 6: AI Settings ── */}
       <Card>
         <CardHeader><CardTitle>AI Settings</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -731,6 +1055,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
               <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
               <option value="gemini-1.5-pro">Gemini 1.5 Pro (Powerful)</option>
               <option value="gemini-2.0-flash">Gemini 2.0 Flash (Latest)</option>
+              <option value="gemini-2.0-flash-thinking">Gemini 2.0 Flash Thinking (Reasoning)</option>
             </select>
           </div>
           <div className="flex items-center gap-3">
@@ -743,7 +1068,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
         </CardContent>
       </Card>
 
-      {/* ── Section 6: Data Export / Import ── */}
+      {/* ── Section 7: Data Export / Import ── */}
       <Card>
         <CardHeader><CardTitle>Data Backup</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -767,7 +1092,39 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
         </CardContent>
       </Card>
 
-      {/* ── Section 7: Danger Zone ── */}
+      {/* ── NEW: Section 8: App Info ── */}
+      <Card>
+        <CardHeader><CardTitle>About Fintracker</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 p-4 bg-[rgb(var(--color-bg-rgb))] rounded-xl">
+            <div className="w-12 h-12 rounded-xl bg-[rgb(var(--color-primary-rgb))] flex items-center justify-center text-white text-xl flex-shrink-0">
+              💰
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-[rgb(var(--color-text-rgb))]">Fintracker</p>
+              <p className="text-sm text-[rgb(var(--color-text-muted-rgb))]">Version {APP_VERSION}</p>
+            </div>
+          </div>
+          <div className="mt-3 space-y-2">
+            {[
+              { label: 'Financial Accounts', desc: 'Multi-account tracking with net worth overview' },
+              { label: 'AI-Powered Insights', desc: 'Smart categorisation via Gemini AI' },
+              { label: 'Goals & Budgets',     desc: 'Track savings goals and spending limits' },
+              { label: 'Bills & Reminders',   desc: 'Never miss a bill payment' },
+            ].map(f => (
+              <div key={f.label} className="flex items-start gap-3 px-2 py-1.5">
+                <svg className="w-4 h-4 text-[rgb(var(--color-primary-rgb))] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                <div>
+                  <span className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">{f.label}</span>
+                  <span className="text-xs text-[rgb(var(--color-text-muted-rgb))] ml-2">{f.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Section 9: Danger Zone ── */}
       <Card>
         <CardHeader>
           <CardTitle>
@@ -810,12 +1167,20 @@ const AccountPage: React.FC<AccountPageProps> = ({ user, onUpdateUser, onChangeP
         </CardContent>
       </Card>
 
-      {/* ── Financial Account Modal ── */}
+      {/* ── Modals ── */}
       {showAccountModal && (
         <FinancialAccountModal
           account={editingAccount}
           onSave={handleSaveAccount}
           onClose={() => { setShowAccountModal(false); setEditingAccount(null); }}
+        />
+      )}
+      {showTransferModal && (
+        <TransferModal
+          accounts={accounts}
+          currencySymbol={currencySymbol}
+          onTransfer={handleTransfer}
+          onClose={() => setShowTransferModal(false)}
         />
       )}
     </div>
