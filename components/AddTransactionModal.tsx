@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Transaction, User, SubCategory, FinancialAccount, ACCOUNT_TYPE_META } from '../types';
+import { Transaction, User, SubCategory } from '../types';
 import { TRANSACTION_CATEGORIES } from '../constants';
 import { suggestCategory } from '../utils/categoryAI';
 import { parseReceiptWithGemini } from '../utils/ocr';
@@ -19,7 +19,6 @@ interface AddTransactionModalProps {
   initialData?: Partial<Omit<Transaction, 'id' | 'date'>>;
   smartSuggestionsEnabled?: boolean;
   user: User | null;
-  financialAccounts?: FinancialAccount[];
 }
 
 // ─── CSS ─────────────────────────────────────────────────────────────────────
@@ -46,6 +45,7 @@ const CSS = `
   .atm-spin { animation: atm-spin 0.75s linear infinite; }
   .atm-pulse-ring { animation: atm-pulse-ring 0.9s ease 0.3s 1; }
 
+  /* Glass input field */
   .atm-glass {
     background: rgba(var(--color-card-muted-rgb), 0.45);
     border: 1px solid rgba(255,255,255,0.09);
@@ -68,6 +68,7 @@ const CSS = `
     box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.08), 0 0 0 3.5px rgba(239,68,68,0.11);
   }
 
+  /* Type toggle */
   .atm-toggle {
     display: flex;
     background: rgba(var(--color-card-muted-rgb), 0.55);
@@ -101,6 +102,7 @@ const CSS = `
     box-shadow: 0 2px 10px rgba(34,197,94,0.32);
   }
 
+  /* Chip */
   .atm-chip {
     padding: 3px 10px; border-radius: 999px;
     font-size: 11px; font-weight: 600;
@@ -134,6 +136,7 @@ const injectCSS = () => {
   cssInjected = true;
 };
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ htmlFor?: string; required?: boolean; children: React.ReactNode }> = ({ htmlFor, required, children }) => (
   <label htmlFor={htmlFor}
     className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-[rgb(var(--color-text-muted-rgb))]/60 mb-2 select-none">
@@ -151,23 +154,25 @@ const ErrMsg: React.FC<{ msg?: string }> = ({ msg }) => (
   </div>
 );
 
+// ─── Main ─────────────────────────────────────────────────────────────────────
 const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   isOpen, onClose, onSaveTransaction, onDeleteTransaction,
   transactionToEdit, initialType = 'expense', initialData,
-  smartSuggestionsEnabled = true, user, financialAccounts = [],
+  smartSuggestionsEnabled = true, user,
 }) => {
   injectCSS();
 
   const isEditing = !!transactionToEdit;
-  const activeAccounts = financialAccounts.filter(a => !a.isArchived);
-
+  // 修正：同時顯示自訂分類與預設分類
   const mergeCategories = (userCats: any) => {
     if (!userCats) return TRANSACTION_CATEGORIES;
     const mergeType = (typeCats: any, defaultCats: any) => {
       const out: { [key: string]: SubCategory[] } = { ...defaultCats };
       for (const group in typeCats) {
         if (!out[group]) out[group] = [];
+        // 將自訂分類轉成 SubCategory 並合併
         const customSubs = (typeCats[group] as any[]).map(name => typeof name === 'string' ? { name } : name);
+        // 避免重複
         customSubs.forEach(sub => {
           if (!out[group].some(c => c.name === sub.name)) out[group].push(sub);
         });
@@ -183,6 +188,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const getDefaultCategory = (t: 'income' | 'expense') =>
     Object.values(currentCategories[t]).flat()[0]?.name || '';
 
+
   const [type, setType]               = useState<'income' | 'expense'>(() => transactionToEdit?.type || initialData?.type || initialType);
   const [description, setDescription] = useState(() => transactionToEdit?.description || initialData?.description || '');
   const [amount, setAmount]           = useState(() => transactionToEdit?.amount?.toString() || initialData?.amount?.toString() || '');
@@ -190,11 +196,6 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     if (transactionToEdit)    return transactionToEdit.category;
     if (initialData?.category) return initialData.category;
     return getDefaultCategory(initialData?.type || initialType);
-  });
-  const [accountId, setAccountId] = useState<string>(() => {
-    if (transactionToEdit?.accountId) return transactionToEdit.accountId;
-    if (initialData?.accountId) return initialData.accountId || '';
-    return activeAccounts[0]?.id || '';
   });
   const [suggestedEmoji, setSuggestedEmoji] = useState<string | undefined>(transactionToEdit?.emoji || initialData?.emoji);
   const [aiSuggestions, setAiSuggestions]   = useState<string[]>([]);
@@ -204,6 +205,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [isScanning, setIsScanning]         = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Reset on open ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (transactionToEdit) {
       setType(transactionToEdit.type);
@@ -211,7 +213,6 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setAmount(transactionToEdit.amount.toString());
       setCategory(transactionToEdit.category);
       setSuggestedEmoji(transactionToEdit.emoji);
-      setAccountId(transactionToEdit.accountId || activeAccounts[0]?.id || '');
     } else {
       const t = initialData?.type || initialType;
       setType(t);
@@ -219,11 +220,11 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setAmount(initialData?.amount?.toString() || '');
       setCategory(initialData?.category || getDefaultCategory(t));
       setSuggestedEmoji(initialData?.emoji);
-      setAccountId(initialData?.accountId || activeAccounts[0]?.id || '');
     }
     setErrors({});
   }, [transactionToEdit, initialType, initialData]);
 
+  // ── AI suggestions ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (smartSuggestionsEnabled && description.length > 2) {
       const avail = Object.values(currentCategories[type]).flat().map(c => c.name);
@@ -284,7 +285,6 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         type,
         category,
         emoji: suggestedEmoji,
-        accountId: accountId || undefined,
       });
       onClose();
     } catch (err) {
@@ -296,16 +296,19 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const categories = currentCategories[type];
   const isExpense  = type === 'expense';
-  const selectedAccount = activeAccounts.find(a => a.id === accountId);
 
 const footer = (
   <div className="flex items-center gap-2">
+
+    {/* ── Delete — ghost danger, left-anchored ── */}
     {isEditing && (
       <button
         type="button"
         onClick={() => setShowDeleteConfirmation(true)}
         disabled={isSubmitting}
-        className="atm-btn-danger flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-400/25"
+        className="atm-btn-danger flex items-center gap-1.5 px-3 py-2 rounded-xl
+                   text-xs font-semibold touch-manipulation
+                   focus:outline-none focus:ring-2 focus:ring-red-400/25"
       >
         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2}
@@ -314,20 +317,29 @@ const footer = (
         Delete
       </button>
     )}
+
     <div className="flex items-center gap-2 ml-auto">
+
+      {/* ── Cancel — ghost neutral ── */}
       <button
         type="button"
         onClick={onClose}
         disabled={isSubmitting}
-        className="atm-btn-ghost px-4 py-2 rounded-xl text-sm font-medium touch-manipulation focus:outline-none focus:ring-2 focus:ring-white/10"
+        className="atm-btn-ghost px-4 py-2 rounded-xl text-sm font-medium
+                   touch-manipulation
+                   focus:outline-none focus:ring-2 focus:ring-white/10"
       >
         Cancel
       </button>
+
+      {/* ── Submit — solid primary ── */}
       <button
         type="submit"
         form="atm-form"
         disabled={isSubmitting}
-        className="atm-btn-submit atm-pulse-ring flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold touch-manipulation focus:outline-none focus:ring-2"
+        className="atm-btn-submit atm-pulse-ring flex items-center gap-2 px-5 py-2 rounded-xl
+                   text-sm font-bold touch-manipulation
+                   focus:outline-none focus:ring-2"
         style={{
           background: isExpense
             ? 'linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%)'
@@ -338,17 +350,31 @@ const footer = (
         }}
       >
         {isSubmitting ? (
-          <><svg className="atm-spin" width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40 20" /></svg>Saving…</>
+          <>
+            <svg className="atm-spin" width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40 20" />
+            </svg>
+            Saving…
+          </>
         ) : isEditing ? (
-          <><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>Save Changes</>
+          <>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+            Save Changes
+          </>
         ) : (
-          <><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>Add {isExpense ? 'Expense' : 'Income'}</>
+          <>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+            </svg>
+            Add {isExpense ? 'Expense' : 'Income'}
+          </>
         )}
       </button>
     </div>
   </div>
 );
-
   return (
     <>
       <BaseModal
@@ -363,42 +389,63 @@ const footer = (
       >
         <form id="atm-form" onSubmit={handleSubmit} noValidate className="flex flex-col gap-5 pb-1">
 
-          {/* Row 1: Type + Scan */}
+          {/* ── Row 1: Type + Scan ── */}
           <div className="atm-in flex items-center gap-3" style={{ animationDelay: '0ms' }}>
             <div className="atm-toggle flex-1">
               {(['expense', 'income'] as const).map(t => (
-                <button key={t} type="button" onClick={() => handleTypeChange(t)}
-                  className={`atm-toggle-btn ${type === t ? `is-active ${t}` : ''}`}>
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => handleTypeChange(t)}
+                  className={`atm-toggle-btn ${type === t ? `is-active ${t}` : ''}`}
+                >
                   {t === 'expense' ? '↑ Expense' : '↓ Income'}
                 </button>
               ))}
             </div>
-            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isScanning}
-              className="atm-glass flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] active:scale-95 transition-all touch-manipulation flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isScanning}
+              className="atm-glass flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] active:scale-95 transition-all touch-manipulation flex-shrink-0"
+            >
               {isScanning
                 ? <svg className="atm-spin" width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40 20"/></svg>
-                : <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                : <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
               }
               {isScanning ? 'Scanning…' : 'Scan Receipt'}
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleScanReceipt} className="hidden" />
           </div>
 
+          {/* ── Scan error ── */}
           {errors.scan && <ErrMsg msg={errors.scan} />}
 
-          {/* AI Emoji badge */}
+          {/* ── AI Emoji badge ── */}
           {suggestedEmoji && (
-            <div className="atm-pop flex items-center gap-3 px-4 py-3 rounded-2xl"
-              style={{ background: 'rgba(var(--color-primary-rgb),0.06)', border: '1px solid rgba(var(--color-primary-rgb),0.18)' }}>
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
-                style={{ background: 'rgba(var(--color-primary-rgb),0.10)' }}>{suggestedEmoji}</div>
+            <div
+              className="atm-pop flex items-center gap-3 px-4 py-3 rounded-2xl"
+              style={{ background: 'rgba(var(--color-primary-rgb),0.06)', border: '1px solid rgba(var(--color-primary-rgb),0.18)' }}
+            >
+              <div
+                className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
+                style={{ background: 'rgba(var(--color-primary-rgb),0.10)' }}
+              >
+                {suggestedEmoji}
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-[rgb(var(--color-text-rgb))]">AI detected emoji</p>
                 <p className="text-[11px] text-[rgb(var(--color-text-muted-rgb))]/65 mt-0.5">Will be saved with this transaction</p>
               </div>
-              <button type="button" onClick={() => setSuggestedEmoji(undefined)}
+              <button
+                type="button"
+                onClick={() => setSuggestedEmoji(undefined)}
                 className="w-6 h-6 rounded-full flex items-center justify-center bg-[rgb(var(--color-text-muted-rgb))]/10 hover:bg-[rgba(var(--color-error-rgb),0.20)] hover:text-[rgb(var(--color-error-rgb))] text-[rgb(var(--color-text-muted-rgb))] transition-all active:scale-90"
-                aria-label="Remove emoji">
+                aria-label="Remove emoji"
+              >
                 <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -406,76 +453,73 @@ const footer = (
             </div>
           )}
 
-          {/* Description */}
+          {/* ── Description ── */}
           <div className="atm-in" style={{ animationDelay: '50ms' }}>
             <FieldLabel htmlFor="description" required>Description</FieldLabel>
             <div className={`atm-glass px-4 py-3 ${errors.description ? 'has-error' : ''}`}>
-              <input id="description" type="text" value={description} autoFocus
+              <input
+                id="description"
+                type="text"
+                value={description}
+                autoFocus
                 onChange={e => { setDescription(e.target.value); clrErr('description'); }}
                 placeholder="e.g. Coffee at Starbucks"
-                className="w-full bg-transparent text-sm font-medium text-[rgb(var(--color-text-rgb))] placeholder-[rgb(var(--color-text-muted-rgb))]/30 outline-none" />
+                className="w-full bg-transparent text-sm font-medium text-[rgb(var(--color-text-rgb))] placeholder-[rgb(var(--color-text-muted-rgb))]/30 outline-none"
+              />
             </div>
             <ErrMsg msg={errors.description} />
+
+            {/* AI category chips */}
             {aiSuggestions.length > 0 && (
               <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
                 <span className="text-[10px] font-semibold text-[rgb(var(--color-text-muted-rgb))]/50 flex items-center gap-0.5">
-                  <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
                   Quick:
                 </span>
                 {aiSuggestions.map((s, i) => (
-                  <button key={s} type="button" onClick={() => { setCategory(s); clrErr('category'); }}
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => { setCategory(s); clrErr('category'); }}
                     className={`atm-pop atm-chip ${category === s ? 'active' : 'inactive'}`}
-                    style={{ animationDelay: `${i * 35}ms` }}>{s}</button>
+                    style={{ animationDelay: `${i * 35}ms` }}
+                  >
+                    {s}
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Amount */}
+          {/* ── Amount ── */}
           <div className="atm-in" style={{ animationDelay: '100ms' }}>
             <FieldLabel htmlFor="amount" required>Amount</FieldLabel>
-            <AmountInput id="amount" value={amount}
+            <AmountInput
+              id="amount"
+              value={amount}
               onChange={v => { setAmount(v); clrErr('amount'); }}
-              error={errors.amount} currencySymbol="$" />
+              error={errors.amount}
+              currencySymbol="$"
+            />
           </div>
 
-          {/* Account Selector */}
-          {activeAccounts.length > 0 && (
-            <div className="atm-in" style={{ animationDelay: '130ms' }}>
-              <FieldLabel>Account</FieldLabel>
-              <div className="flex gap-2 flex-wrap">
-                {activeAccounts.map(acc => {
-                  const meta = ACCOUNT_TYPE_META[acc.type];
-                  const color = acc.color || meta.color;
-                  const isSelected = accountId === acc.id;
-                  return (
-                    <button key={acc.id} type="button"
-                      onClick={() => setAccountId(acc.id)}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold transition-all active:scale-95"
-                      style={{
-                        background: isSelected ? color + '22' : 'rgba(var(--color-card-muted-rgb),0.6)',
-                        border: isSelected ? `1.5px solid ${color}66` : '1.5px solid rgba(255,255,255,0.06)',
-                        color: isSelected ? color : 'rgb(var(--color-text-muted-rgb))',
-                      }}>
-                      <span>{meta.emoji}</span>
-                      <span>{acc.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              {selectedAccount && (
-                <p className="text-[11px] mt-1.5" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
-                  Balance: {selectedAccount.balance < 0 ? '-' : ''}{Math.abs(selectedAccount.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Category */}
-          <FormField label="Category" htmlFor="category" required error={errors.category}>
-            <Select id="category" value={category}
-              onChange={(e) => { setCategory(e.target.value); if (errors.category) setErrors({ ...errors, category: '' }); }}
-              error={errors.category}>
+      <FormField
+            label="Category"
+            htmlFor="category"
+            required
+            error={errors.category}
+          >
+            <Select
+              id="category"
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                if (errors.category) setErrors({ ...errors, category: '' });
+              }}
+              error={errors.category}
+            >
               {Object.entries(categories).map(([group, subcategories]) => (
                 <optgroup label={group} key={group}>
                   {(subcategories as SubCategory[]).map(cat => (
@@ -494,14 +538,14 @@ const footer = (
         onConfirm={() => {
           if (transactionToEdit && onDeleteTransaction) onDeleteTransaction(transactionToEdit.id);
           setShowDeleteConfirmation(false);
-          setTimeout(() => { onClose(); }, 10);
+          setTimeout(() => { onClose(); }, 10); // 保險延遲，確保狀態同步
           setTimeout(() => {
             if (typeof document !== 'undefined') {
               document.body.style.overflow = '';
               const backdrops = document.querySelectorAll('.lg-backdrop');
               backdrops.forEach(el => el.parentNode && el.parentNode.removeChild(el));
             }
-          }, 350);
+          }, 350); // 動畫結束後強制清理
         }}
         title="Delete Transaction"
         message={`Are you sure you want to delete "${transactionToEdit?.description}"? This action cannot be undone.`}
