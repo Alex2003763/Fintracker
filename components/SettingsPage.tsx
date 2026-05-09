@@ -373,10 +373,9 @@ const SecuritySection: React.FC<{
             sublabel={isRegistering ? 'Registering…' : 'Touch ID / Face ID'}
             right={
               <ToggleButton
-                checked={user.biometricEnabled}
+                checked={user.biometricEnabled ?? false}
                 onChange={handleToggleBiometrics}
                 disabled={isRegistering}
-                size="md"
               />
             }
           />
@@ -388,149 +387,97 @@ const SecuritySection: React.FC<{
 };
 
 
-// ─── Smart Features Section ───────────────────────────────────────────────────
-
-const SmartFeaturesSection: React.FC<{
-  user: User;
-  onUpdateUser: (u: User) => void;
-  setActiveItem?: (item: string) => void;
-}> = ({ user, onUpdateUser, setActiveItem }) => {
-  const [apiKey, setApiKey] = useState(user.aiSettings?.apiKey || '');
-  const [show, setShow] = useState(false);
-  const [msg, setMsg] = useState('');
-
-  const saveApiKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    onUpdateUser({ ...user, aiSettings: { apiKey, model: 'gemini-2.0-flash' } });
-    setMsg('API Key saved!');
-    setTimeout(() => setMsg(''), 3000);
-  };
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader><CardTitle>AI Settings</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] leading-relaxed">
-            Enter your Gemini API key to enable AI-powered financial insights and smart categorization.
-          </p>
-          <form onSubmit={saveApiKey} className="space-y-3">
-            <div className="relative">
-              <input
-                type={show ? 'text' : 'password'}
-                placeholder="Gemini API Key"
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-                className="w-full px-4 py-3 pr-12 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none text-[rgb(var(--color-text-rgb))] text-base"
-              />
-              <button type="button" onClick={() => setShow(s => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-[rgb(var(--color-text-muted-rgb))]">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {show
-                    ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M3 3l18 18" />
-                    : <>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </>
-                  }
-                </svg>
-              </button>
-            </div>
-            {msg && <p className="text-sm text-[rgb(var(--color-success-rgb))] px-1">{msg}</p>}
-            <button type="submit"
-              className="w-full py-3 bg-[rgb(var(--color-primary-rgb))] text-white rounded-xl hover:brightness-110 active:scale-[0.98] transition-all font-semibold">
-              Save API Key
-            </button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>Categorization</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <SettingsRow
-            icon={<SparklesIcon className="w-5 h-5" />}
-            label="Smart Suggestions"
-            sublabel="Auto-suggest categories for transactions"
-            right={
-              <ToggleButton
-                checked={user.smartFeatures?.categorySuggestions ?? true}
-                onChange={() => onUpdateUser({
-                  ...user,
-                  smartFeatures: {
-                    ...user.smartFeatures,
-                    categorySuggestions: !(user.smartFeatures?.categorySuggestions ?? true),
-                  },
-                })}
-                size="md"
-              />
-            }
-          />
-          <SettingsRow
-            icon={
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
-            }
-            label="Manage Categories"
-            sublabel="Add, edit or remove categories"
-            onClick={() => setActiveItem?.('Manage Categories')}
-          />
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-
 // ─── Main SettingsPage ────────────────────────────────────────────────────────
 
 const SettingsPage: React.FC<SettingsPageProps> = ({
-  user, onUpdateUser, onSignOut, onOpenConfirmModal,
-  onImportData, onExportData, setActiveItem,
-  onOpenCropModal, isProcessingImage = false,
-  processingType = 'transparent', setProcessingType,
+  user,
+  onUpdateUser,
+  onSignOut,
+  onOpenConfirmModal,
+  onImportData,
+  setActiveItem,
+  onOpenCropModal,
+  isProcessingImage,
+  processingType,
+  setProcessingType,
+  onExportData,
   onChangePassword,
 }) => {
-  const [activeHubTab, setActiveHubTab] = useState<'account' | 'app'>('account');
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const { theme, setTheme, customBackground, setCustomBackground } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState<'account' | 'appearance' | 'data' | 'notifications' | 'advanced'>('account');
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const backgroundInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Background image handling ──
+  const handleBackgroundUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      alert('File size must be less than 20 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const dataUrl = reader.result as string;
+      if (onOpenCropModal) {
+        onOpenCropModal(dataUrl, processingType || 'transparent');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Listen for crop completion from App.tsx
   useEffect(() => {
     const handleCropComplete = async (event: CustomEvent) => {
-      const { croppedImageUrl, processingType: et } = event.detail;
-      const colors = THEME_COLORS[theme] || THEME_COLORS['theme-light'];
-      const tc = { isDark: !colors.isLight, primaryColor: colors.primary };
-      const processed = et === 'transparent'
-        ? await processImageForBackground(croppedImageUrl, tc)
-        : await createPatternBackground(croppedImageUrl, tc);
-      setCustomBackground(processed);
+      const { croppedImageUrl, processingType: type } = event.detail;
+      try {
+        let processedImage: string;
+        if (type === 'pattern') {
+          processedImage = await createPatternBackground(croppedImageUrl);
+        } else {
+          processedImage = await processImageForBackground(croppedImageUrl);
+        }
+        onUpdateUser({ ...user, backgroundImage: processedImage });
+      } catch (error) {
+        console.error('Error processing image:', error);
+        alert('Failed to process image. Please try again.');
+      }
     };
+
     window.addEventListener('cropComplete', handleCropComplete as EventListener);
     return () => window.removeEventListener('cropComplete', handleCropComplete as EventListener);
-  }, [theme, setCustomBackground]);
+  }, [user, onUpdateUser]);
 
-  if (showNotificationSettings) {
-    return (
-      <NotificationSettingsPage
-        user={user}
-        onUpdateUser={onUpdateUser}
-        onBack={() => setShowNotificationSettings(false)}
-      />
-    );
-  }
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      try {
+        const data = JSON.parse(reader.result as string);
+        onOpenConfirmModal(
+          'Import Data',
+          'This will merge imported data with your existing data. Continue?',
+          () => onImportData(data),
+          { confirmText: 'Import', variant: 'primary' }
+        );
+      } catch {
+        alert('Invalid backup file.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
-  // ── Account Tab ──────────────────────────────────────────────────────────────
+  // ── Tab content renderers ──
+
   const renderAccountTab = () => (
     <div className="space-y-4 animate-fade-in">
       <ProfileSection user={user} onUpdateUser={onUpdateUser} />
       <SecuritySection user={user} onUpdateUser={onUpdateUser} onChangePassword={onChangePassword} />
 
-      {/* ── NEW: Manage Financial Accounts quick-link ── */}
+      {/* ── Manage Financial Accounts quick-link ── */}
       <Card>
         <CardHeader><CardTitle>Financial Accounts</CardTitle></CardHeader>
         <CardContent className="space-y-3">
@@ -547,244 +494,242 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             iconBg="rgba(var(--color-primary-rgb), 0.12)"
             label="Manage Accounts"
             sublabel={`${(user.financialAccounts ?? []).filter(a => !a.isArchived).length} active account(s)`}
-            onClick={() => setActiveItem?.('Account')}
+            onClick={() => setActiveItem?.('Accounts')}
           />
         </CardContent>
       </Card>
     </div>
   );
 
-  // ── App Tab ──────────────────────────────────────────────────────────────────
-  const renderAppTab = () => (
+  const renderAppearanceTab = () => (
     <div className="space-y-4 animate-fade-in">
-
-      {/* ── Accounts ── */}
       <Card>
-        <CardHeader><CardTitle>Accounts</CardTitle></CardHeader>
-        <CardContent>
-          <SettingsRow
-            icon={
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-            }
-            iconBg="rgba(var(--color-primary-rgb), 0.12)"
-            label="Manage Accounts"
-            sublabel="Credit card, savings, piggy bank & more"
-            onClick={() => setActiveItem?.('Account')}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Appearance */}
-      <Card>
-        <CardHeader><CardTitle>Appearance</CardTitle></CardHeader>
-        <CardContent className="space-y-6">
-          {/* Theme selector + live preview stacked on mobile */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Theme</label>
-            <select
-              value={theme}
-              onChange={e => setTheme(e.target.value)}
-              className="w-full p-3.5 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none text-[rgb(var(--color-text-rgb))] text-base appearance-none"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '18px' }}
-            >
-              {THEMES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-            {/* Preview */}
-            <div className="p-3 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl border border-[rgb(var(--color-border-rgb))]">
-              <p className="text-xs font-medium text-[rgb(var(--color-text-muted-rgb))] mb-2 text-center">Preview</p>
-              <ThemePreview themeId={theme} />
-            </div>
-          </div>
-
-          {/* Currency */}           <div className="pt-4 border-t border-[rgb(var(--color-border-rgb))] space-y-3">             <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Currency</label>             <select               value={user.currency || 'USD'}               onChange={e => onUpdateUser({ ...user, currency: e.target.value as any })}               className="w-full p-3.5 bg-[rgb(var(--color-card-muted-rgb))] border border-[rgb(var(--color-border-rgb))] rounded-xl focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb))] outline-none text-[rgb(var(--color-text-rgb))] text-base appearance-none"               style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '18px' }}             >               {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol} {c.name} ({c.code})</option>)}             </select>           </div>            {/* Card Background */}
-          <div className="pt-4 border-t border-[rgb(var(--color-border-rgb))] space-y-3">
-            <label className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Card Background</label>
-            {customBackground ? (
-              <div className="flex items-center gap-3 p-4 bg-[rgb(var(--color-card-muted-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))]">
-                <div className="w-14 h-14 rounded-xl border border-[rgb(var(--color-border-rgb))] overflow-hidden shrink-0">
-                  <img src={customBackground} className="w-full h-full object-cover" alt="Background preview" />
+        <CardHeader><CardTitle>Theme</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            {THEMES.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTheme(t.id)}
+                className={`relative rounded-2xl overflow-hidden border-2 transition-all active:scale-[0.97] ${
+                  theme === t.id
+                    ? 'border-[rgb(var(--color-primary-rgb))] shadow-md'
+                    : 'border-transparent hover:border-[rgb(var(--color-border-rgb))]'
+                }`}
+              >
+                <ThemePreview themeId={t.id} />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                  <p className="text-white text-xs font-medium text-center">{t.name}</p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Custom background active</p>
-                  <p className="text-xs text-red-600">Tap remove to reset</p>
-                </div>
-                <button
-                  onClick={() => setCustomBackground(null)}
-                  className="px-3 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <>
-                {/* Processing type toggle */}
-                <div className="flex gap-2">
-                  {(['transparent', 'pattern'] as const).map(type => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setProcessingType?.(type)}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-semibold capitalize transition-all ${
-                        processingType === type
-                          ? 'bg-[rgb(var(--color-primary-rgb))] text-white shadow-sm'
-                          : 'bg-[rgb(var(--color-card-muted-rgb))] text-[rgb(var(--color-text-rgb))] border border-[rgb(var(--color-border-rgb))]'
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-[rgb(var(--color-border-rgb))] rounded-2xl py-8 flex flex-col items-center gap-2 hover:border-[rgb(var(--color-primary-rgb))] active:scale-[0.99] transition-all"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-[rgb(var(--color-primary-rgb))]/10 flex items-center justify-center text-[rgb(var(--color-primary-rgb))]">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                {theme === t.id && (
+                  <div className="absolute top-2 right-2 w-5 h-5 bg-[rgb(var(--color-primary-rgb))] rounded-full flex items-center justify-center shadow">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <p className="text-sm font-medium text-[rgb(var(--color-text-rgb))]">Upload custom background</p>
-                  <p className="text-xs text-[rgb(var(--color-text-muted-rgb))]">{processingType === 'transparent' ? 'Transparent' : 'Pattern'} style • max 10 MB</p>
-                </button>
-                <input
-                  type="file" accept="image/*" ref={fileInputRef} className="hidden"
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = () => onOpenCropModal?.(reader.result as string, processingType);
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-              </>
-            )}
+                )}
+              </button>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Smart Features */}
-      <SmartFeaturesSection user={user} onUpdateUser={onUpdateUser} setActiveItem={setActiveItem} />
-
-      {/* Notifications */}
+      {/* Background Image */}
       <Card>
-        <CardHeader><CardTitle>Notifications</CardTitle></CardHeader>
-        <CardContent>
-          <SettingsRow
-            icon={<BellIcon className="w-5 h-5" />}
-            label="Preferences & Alerts"
-            sublabel="Budget alerts, reminders & more"
-            onClick={() => setShowNotificationSettings(true)}
-          />
+        <CardHeader><CardTitle>Background Image</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          {user.backgroundImage && (
+            <div className="relative w-full h-32 rounded-xl overflow-hidden border border-[rgb(var(--color-border-rgb))]">
+              <img src={user.backgroundImage} alt="Background" className="w-full h-full object-cover" />
+              <button
+                onClick={() => onUpdateUser({ ...user, backgroundImage: undefined })}
+                className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-lg flex items-center justify-center hover:bg-black/70 transition-colors"
+                aria-label="Remove background"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {/* Processing type selector */}
+          <div className="flex gap-2">
+            {(['transparent', 'pattern'] as const).map(type => (
+              <button
+                key={type}
+                onClick={() => setProcessingType?.(type)}
+                className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium border transition-all ${
+                  processingType === type
+                    ? 'border-[rgb(var(--color-primary-rgb))] bg-[rgba(var(--color-primary-rgb),0.1)] text-[rgb(var(--color-primary-rgb))]'
+                    : 'border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-muted-rgb))]'
+                }`}
+              >
+                {type === 'transparent' ? '🎨 Transparent' : '🔲 Pattern'}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => backgroundInputRef.current?.click()}
+            disabled={isProcessingImage}
+            className="w-full py-3 rounded-xl border-2 border-dashed border-[rgb(var(--color-border-rgb))] text-[rgb(var(--color-text-muted-rgb))] hover:border-[rgb(var(--color-primary-rgb))] hover:text-[rgb(var(--color-primary-rgb))] transition-all text-sm font-medium disabled:opacity-50"
+          >
+            {isProcessingImage ? '⏳ Processing…' : '📁 Upload Background Image'}
+          </button>
+          <input type="file" accept="image/*" ref={backgroundInputRef} onChange={handleBackgroundUpload} className="hidden" />
+          <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] text-center">
+            Max 20 MB · PNG, JPG, WebP
+          </p>
         </CardContent>
       </Card>
 
-      {/* Data & Privacy */}
+      {/* Currency */}
       <Card>
-        <CardHeader><CardTitle>Data & Privacy</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Currency</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-2">
+            {CURRENCIES.map(c => (
+              <button
+                key={c.code}
+                onClick={() => onUpdateUser({ ...user, currency: c.code })}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-left transition-all active:scale-[0.97] ${
+                  user.currency === c.code
+                    ? 'border-[rgb(var(--color-primary-rgb))] bg-[rgba(var(--color-primary-rgb),0.08)]'
+                    : 'border-[rgb(var(--color-border-rgb))] hover:border-[rgb(var(--color-primary-rgb))]/50'
+                }`}
+              >
+                <span className="text-lg">{c.symbol}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[rgb(var(--color-text-rgb))] leading-tight">{c.code}</p>
+                  <p className="text-xs text-[rgb(var(--color-text-muted-rgb))] leading-tight truncate">{c.name}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderDataTab = () => (
+    <div className="space-y-4 animate-fade-in">
+      <Card>
+        <CardHeader><CardTitle>Backup & Restore</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <SettingsRow
             icon={<BackupIcon className="w-5 h-5" />}
-            iconBg="rgba(34,197,94,0.12)"
-            label="Backup Data"
-            sublabel="Export all data to a .json file"
+            iconBg="rgba(var(--color-success-rgb), 0.12)"
+            label="Export Data"
+            sublabel="Download a full backup as JSON"
             onClick={onExportData}
           />
           <SettingsRow
             icon={<RestoreIcon className="w-5 h-5" />}
-            iconBg="rgba(59,130,246,0.12)"
-            label="Restore Backup"
-            sublabel="Import data from a .json file"
-            onClick={() => {
-              const input = document.createElement('input');
-              input.type = 'file'; input.accept = '.json';
-              input.onchange = (e: any) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onload = (re: any) => {
-                    const data = JSON.parse(re.target.result);
-                    onOpenConfirmModal('Import Data', 'Overwrite ALL current data?', () => onImportData(data), { variant: 'danger' });
-                  };
-                  reader.readAsText(file);
-                }
-              };
-              input.click();
-            }}
+            iconBg="rgba(var(--color-primary-rgb), 0.12)"
+            label="Import Data"
+            sublabel="Restore from a backup file"
+            onClick={() => fileInputRef.current?.click()}
           />
+          <input type="file" accept=".json" ref={fileInputRef} onChange={handleImport} className="hidden" />
         </CardContent>
       </Card>
 
-      {/* App Info */}
       <Card>
-        <CardHeader><CardTitle>App Information</CardTitle></CardHeader>
-        <CardContent><ServiceWorkerDebugPanel /></CardContent>
+        <CardHeader><CardTitle>Danger Zone</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <SettingsRow
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            }
+            iconBg="rgba(var(--color-error-rgb), 0.12)"
+            label="Sign Out"
+            sublabel="You will need to sign in again"
+            onClick={() => onOpenConfirmModal('Sign Out', 'Are you sure you want to sign out?', onSignOut, { confirmText: 'Sign Out', variant: 'danger' })}
+          />
+        </CardContent>
       </Card>
-
-      {/* Sign Out — thumb-zone friendly, full width, generous padding */}
-      <button
-        onClick={() => onOpenConfirmModal('Sign Out', 'Are you sure you want to sign out?', onSignOut, { variant: 'danger' })}
-        className="w-full py-4 rounded-2xl font-bold text-base bg-red-600 text-white hover:bg-red-700 active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-red-700"
-      >
-        Sign Out
-      </button>
-
     </div>
   );
 
+  const renderNotificationsTab = () => (
+    <div className="animate-fade-in">
+      <NotificationSettingsPage user={user} onUpdateUser={onUpdateUser} />
+    </div>
+  );
+
+  const renderAdvancedTab = () => (
+    <div className="space-y-4 animate-fade-in">
+      <Card>
+        <CardHeader><CardTitle>Advanced</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <SettingsRow
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            }
+            label="Service Worker Debug"
+            sublabel="Developer tools for PWA debugging"
+            onClick={() => setShowDebugPanel(v => !v)}
+            right={
+              <svg className={`w-4 h-4 text-[rgb(var(--color-text-muted-rgb))] transition-transform ${showDebugPanel ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            }
+          />
+          {showDebugPanel && (
+            <div className="mt-2">
+              <ServiceWorkerDebugPanel />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  // ── Tab bar ──
+  const tabs = [
+    { key: 'account',       label: 'Account',       icon: <UserIcon className="w-4 h-4" /> },
+    { key: 'appearance',    label: 'Appearance',    icon: <SparklesIcon className="w-4 h-4" /> },
+    { key: 'notifications', label: 'Alerts',        icon: <BellIcon className="w-4 h-4" /> },
+    { key: 'data',          label: 'Data',          icon: <BackupIcon className="w-4 h-4" /> },
+    { key: 'advanced',      label: 'Advanced',      icon: <SettingsIcon className="w-4 h-4" /> },
+  ] as const;
+
   return (
-    <div className="min-h-screen pb-24">
-
-      {/* ── Sticky header + tab bar ── */}
-      <div className="sticky top-0 z-20 bg-[rgb(var(--color-bg-rgb))]/90 backdrop-blur-md border-b border-[rgb(var(--color-border-rgb))] safe-top">
-        {/* Page title row */}
-        <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-          <div className="p-2 bg-[rgb(var(--color-primary-rgb))]/10 rounded-xl shrink-0">
-            <SettingsIcon className="w-5 h-5 text-[rgb(var(--color-primary-rgb))]" />
-          </div>
-          <h1 className="text-xl font-bold text-[rgb(var(--color-text-rgb))]">Settings</h1>
-        </div>
-
-        {/* Segmented tab control */}
-        <div className="px-4 pb-3">
-          <div className="flex p-1 bg-[rgb(var(--color-card-muted-rgb))] rounded-xl">
-            {([
-              { id: 'account', label: 'My Account' },
-              { id: 'app',     label: 'App Settings' },
-            ] as const).map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveHubTab(tab.id)}
-                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                  activeHubTab === tab.id
-                    ? 'bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-primary-rgb))] shadow-sm'
-                    : 'text-[rgb(var(--color-text-muted-rgb))]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
+    <div className="max-w-2xl mx-auto pb-8">
+      {/* Tab Bar */}
+      <div className="flex gap-1 p-1 bg-[rgb(var(--color-card-muted-rgb))] rounded-2xl mb-6 overflow-x-auto scrollbar-hide">
+        {tabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+              activeTab === tab.key
+                ? 'bg-[rgb(var(--color-card-rgb))] text-[rgb(var(--color-text-rgb))] shadow-sm'
+                : 'text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))]'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* ── Content ── */}
-      <div className="max-w-xl mx-auto px-4 pt-5 space-y-4 bg-[rgb(var(--color-card-rgb))] rounded-2xl border border-[rgb(var(--color-border-rgb))]">
-        {activeHubTab === 'account' ? renderAccountTab() : renderAppTab()}
-
-        <footer className="text-center text-[rgb(var(--color-text-muted-rgb))] text-xs pt-4 pb-2 border-t border-[rgb(var(--color-border-rgb))]">
-          FinTrack v2.1.0
-        </footer>
-      </div>
-
+      {/* Tab Content */}
+      {activeTab === 'account'       && renderAccountTab()}
+      {activeTab === 'appearance'    && renderAppearanceTab()}
+      {activeTab === 'notifications' && renderNotificationsTab()}
+      {activeTab === 'data'          && renderDataTab()}
+      {activeTab === 'advanced'      && renderAdvancedTab()}
     </div>
   );
 };
-
 
 export default SettingsPage;
