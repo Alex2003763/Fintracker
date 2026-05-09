@@ -27,12 +27,22 @@ export interface TransactionCategories {
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
 
+// Wallet icon inline SVG component for Accounts nav
+const AccountsNavIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 6h18M3 14h18M3 18h18" />
+    <rect x="1" y="4" width="22" height="16" rx="3" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="17" cy="14" r="2" strokeWidth={1.8} />
+  </svg>
+);
+
 export const NAV_ITEMS: NavItem[] = [
   { name: 'Home',         icon: HomeIcon         },
   { name: 'Transactions', icon: TransactionsIcon  },
   { name: 'Insights',     icon: TrendingUpIcon    },
   { name: 'Goals',        icon: GoalsIcon         },
   { name: 'Budgets',      icon: BudgetIcon        },
+  { name: 'Accounts',     icon: AccountsNavIcon   },
 ];
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -40,8 +50,6 @@ export const NAV_ITEMS: NavItem[] = [
 export const INITIAL_BALANCE = 0;
 
 // ─── Categories ───────────────────────────────────────────────────────────────
-// Each SubCategory has name + emoji for richer display in CategoryIcon & chips.
-// Emoji are cross-platform functional identifiers — not decorative.
 
 export const TRANSACTION_CATEGORIES: TransactionCategories = {
   expense: {
@@ -109,86 +117,63 @@ export const TRANSACTION_CATEGORIES: TransactionCategories = {
 };
 
 // ─── Icon map ─────────────────────────────────────────────────────────────────
-// FIX: Icons are now semantically matched.
-// Categories with emoji in TRANSACTION_CATEGORIES will render emoji first
-// (via CategoryIcon's emoji branch), so SVG fallbacks here are for
-// custom/user-added categories that only have a name.
 
 export const CATEGORY_ICON_MAP: Record<string, IconComponent> = {
-  // ── Income ──────────────────────────────────────────────────────────────
   'Salary':      SalaryIcon,
-  'Freelance':   UserIcon,         // FIX: person/worker, not a money bag
-  'Bonus':       SparklesIcon,     // FIX: special/reward, not generic salary
-  'Investments': PieChartIcon,     // FIX: chart/portfolio, not piggy bank
+  'Freelance':   UserIcon,
+  'Bonus':       SparklesIcon,
+  'Investments': PieChartIcon,
   'Rental':      HomeGoodsIcon,
   'Dividends':   TrendingUpIcon,
   'Savings':     PiggyBankIcon,
   'Gifts':       SparklesIcon,
-
-  // ── Food & Drink ────────────────────────────────────────────────────────
   'Groceries':    GroceriesIcon,
-  'Restaurants':  CoffeeIcon,      // best available — no utensil icon
+  'Restaurants':  CoffeeIcon,
   'Coffee Shops': CoffeeIcon,
-  'Takeout':      CartIcon,        // FIX: takeout = carry items, not coffee
-
-  // ── Shopping ────────────────────────────────────────────────────────────
+  'Takeout':      CartIcon,
   'Clothing':         CartIcon,
   'Electronics':      CartIcon,
   'Home Goods':       HomeGoodsIcon,
   'Hobbies':          HobbiesIcon,
   'General Shopping': CartIcon,
-
-  // ── Bills & Utilities ───────────────────────────────────────────────────
-  'Rent/Mortgage': HomeGoodsIcon,  // FIX: home icon, not generic bill
+  'Rent/Mortgage': HomeGoodsIcon,
   'Utilities':     BillIcon,
   'Phone':         BillIcon,
   'Internet':      BillIcon,
   'Insurance':     BillIcon,
-
-  // ── Transportation ──────────────────────────────────────────────────────
   'Gas/Fuel':       GasIcon,
   'Public Transit': BusIcon,
   'Ride Sharing':   CarIcon,
   'Maintenance':    MaintenanceIcon,
-
-  // ── Health & Wellness ───────────────────────────────────────────────────
   'Pharmacy': PharmacyIcon,
   'Doctor':   DoctorIcon,
   'Gym':      GymIcon,
-
-  // ── Entertainment ───────────────────────────────────────────────────────
   'Movies':        MoviesIcon,
   'Subscriptions': SubscriptionsIcon,
-  'Games':         HobbiesIcon,    // FIX: hobby/fun, not shopping cart
-
-  // ── Misc ────────────────────────────────────────────────────────────────
+  'Games':         HobbiesIcon,
   'Transfers': TransferIcon,
-  'Other':     WalletIcon,         // FIX: neutral wallet, not groceries
+  'Other':     WalletIcon,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Flatten all SubCategory for a given type */
 export const getFlatCategories = (
   type: TransactionType,
   customCategories?: TransactionCategories,
 ): SubCategory[] =>
   Object.values((customCategories ?? TRANSACTION_CATEGORIES)[type]).flat();
 
-/** First category name in a type — useful as form default */
 export const getDefaultCategory = (
   type: TransactionType,
   customCategories?: TransactionCategories,
 ): string => getFlatCategories(type, customCategories)[0]?.name ?? '';
 
-/** All category names as a flat string array */
 export const getAllCategoryNames = (
   type: TransactionType,
   customCategories?: TransactionCategories,
 ): string[] =>
   getFlatCategories(type, customCategories).map(c => c.name);
 
-/** Find which group a category name belongs to, or undefined if not found */
 export const getCategoryGroup = (
   name: string,
   type: TransactionType,
@@ -200,7 +185,6 @@ export const getCategoryGroup = (
   )?.[0];
 };
 
-/** Look up the emoji for a category name, or undefined */
 export const getEmojiForCategory = (
   name: string,
   type?: TransactionType,
@@ -214,11 +198,9 @@ export const getEmojiForCategory = (
   return undefined;
 };
 
-/** SVG icon component for a category name, or undefined */
 export const getIconForCategory = (name: string): IconComponent | undefined =>
   CATEGORY_ICON_MAP[name];
 
-/** True if the category name exists in the given type */
 export const isCategoryInType = (
   name: string,
   type: TransactionType,
