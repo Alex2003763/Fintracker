@@ -74,7 +74,6 @@ const ThemePreview: React.FC<{ themeId: string }> = ({ themeId }) => {
           <div className="w-1/2 h-8 rounded-md" style={{ backgroundColor: colors.card }} />
         </div>
       </div>
-      {/* Accent ring */}
       {/* Theme-specific subtle overlays for preview */}
       {themeId === 'theme-pixel' && (
         <div
@@ -530,6 +529,28 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     <div className="space-y-4 animate-fade-in">
       <ProfileSection user={user} onUpdateUser={onUpdateUser} />
       <SecuritySection user={user} onUpdateUser={onUpdateUser} onChangePassword={onChangePassword} />
+
+      {/* ── NEW: Manage Financial Accounts quick-link ── */}
+      <Card>
+        <CardHeader><CardTitle>Financial Accounts</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-[rgb(var(--color-text-muted-rgb))] leading-relaxed">
+            View and manage your bank accounts, credit cards, wallets, and track your net worth.
+          </p>
+          <SettingsRow
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            }
+            iconBg="rgba(var(--color-primary-rgb), 0.12)"
+            label="Manage Accounts"
+            sublabel={`${(user.financialAccounts ?? []).filter(a => !a.isArchived).length} active account(s)`}
+            onClick={() => setActiveItem?.('Account')}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 
@@ -551,7 +572,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             iconBg="rgba(var(--color-primary-rgb), 0.12)"
             label="Manage Accounts"
             sublabel="Credit card, savings, piggy bank & more"
-            onClick={() => setActiveItem?.('Financial Accounts')}
+            onClick={() => setActiveItem?.('Account')}
           />
         </CardContent>
       </Card>
