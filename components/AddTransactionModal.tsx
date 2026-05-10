@@ -126,12 +126,84 @@ const CSS = `
     color: rgb(var(--color-text-rgb));
   }
 
-  /* Account card picker */
-  .atm-acc-card:focus-visible {
-    outline: 2px solid rgba(var(--color-primary-rgb), 0.7);
-    outline-offset: 2px;
+  /* Account dropdown */
+  .atm-acc-dropdown {
+    position: relative;
   }
-  .atm-acc-row::-webkit-scrollbar { display: none; }
+  .atm-acc-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(var(--color-card-muted-rgb), 0.45);
+    border: 1px solid rgba(255,255,255,0.09);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.09), 0 2px 10px rgba(0,0,0,0.06);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    touch-action: manipulation;
+  }
+  .atm-acc-trigger:hover {
+    background: rgba(var(--color-card-muted-rgb), 0.65);
+    border-color: rgba(255,255,255,0.14);
+  }
+  .atm-acc-trigger.open {
+    background: rgba(var(--color-card-muted-rgb), 0.72);
+    border-color: rgba(var(--color-primary-rgb), 0.38);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,255,255,0.11),
+      0 0 0 3.5px rgba(var(--color-primary-rgb), 0.11),
+      0 4px 16px rgba(0,0,0,0.08);
+    border-radius: 14px 14px 0 0;
+  }
+  .atm-acc-trigger.has-error {
+    border-color: rgba(239,68,68,0.48);
+    box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.08), 0 0 0 3.5px rgba(239,68,68,0.11);
+  }
+  .atm-acc-menu {
+    position: absolute;
+    top: calc(100% - 1px);
+    left: 0; right: 0;
+    background: rgba(var(--color-card-rgb), 0.97);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(var(--color-primary-rgb), 0.28);
+    border-top: none;
+    border-radius: 0 0 14px 14px;
+    overflow: hidden;
+    z-index: 50;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    animation: atm-in 0.18s cubic-bezier(0.4,0,0.2,1) both;
+  }
+  .atm-acc-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.14s ease;
+    touch-action: manipulation;
+    border: none;
+    background: transparent;
+  }
+  .atm-acc-option:hover {
+    background: rgba(var(--color-primary-rgb), 0.07);
+  }
+  .atm-acc-option.selected {
+    background: rgba(var(--color-primary-rgb), 0.10);
+  }
+  .atm-acc-option + .atm-acc-option {
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .atm-acc-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
 `;
 
 let cssInjected = false;
@@ -161,6 +233,137 @@ const ErrMsg: React.FC<{ msg?: string }> = ({ msg }) => (
     <span className="text-[11px]" style={{color:'rgb(var(--color-error-rgb))'}}>{msg}</span>
   </div>
 );
+
+// ─── Account Dropdown ─────────────────────────────────────────────────────────
+interface AccountDropdownProps {
+  accounts: NonNullable<User['financialAccounts']>;
+  value: string;
+  onChange: (id: string) => void;
+  isExpense: boolean;
+  hasError?: boolean;
+}
+
+const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onChange, isExpense, hasError }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const activeAccounts = accounts.filter(a => !a.isArchived);
+  const selected = activeAccounts.find(a => a.id === value);
+  const selectedMeta = selected ? ACCOUNT_TYPE_META[selected.type] : null;
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleSelect = (id: string) => {
+    onChange(id);
+    setOpen(false);
+  };
+
+  return (
+    <div className="atm-acc-dropdown" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className={`atm-acc-trigger ${open ? 'open' : ''} ${hasError ? 'has-error' : ''}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={isExpense ? 'From Account' : 'To Account'}
+      >
+        {/* Left: color dot + emoji + name */}
+        {selected && selectedMeta ? (
+          <>
+            <span className="atm-acc-dot" style={{ background: selectedMeta.color }} />
+            <span className="text-base leading-none">{selectedMeta.emoji}</span>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-semibold text-[rgb(var(--color-text-rgb))] truncate leading-tight">
+                {selected.name}
+              </p>
+              <p className="text-[11px] font-medium tabular-nums leading-tight"
+                style={{ color: selected.balance < 0 ? '#f87171' : selectedMeta.color }}>
+                {formatCurrency(selected.balance)}
+                <span className="text-[rgb(var(--color-text-muted-rgb))] font-normal ml-1">· {selectedMeta.label}</span>
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            <span className="atm-acc-dot" style={{ background: 'rgba(var(--color-text-muted-rgb),0.4)' }} />
+            <span className="text-base leading-none">🚫</span>
+            <p className="flex-1 text-sm text-[rgb(var(--color-text-muted-rgb))] text-left">No Account</p>
+          </>
+        )}
+        {/* Right: chevron */}
+        <svg
+          className="flex-shrink-0 text-[rgb(var(--color-text-muted-rgb))] transition-transform duration-200"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="atm-acc-menu" role="listbox">
+          {/* No Account option */}
+          <button
+            type="button"
+            role="option"
+            aria-selected={value === ''}
+            className={`atm-acc-option ${value === '' ? 'selected' : ''}`}
+            onClick={() => handleSelect('')}
+          >
+            <span className="atm-acc-dot" style={{ background: 'rgba(var(--color-text-muted-rgb),0.35)' }} />
+            <span className="text-sm leading-none">🚫</span>
+            <p className="flex-1 text-sm text-[rgb(var(--color-text-muted-rgb))] text-left">No Account</p>
+            {value === '' && (
+              <svg width="12" height="12" fill="none" stroke="rgb(var(--color-primary-rgb))" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </button>
+
+          {/* Account options */}
+          {activeAccounts.map(acc => {
+            const meta = ACCOUNT_TYPE_META[acc.type] ?? ACCOUNT_TYPE_META['other' as keyof typeof ACCOUNT_TYPE_META];
+            const isSelected = value === acc.id;
+            const isNeg = acc.balance < 0;
+            return (
+              <button
+                key={acc.id}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                className={`atm-acc-option ${isSelected ? 'selected' : ''}`}
+                onClick={() => handleSelect(acc.id)}
+              >
+                <span className="atm-acc-dot" style={{ background: meta.color }} />
+                <span className="text-sm leading-none">{meta.emoji}</span>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-semibold text-[rgb(var(--color-text-rgb))] truncate leading-tight">{acc.name}</p>
+                  <p className="text-[11px] font-medium tabular-nums leading-tight"
+                    style={{ color: isNeg ? '#f87171' : 'rgb(var(--color-text-muted-rgb))' }}>
+                    {formatCurrency(acc.balance)}
+                    <span className="text-[rgb(var(--color-text-muted-rgb))] font-normal ml-1">· {meta.label}</span>
+                  </p>
+                </div>
+                {isSelected && (
+                  <svg width="12" height="12" fill="none" stroke="rgb(var(--color-primary-rgb))" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
@@ -203,7 +406,6 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [accountId, setAccountId]     = useState<string>(() => {
     if (transactionToEdit?.accountId) return transactionToEdit.accountId;
     if (initialData?.accountId) return initialData.accountId;
-    // Default to first active account if available
     const activeAccounts = user?.financialAccounts?.filter(a => !a.isArchived) || [];
     return activeAccounts.length > 0 ? activeAccounts[0].id : '';
   });
@@ -472,106 +674,20 @@ const footer = (
             </div>
           )}
 
-          {/* ── Account Selector — Card Picker ── */}
-          {user?.financialAccounts && user.financialAccounts.filter(a => !a.isArchived).length > 0 && (() => {
-            const activeAccounts = user.financialAccounts!.filter(a => !a.isArchived);
-            return (
-              <div className="atm-in" style={{ animationDelay: '40ms' }}>
-                <FieldLabel>{isExpense ? 'From Account' : 'To Account'}</FieldLabel>
-
-                {/* Scrollable card row */}
-                <div
-                  className="atm-acc-row flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
-                  role="radiogroup"
-                  aria-label={isExpense ? 'From Account' : 'To Account'}
-                >
-                  {/* No Account card */}
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={accountId === ''}
-                    onClick={() => { setAccountId(''); clrErr('accountId'); }}
-                    className={`atm-acc-card flex-shrink-0 flex flex-col items-center justify-center gap-1 w-[72px] h-[68px] rounded-2xl border transition-all duration-200 active:scale-95 touch-manipulation
-                      ${accountId === ''
-                        ? 'border-white/20 bg-white/10 shadow-[0_0_0_2px_rgba(255,255,255,0.22)]'
-                        : 'border-white/[0.06] bg-white/[0.04] hover:bg-white/[0.08]'
-                      }`}
-                  >
-                    <span className="text-lg leading-none">🚫</span>
-                    <span
-                      className="text-[10px] font-semibold leading-tight text-center w-full truncate px-1"
-                      style={{ color: accountId === '' ? 'rgb(var(--color-text-rgb))' : 'rgb(var(--color-text-muted-rgb))' }}
-                    >
-                      None
-                    </span>
-                  </button>
-
-                  {/* Account cards */}
-                  {activeAccounts.map(acc => {
-                    const meta = ACCOUNT_TYPE_META[acc.type] ?? ACCOUNT_TYPE_META['other' as keyof typeof ACCOUNT_TYPE_META];
-                    const isSelected = accountId === acc.id;
-                    const isNegative = acc.balance < 0;
-                    const accentColor = meta.color || 'rgb(var(--color-primary-rgb))';
-
-                    return (
-                      <button
-                        key={acc.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={isSelected}
-                        onClick={() => { setAccountId(acc.id); clrErr('accountId'); }}
-                        className="atm-acc-card flex-shrink-0 flex flex-col justify-between w-[100px] h-[68px] rounded-2xl border px-2.5 py-2 transition-all duration-200 active:scale-95 touch-manipulation text-left"
-                        style={{
-                          background: isSelected
-                            ? `linear-gradient(135deg, ${accentColor}22, ${accentColor}0f)`
-                            : 'rgba(var(--color-card-muted-rgb), 0.28)',
-                          borderColor: isSelected ? `${accentColor}50` : 'rgba(255,255,255,0.07)',
-                          boxShadow: isSelected
-                            ? `0 0 0 2px ${accentColor}40, 0 4px 12px ${accentColor}18`
-                            : undefined,
-                        }}
-                      >
-                        {/* Top row: emoji + check badge */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm leading-none">{meta.emoji}</span>
-                          {isSelected && (
-                            <span
-                              className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
-                              style={{ background: accentColor }}
-                            >
-                              <svg width="7" height="7" viewBox="0 0 10 8" fill="none">
-                                <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.8"
-                                  strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Bottom: name + balance */}
-                        <div className="min-w-0">
-                          <p
-                            className="text-[10px] font-semibold truncate leading-tight"
-                            style={{ color: isSelected ? 'rgb(var(--color-text-rgb))' : 'rgb(var(--color-text-muted-rgb))' }}
-                          >
-                            {acc.name}
-                          </p>
-                          <p
-                            className="text-[10px] font-bold leading-tight tabular-nums"
-                            style={{ color: isNegative ? '#f87171' : isSelected ? accentColor : 'rgb(var(--color-text-muted-rgb))' }}
-                          >
-                            {formatCurrency(acc.balance)}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <ErrMsg msg={errors.accountId} />
-              </div>
-            );
-          })()}
+          {/* ── Account Selector — Dropdown ── */}
+          {user?.financialAccounts && user.financialAccounts.filter(a => !a.isArchived).length > 0 && (
+            <div className="atm-in" style={{ animationDelay: '40ms' }}>
+              <FieldLabel>{isExpense ? 'From Account' : 'To Account'}</FieldLabel>
+              <AccountDropdown
+                accounts={user.financialAccounts}
+                value={accountId}
+                onChange={(id) => { setAccountId(id); clrErr('accountId'); }}
+                isExpense={isExpense}
+                hasError={!!errors.accountId}
+              />
+              <ErrMsg msg={errors.accountId} />
+            </div>
+          )}
 
           {/* ── Description ── */}
           <div className="atm-in" style={{ animationDelay: '50ms' }}>
@@ -658,14 +774,14 @@ const footer = (
         onConfirm={() => {
           if (transactionToEdit && onDeleteTransaction) onDeleteTransaction(transactionToEdit.id);
           setShowDeleteConfirmation(false);
-          setTimeout(() => { onClose(); }, 10); // 保險延遲，確保狀態同步
+          setTimeout(() => { onClose(); }, 10);
           setTimeout(() => {
             if (typeof document !== 'undefined') {
               document.body.style.overflow = '';
               const backdrops = document.querySelectorAll('.lg-backdrop');
               backdrops.forEach(el => el.parentNode && el.parentNode.removeChild(el));
             }
-          }, 350); // 動畫結束後強制清理
+          }, 350);
         }}
         title="Delete Transaction"
         message={`Are you sure you want to delete "${transactionToEdit?.description}"? This action cannot be undone.`}
