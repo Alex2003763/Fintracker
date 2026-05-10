@@ -60,23 +60,36 @@ const SP_CSS = `
     border-radius: 20px;
   }
 
-  /* Input */
+  /* Input — strong defaults so text is always visible */
   .sp-input {
     width: 100%;
     padding: 11px 16px;
-    background: rgba(var(--color-card-muted-rgb), 0.6);
-    border: 1px solid rgba(var(--color-border-rgb), 0.7);
+    background: rgba(30, 35, 50, 0.7);
+    border: 1.5px solid rgba(120, 140, 180, 0.45);
     border-radius: 14px;
     font-size: 13px;
-    color: rgb(var(--color-text-rgb));
+    color: #e8eaf0;
     outline: none;
     transition: border-color 0.18s, box-shadow 0.18s;
+    /* override any theme variable that resolves to transparent */
+    -webkit-text-fill-color: #e8eaf0;
+  }
+  /* theme-aware override for light themes */
+  :root[class*="light"] .sp-input,
+  .theme-light .sp-input {
+    background: rgba(255,255,255,0.85);
+    border-color: rgba(80, 100, 140, 0.35);
+    color: #1a1d2e;
+    -webkit-text-fill-color: #1a1d2e;
   }
   .sp-input:focus {
-    border-color: rgba(var(--color-primary-rgb), 0.5);
-    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.10);
+    border-color: rgba(var(--color-primary-rgb, 99, 140, 255), 0.65);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 99, 140, 255), 0.13);
   }
-  .sp-input::placeholder { color: rgba(var(--color-text-muted-rgb), 0.45); }
+  .sp-input::placeholder {
+    color: rgba(160, 170, 200, 0.55);
+    -webkit-text-fill-color: rgba(160, 170, 200, 0.55);
+  }
 
   /* Select */
   .sp-select {
@@ -272,19 +285,31 @@ const PasswordField: React.FC<{ label: string; value: string; onChange: (v: stri
   const [show, setShow] = useState(false);
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(var(--color-text-muted-rgb), 0.6)' }}>{label}</label>
+      <label
+        className="text-[11px] font-semibold uppercase tracking-widest block"
+        style={{ color: 'rgba(160, 175, 210, 0.85)' }}
+      >
+        {label}
+      </label>
       <div className="relative">
         <input
           type={show ? 'text' : 'password'}
           value={value}
           onChange={e => onChange(e.target.value)}
           className="sp-input pr-11"
+          style={{
+            /* Hard-coded fallbacks so the field is ALWAYS legible */
+            color: '#e8eaf0',
+            WebkitTextFillColor: '#e8eaf0',
+            background: 'rgba(20, 25, 45, 0.75)',
+            border: '1.5px solid rgba(100, 130, 200, 0.45)',
+          }}
         />
         <button
           type="button"
           onClick={() => setShow(s => !s)}
           className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 transition-colors"
-          style={{ color: 'rgb(var(--color-text-muted-rgb))' }}
+          style={{ color: 'rgba(160, 175, 210, 0.75)' }}
           aria-label={show ? 'Hide' : 'Show'}
         >
           {show ? (
