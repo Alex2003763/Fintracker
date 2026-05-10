@@ -131,26 +131,26 @@ const CSS = `
     position: relative;
   }
 
-  /* Trigger button — solid background, no blur */
+  /* Trigger button — uses theme card background, fully opaque */
   .atm-acc-trigger {
     width: 100%;
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px 14px;
-    background: var(--atm-trigger-bg, #2a2d36);
-    border: 1px solid rgba(255,255,255,0.10);
+    background: rgb(var(--color-card-rgb));
+    border: 1px solid rgba(var(--color-border-rgb), 0.6);
     border-radius: 14px;
     cursor: pointer;
     transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
     touch-action: manipulation;
   }
   .atm-acc-trigger:hover {
-    background: var(--atm-trigger-hover-bg, #31343f);
-    border-color: rgba(255,255,255,0.16);
+    background: rgb(var(--color-card-muted-rgb));
+    border-color: rgba(var(--color-border-rgb), 0.9);
   }
   .atm-acc-trigger.open {
-    background: var(--atm-trigger-bg, #2a2d36);
+    background: rgb(var(--color-card-rgb));
     border-color: rgba(var(--color-primary-rgb), 0.45);
     box-shadow:
       0 0 0 3px rgba(var(--color-primary-rgb), 0.12),
@@ -162,49 +162,19 @@ const CSS = `
     box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
   }
 
-  /* Light-mode trigger overrides */
-  @media (prefers-color-scheme: light) {
-    .atm-acc-trigger {
-      --atm-trigger-bg: #f3f4f6;
-      --atm-trigger-hover-bg: #e9eaec;
-    }
-  }
-  [data-theme="light"] .atm-acc-trigger,
-  .light .atm-acc-trigger {
-    --atm-trigger-bg: #f3f4f6;
-    --atm-trigger-hover-bg: #e9eaec;
-    border-color: rgba(0,0,0,0.10);
-  }
-  [data-theme="light"] .atm-acc-trigger:hover,
-  .light .atm-acc-trigger:hover {
-    border-color: rgba(0,0,0,0.18);
-  }
-
-  /* Dropdown menu — solid opaque background */
+  /* Dropdown menu — fully opaque, uses theme card background */
   .atm-acc-menu {
     position: absolute;
     top: calc(100% - 1px);
     left: 0; right: 0;
-    background: var(--atm-menu-bg, #1e2028);
+    background: rgb(var(--color-card-rgb));
     border: 1px solid rgba(var(--color-primary-rgb), 0.30);
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid rgba(var(--color-border-rgb), 0.4);
     border-radius: 0 0 14px 14px;
     overflow: hidden;
     z-index: 9999;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.50), 0 4px 12px rgba(0,0,0,0.30);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.40), 0 4px 12px rgba(0,0,0,0.20);
     animation: atm-in 0.18s cubic-bezier(0.4,0,0.2,1) both;
-  }
-
-  /* Light-mode menu override */
-  @media (prefers-color-scheme: light) {
-    .atm-acc-menu { --atm-menu-bg: #ffffff; }
-  }
-  [data-theme="light"] .atm-acc-menu,
-  .light .atm-acc-menu {
-    --atm-menu-bg: #ffffff;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);
-    border-color: rgba(0,0,0,0.12);
-    border-top-color: rgba(0,0,0,0.06);
   }
 
   .atm-acc-option {
@@ -226,11 +196,7 @@ const CSS = `
     background: rgba(var(--color-primary-rgb), 0.14);
   }
   .atm-acc-option + .atm-acc-option {
-    border-top: 1px solid rgba(255,255,255,0.05);
-  }
-  [data-theme="light"] .atm-acc-option + .atm-acc-option,
-  .light .atm-acc-option + .atm-acc-option {
-    border-top-color: rgba(0,0,0,0.06);
+    border-top: 1px solid rgba(var(--color-border-rgb), 0.35);
   }
   .atm-acc-dot {
     width: 8px; height: 8px;
