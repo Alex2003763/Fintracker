@@ -163,21 +163,35 @@ const CSS = `
     border-color: rgba(239,68,68,0.48);
     box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.08), 0 0 0 3.5px rgba(239,68,68,0.11);
   }
+
+  /* ── FIXED: solid opaque background so it's always visible ── */
   .atm-acc-menu {
     position: absolute;
     top: calc(100% - 1px);
     left: 0; right: 0;
-    background: rgba(var(--color-card-rgb), 0.97);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    /* Use a solid dark surface colour so it is never invisible */
+    background: var(--atm-menu-bg, #1e1f25);
     border: 1px solid rgba(var(--color-primary-rgb), 0.28);
-    border-top: none;
+    border-top: 1px solid rgba(255,255,255,0.06);
     border-radius: 0 0 14px 14px;
     overflow: hidden;
-    z-index: 50;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    z-index: 9999;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.45), 0 4px 12px rgba(0,0,0,0.30);
     animation: atm-in 0.18s cubic-bezier(0.4,0,0.2,1) both;
   }
+
+  /* Light-mode override */
+  @media (prefers-color-scheme: light) {
+    .atm-acc-menu { --atm-menu-bg: #ffffff; }
+  }
+  [data-theme="light"] .atm-acc-menu,
+  .light .atm-acc-menu {
+    --atm-menu-bg: #ffffff;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);
+    border-color: rgba(0,0,0,0.12);
+    border-top-color: rgba(0,0,0,0.06);
+  }
+
   .atm-acc-option {
     width: 100%;
     display: flex;
@@ -191,13 +205,17 @@ const CSS = `
     background: transparent;
   }
   .atm-acc-option:hover {
-    background: rgba(var(--color-primary-rgb), 0.07);
+    background: rgba(var(--color-primary-rgb), 0.10);
   }
   .atm-acc-option.selected {
-    background: rgba(var(--color-primary-rgb), 0.10);
+    background: rgba(var(--color-primary-rgb), 0.14);
   }
   .atm-acc-option + .atm-acc-option {
     border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  [data-theme="light"] .atm-acc-option + .atm-acc-option,
+  .light .atm-acc-option + .atm-acc-option {
+    border-top-color: rgba(0,0,0,0.06);
   }
   .atm-acc-dot {
     width: 8px; height: 8px;
