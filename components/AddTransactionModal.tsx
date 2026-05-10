@@ -126,61 +126,76 @@ const CSS = `
     color: rgb(var(--color-text-rgb));
   }
 
-  /* Account dropdown */
+  /* ── Account dropdown ──────────────────────────────────────────────────── */
   .atm-acc-dropdown {
     position: relative;
   }
+
+  /* Trigger button — solid background, no blur */
   .atm-acc-trigger {
     width: 100%;
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px 14px;
-    background: rgba(var(--color-card-muted-rgb), 0.45);
-    border: 1px solid rgba(255,255,255,0.09);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.09), 0 2px 10px rgba(0,0,0,0.06);
+    background: var(--atm-trigger-bg, #2a2d36);
+    border: 1px solid rgba(255,255,255,0.10);
     border-radius: 14px;
     cursor: pointer;
-    transition: all 0.22s ease;
+    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
     touch-action: manipulation;
   }
   .atm-acc-trigger:hover {
-    background: rgba(var(--color-card-muted-rgb), 0.65);
-    border-color: rgba(255,255,255,0.14);
+    background: var(--atm-trigger-hover-bg, #31343f);
+    border-color: rgba(255,255,255,0.16);
   }
   .atm-acc-trigger.open {
-    background: rgba(var(--color-card-muted-rgb), 0.72);
-    border-color: rgba(var(--color-primary-rgb), 0.38);
+    background: var(--atm-trigger-bg, #2a2d36);
+    border-color: rgba(var(--color-primary-rgb), 0.45);
     box-shadow:
-      inset 0 1.5px 0 rgba(255,255,255,0.11),
-      0 0 0 3.5px rgba(var(--color-primary-rgb), 0.11),
-      0 4px 16px rgba(0,0,0,0.08);
+      0 0 0 3px rgba(var(--color-primary-rgb), 0.12),
+      0 4px 16px rgba(0,0,0,0.12);
     border-radius: 14px 14px 0 0;
   }
   .atm-acc-trigger.has-error {
-    border-color: rgba(239,68,68,0.48);
-    box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.08), 0 0 0 3.5px rgba(239,68,68,0.11);
+    border-color: rgba(239,68,68,0.55);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
   }
 
-  /* ── FIXED: solid opaque background so it's always visible ── */
+  /* Light-mode trigger overrides */
+  @media (prefers-color-scheme: light) {
+    .atm-acc-trigger {
+      --atm-trigger-bg: #f3f4f6;
+      --atm-trigger-hover-bg: #e9eaec;
+    }
+  }
+  [data-theme="light"] .atm-acc-trigger,
+  .light .atm-acc-trigger {
+    --atm-trigger-bg: #f3f4f6;
+    --atm-trigger-hover-bg: #e9eaec;
+    border-color: rgba(0,0,0,0.10);
+  }
+  [data-theme="light"] .atm-acc-trigger:hover,
+  .light .atm-acc-trigger:hover {
+    border-color: rgba(0,0,0,0.18);
+  }
+
+  /* Dropdown menu — solid opaque background */
   .atm-acc-menu {
     position: absolute;
     top: calc(100% - 1px);
     left: 0; right: 0;
-    /* Use a solid dark surface colour so it is never invisible */
-    background: var(--atm-menu-bg, #1e1f25);
-    border: 1px solid rgba(var(--color-primary-rgb), 0.28);
+    background: var(--atm-menu-bg, #1e2028);
+    border: 1px solid rgba(var(--color-primary-rgb), 0.30);
     border-top: 1px solid rgba(255,255,255,0.06);
     border-radius: 0 0 14px 14px;
     overflow: hidden;
     z-index: 9999;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.45), 0 4px 12px rgba(0,0,0,0.30);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.50), 0 4px 12px rgba(0,0,0,0.30);
     animation: atm-in 0.18s cubic-bezier(0.4,0,0.2,1) both;
   }
 
-  /* Light-mode override */
+  /* Light-mode menu override */
   @media (prefers-color-scheme: light) {
     .atm-acc-menu { --atm-menu-bg: #ffffff; }
   }
