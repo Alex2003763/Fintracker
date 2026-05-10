@@ -606,7 +606,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
     
     console.log('[DEBUG] expenseTransactions:', expenseTransactions.map(t => ({ id: t.id, description: t.description, type: t.type, category: t.category, amount: t.amount })));
 
-    const debugOtherTxns = [];
+    const debugOtherTxns: any[] = [];
     expenseTransactions.forEach(t => {
       let categoryName = typeof t.category === 'object' && t.category !== null
         ? (t.category as any).name || 'Uncategorized'
@@ -657,6 +657,10 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
   }, [filteredTransactions]);
 
   const totalSpending = useMemo(() => pieData.reduce((sum, item) => sum + item.value, 0), [pieData]);
+
+  // Derive accounts and currencySymbol from user for NetWorthTimeline
+  const activeAccounts = useMemo(() => user?.financialAccounts ?? [], [user]);
+  const currencySymbol = user?.settings?.currencySymbol ?? '$';
 
   return (
     <div className="flex flex-col gap-6 p-0 sm:p-0 pb-20 md:pb-6 max-w-7xl mx-auto animate-fade-in-up">
@@ -881,7 +885,11 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
 
       {/* Net Worth Timeline - Full Width */}
       <div className="w-full">
-        <NetWorthTimeline user={user} transactions={transactions} />
+        <NetWorthTimeline
+          accounts={activeAccounts}
+          transactions={transactions}
+          currencySymbol={currencySymbol}
+        />
       </div>
     </div>
   );
