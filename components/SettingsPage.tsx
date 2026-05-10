@@ -239,6 +239,19 @@ const SP_CSS = `
     vertical-align: middle;
     border: 1px solid rgba(255,255,255,0.15);
   }
+
+  /* Theme preview card */
+  @keyframes sp-preview-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .sp-theme-preview {
+    animation: sp-preview-in 0.22s cubic-bezier(0.34,1.2,0.64,1) both;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  }
 `;
 
 let spCssInjected = false;
@@ -252,17 +265,79 @@ const injectSPCSS = () => {
 };
 
 // ─── Theme color map (for swatch preview) ────────────────────────────────────
-const THEME_COLORS: Record<string, { bg: string; card: string; primary: string; isLight: boolean }> = {
-  'theme-light':          { bg: '#f3f4f6', card: '#ffffff',  primary: '#2563eb', isLight: true },
-  'theme-dark-slate':     { bg: '#0f172a', card: '#1e293b',  primary: '#3b82f6', isLight: false },
-  'theme-dark-green':     { bg: '#0f1714', card: '#19271e',  primary: '#4ade80', isLight: false },
-  'theme-dark-crimson':   { bg: '#1c1518', card: '#312126',  primary: '#f43f5e', isLight: false },
-  'theme-ocean-blue':     { bg: '#0f2337', card: '#192d41',  primary: '#648caa', isLight: false },
-  'theme-sunset-orange':  { bg: '#faf5eb', card: '#f5ebdc',  primary: '#be8264', isLight: true },
-  'theme-purple':         { bg: '#231e2d', card: '#2d283a',  primary: '#8c78a5', isLight: false },
-  'theme-midnight-black': { bg: '#121214', card: '#1c1c20',  primary: '#788ca0', isLight: false },
-  'theme-pixel':          { bg: '#0a0a14', card: '#121226',  primary: '#ffdc00', isLight: false },
-  'theme-cyberpunk':      { bg: '#0d0d1a', card: '#12121f',  primary: '#f5e642', isLight: false },
+const THEME_COLORS: Record<string, { bg: string; card: string; primary: string; text: string; textMuted: string; isLight: boolean }> = {
+  'theme-light':          { bg: '#f3f4f6', card: '#ffffff',  primary: '#2563eb', text: '#111827', textMuted: '#6b7280', isLight: true },
+  'theme-dark-slate':     { bg: '#0f172a', card: '#1e293b',  primary: '#3b82f6', text: '#f1f5f9', textMuted: '#94a3b8', isLight: false },
+  'theme-dark-green':     { bg: '#0f1714', card: '#19271e',  primary: '#4ade80', text: '#ecfdf5', textMuted: '#6ee7b7', isLight: false },
+  'theme-dark-crimson':   { bg: '#1c1518', card: '#312126',  primary: '#f43f5e', text: '#fff1f2', textMuted: '#fda4af', isLight: false },
+  'theme-ocean-blue':     { bg: '#0f2337', card: '#192d41',  primary: '#648caa', text: '#e0f2fe', textMuted: '#7dd3fc', isLight: false },
+  'theme-sunset-orange':  { bg: '#faf5eb', card: '#f5ebdc',  primary: '#be8264', text: '#431407', textMuted: '#92400e', isLight: true },
+  'theme-purple':         { bg: '#231e2d', card: '#2d283a',  primary: '#8c78a5', text: '#f5f3ff', textMuted: '#c4b5fd', isLight: false },
+  'theme-midnight-black': { bg: '#121214', card: '#1c1c20',  primary: '#788ca0', text: '#e2e8f0', textMuted: '#94a3b8', isLight: false },
+  'theme-pixel':          { bg: '#0a0a14', card: '#121226',  primary: '#ffdc00', text: '#ffffff', textMuted: '#a5b4fc', isLight: false },
+  'theme-cyberpunk':      { bg: '#0d0d1a', card: '#12121f',  primary: '#f5e642', text: '#ffffff', textMuted: '#a78bfa', isLight: false },
+};
+
+// ─── Theme Preview Card ───────────────────────────────────────────────────────
+const ThemePreviewCard: React.FC<{ themeId: string; themeName: string }> = ({ themeId, themeName }) => {
+  const tc = THEME_COLORS[themeId];
+  if (!tc) return null;
+
+  return (
+    <div className="sp-theme-preview" key={themeId}>
+      {/* Mock app chrome */}
+      <div style={{ background: tc.bg, padding: '12px 14px 14px' }}>
+        {/* Top bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: tc.primary, opacity: 0.9 }} />
+            <div style={{ width: 32, height: 6, borderRadius: 3, background: tc.text, opacity: 0.15 }} />
+          </div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: tc.primary, letterSpacing: '0.05em', opacity: 0.9 }}>
+            {themeName}
+          </div>
+        </div>
+
+        {/* KPI row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 8 }}>
+          {['Income', 'Expense'].map((label, i) => (
+            <div key={label} style={{
+              background: tc.card,
+              borderRadius: 10,
+              padding: '7px 9px',
+              border: `1px solid ${tc.primary}22`,
+            }}>
+              <div style={{ fontSize: 8, color: tc.textMuted, marginBottom: 3, fontWeight: 600 }}>{label}</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: i === 0 ? tc.primary : '#f87171', fontVariantNumeric: 'tabular-nums' }}>
+                {i === 0 ? '+$1,240' : '-$580'}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Transaction list mock */}
+        <div style={{ background: tc.card, borderRadius: 10, overflow: 'hidden', border: `1px solid ${tc.text}0d` }}>
+          {[
+            { emoji: '🛒', label: 'Groceries', amt: '-$42', color: '#f87171' },
+            { emoji: '💼', label: 'Salary',    amt: '+$800', color: tc.primary },
+            { emoji: '🍔', label: 'Dining',    amt: '-$18', color: '#f87171' },
+          ].map((row, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '6px 9px',
+              borderBottom: i < 2 ? `1px solid ${tc.text}0a` : 'none',
+            }}>
+              <span style={{ fontSize: 11 }}>{row.emoji}</span>
+              <span style={{ flex: 1, fontSize: 9, color: tc.textMuted, fontWeight: 500 }}>{row.label}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: row.color, fontVariantNumeric: 'tabular-nums' }}>{row.amt}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // ─── Password Field ───────────────────────────────────────────────────────────
@@ -722,7 +797,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   );
 
   const renderAppearanceTab = () => {
-    const currentThemeColors = THEME_COLORS[theme] || THEME_COLORS['theme-dark-slate'];
+    const selectedTheme = THEMES.find(t => t.id === theme);
     return (
       <div className="space-y-4 sp-fade-up">
         {/* Theme Dropdown */}
@@ -737,26 +812,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           }
         >
           <div className="px-3 py-3 space-y-3">
-            {/* Preview swatch strip */}
-            <div className="flex items-center gap-2.5 px-1">
-              <div
-                className="w-8 h-8 rounded-xl flex-shrink-0 border"
-                style={{
-                  background: currentThemeColors.bg,
-                  borderColor: 'rgba(255,255,255,0.12)',
-                  boxShadow: `0 0 0 2px ${currentThemeColors.primary}55`,
-                }}
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
-                  Current Theme
-                </p>
-                <p className="text-sm font-bold truncate" style={{ color: 'rgb(var(--color-text-rgb))' }}>
-                  {THEMES.find(t => t.id === theme)?.name ?? theme}
-                </p>
-              </div>
-            </div>
-
             {/* Dropdown */}
             <div>
               <label className="text-[11px] font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
@@ -775,33 +830,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               </select>
             </div>
 
-            {/* Color swatches row */}
-            <div className="flex gap-1.5 flex-wrap pt-0.5">
-              {THEMES.map(t => {
-                const tc = THEME_COLORS[t.id];
-                if (!tc) return null;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    title={t.name}
-                    onClick={() => setTheme(t.id)}
-                    aria-label={`Switch to ${t.name}`}
-                    className="transition-transform active:scale-90"
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: '50%',
-                      background: tc.primary,
-                      border: theme === t.id ? `3px solid rgb(var(--color-text-rgb))` : '2px solid transparent',
-                      outline: theme === t.id ? `2px solid ${tc.primary}` : 'none',
-                      outlineOffset: 2,
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                    }}
-                  />
-                );
-              })}
-            </div>
+            {/* Theme preview card — shown below dropdown */}
+            <ThemePreviewCard themeId={theme} themeName={selectedTheme?.name ?? theme} />
           </div>
         </SectionCard>
 
