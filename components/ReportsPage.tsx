@@ -73,17 +73,7 @@ const AIInsightsCard: React.FC<{
       return;
     }
 
-    const prompt = `You are FinTrack, an expert financial assistant. Analyze the following transactions from the last 30 days and provide a structured JSON response. Requirements:
-- 'summary': 1 sentence only, maximum 15 words
-- 'positivePoints': exactly 2 items, each under 10 words
-- 'areasForImprovement': exactly 2 items, each under 10 words
-- 'actionableTip': 1 specific, actionable recommendation under 15 words
-
-Keep text friendly and concise. Focus on actionable insights.
-
-Transactions:
-${JSON.stringify(recentTransactions)}
-`;
+    const prompt = `You are FinTrack, an expert financial assistant. Analyze the following transactions from the last 30 days and provide a structured JSON response. Requirements:\n- 'summary': 1 sentence only, maximum 15 words\n- 'positivePoints': exactly 2 items, each under 10 words\n- 'areasForImprovement': exactly 2 items, each under 10 words\n- 'actionableTip': 1 specific, actionable recommendation under 15 words\n\nKeep text friendly and concise. Focus on actionable insights.\n\nTransactions:\n${JSON.stringify(recentTransactions)}\n`;
 
     try {
       const model = user.aiSettings?.model || 'gemini-2.5-flash';
@@ -194,21 +184,43 @@ ${JSON.stringify(recentTransactions)}
 
 const CustomBarTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
+    const netVal = payload[0]?.value - (payload[1]?.value ?? 0);
     return (
-      <div className="bg-[rgb(var(--color-card-rgb))] p-3 border border-[rgb(var(--color-border-rgb))] rounded-lg shadow-lg z-50">
-        <p className="font-bold text-[rgb(var(--color-text-rgb))] mb-2">{label}</p>
+      <div style={{
+        background: 'rgba(18, 22, 36, 0.97)',
+        border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: '10px',
+        padding: '12px 14px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
+        zIndex: 9999,
+        minWidth: '180px',
+      }}>
+        <p style={{ color: '#e8eaf0', fontWeight: 700, marginBottom: '8px', fontSize: '13px' }}>{label}</p>
         {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex justify-between items-center gap-4 text-sm mb-1">
-            <span style={{ color: entry.color }} className="font-medium">{entry.name}:</span>
-            <span className="font-mono">{formatCurrency(entry.value)}</span>
+          <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '4px' }}>
+            <span style={{ color: entry.color, fontWeight: 600, fontSize: '12px' }}>{entry.name}:</span>
+            <span style={{ color: '#e8eaf0', fontFamily: 'monospace', fontSize: '12px' }}>{formatCurrency(entry.value)}</span>
           </div>
         ))}
         {payload.length >= 2 && (
-          <div className="mt-2 pt-2 border-t border-[rgb(var(--color-border-rgb))] flex justify-between items-center gap-4 text-sm">
-             <span className="font-medium text-[rgb(var(--color-text-muted-rgb))]">Net:</span>
-             <span className={`font-mono font-bold ${payload[0].value - payload[1].value >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-               {payload[0].value - payload[1].value >= 0 ? '+' : ''}{formatCurrency(payload[0].value - payload[1].value)}
-             </span>
+          <div style={{
+            marginTop: '8px',
+            paddingTop: '8px',
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '16px',
+          }}>
+            <span style={{ color: '#9ca3af', fontWeight: 600, fontSize: '12px' }}>Net:</span>
+            <span style={{
+              color: netVal >= 0 ? '#34d399' : '#f87171',
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              fontSize: '13px',
+            }}>
+              {netVal >= 0 ? '+' : ''}{formatCurrency(netVal)}
+            </span>
           </div>
         )}
       </div>
@@ -221,15 +233,23 @@ const PieTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-[rgb(var(--color-card-rgb))] p-3 border border-[rgb(var(--color-border-rgb))] rounded-lg shadow-lg z-50">
-        <p className="font-bold text-[rgb(var(--color-text-rgb))]">{data.name}</p>
-        <div className="flex justify-between gap-4 mt-1">
-          <span className="text-sm text-[rgb(var(--color-text-rgb))] opacity-75">Amount:</span>
-          <span className="text-sm font-mono font-semibold text-[rgb(var(--color-text-rgb))]">{formatCurrency(data.value)}</span>
+      <div style={{
+        background: 'rgba(18, 22, 36, 0.97)',
+        border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: '10px',
+        padding: '12px 14px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
+        zIndex: 9999,
+        minWidth: '160px',
+      }}>
+        <p style={{ color: '#e8eaf0', fontWeight: 700, marginBottom: '6px', fontSize: '13px' }}>{data.name}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', marginBottom: '3px' }}>
+          <span style={{ color: '#9ca3af', fontSize: '12px' }}>Amount:</span>
+          <span style={{ color: '#e8eaf0', fontFamily: 'monospace', fontWeight: 600, fontSize: '12px' }}>{formatCurrency(data.value)}</span>
         </div>
-        <div className="flex justify-between gap-4">
-          <span className="text-sm text-[rgb(var(--color-text-rgb))] opacity-75">Share:</span>
-          <span className="text-sm font-mono text-[rgb(var(--color-text-rgb))]">{data.percentage}%</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+          <span style={{ color: '#9ca3af', fontSize: '12px' }}>Share:</span>
+          <span style={{ color: '#e8eaf0', fontFamily: 'monospace', fontSize: '12px' }}>{data.percentage}%</span>
         </div>
       </div>
     );
