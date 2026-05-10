@@ -126,15 +126,12 @@ const CSS = `
     color: rgb(var(--color-text-rgb));
   }
 
-  /* Account select — custom arrow */
-  .atm-acc-select {
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.35)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 32px !important;
+  /* Account card picker */
+  .atm-acc-card:focus-visible {
+    outline: 2px solid rgba(var(--color-primary-rgb), 0.7);
+    outline-offset: 2px;
   }
+  .atm-acc-row::-webkit-scrollbar { display: none; }
 `;
 
 let cssInjected = false;
@@ -475,38 +472,106 @@ const footer = (
             </div>
           )}
 
-          {/* ── Account Selector — Dropdown ── */}
-          {user?.financialAccounts && user.financialAccounts.filter(a => !a.isArchived).length > 0 && (
-            <div className="atm-in" style={{ animationDelay: '40ms' }}>
-              <FieldLabel htmlFor="accountId">{isExpense ? 'From Account' : 'To Account'}</FieldLabel>
-              <div className={`atm-glass px-3 py-2.5 ${errors.accountId ? 'has-error' : ''}`}>
-                <select
-                  id="accountId"
-                  value={accountId}
-                  onChange={e => { setAccountId(e.target.value); clrErr('accountId'); }}
-                  className="atm-acc-select h-9 w-full bg-transparent outline-none text-sm font-medium !border-0 focus:!ring-0 pl-1"
-                  style={{ fontSize: '13px', color: 'rgb(var(--color-text-rgb))' }}
+          {/* ── Account Selector — Card Picker ── */}
+          {user?.financialAccounts && user.financialAccounts.filter(a => !a.isArchived).length > 0 && (() => {
+            const activeAccounts = user.financialAccounts!.filter(a => !a.isArchived);
+            return (
+              <div className="atm-in" style={{ animationDelay: '40ms' }}>
+                <FieldLabel>{isExpense ? 'From Account' : 'To Account'}</FieldLabel>
+
+                {/* Scrollable card row */}
+                <div
+                  className="atm-acc-row flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+                  role="radiogroup"
+                  aria-label={isExpense ? 'From Account' : 'To Account'}
                 >
-                  <option value="" style={{ background: 'rgb(var(--color-card-muted-rgb))' }}>
-                    — No Account —
-                  </option>
-                  {user.financialAccounts.filter(a => !a.isArchived).map(acc => {
-                    const meta = ACCOUNT_TYPE_META[acc.type] ?? ACCOUNT_TYPE_META.other;
+                  {/* No Account card */}
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={accountId === ''}
+                    onClick={() => { setAccountId(''); clrErr('accountId'); }}
+                    className={`atm-acc-card flex-shrink-0 flex flex-col items-center justify-center gap-1 w-[72px] h-[68px] rounded-2xl border transition-all duration-200 active:scale-95 touch-manipulation
+                      ${accountId === ''
+                        ? 'border-white/20 bg-white/10 shadow-[0_0_0_2px_rgba(255,255,255,0.22)]'
+                        : 'border-white/[0.06] bg-white/[0.04] hover:bg-white/[0.08]'
+                      }`}
+                  >
+                    <span className="text-lg leading-none">🚫</span>
+                    <span
+                      className="text-[10px] font-semibold leading-tight text-center w-full truncate px-1"
+                      style={{ color: accountId === '' ? 'rgb(var(--color-text-rgb))' : 'rgb(var(--color-text-muted-rgb))' }}
+                    >
+                      None
+                    </span>
+                  </button>
+
+                  {/* Account cards */}
+                  {activeAccounts.map(acc => {
+                    const meta = ACCOUNT_TYPE_META[acc.type] ?? ACCOUNT_TYPE_META['other' as keyof typeof ACCOUNT_TYPE_META];
+                    const isSelected = accountId === acc.id;
+                    const isNegative = acc.balance < 0;
+                    const accentColor = meta.color || 'rgb(var(--color-primary-rgb))';
+
                     return (
-                      <option
+                      <button
                         key={acc.id}
-                        value={acc.id}
-                        style={{ background: 'rgb(var(--color-card-muted-rgb))' }}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        onClick={() => { setAccountId(acc.id); clrErr('accountId'); }}
+                        className="atm-acc-card flex-shrink-0 flex flex-col justify-between w-[100px] h-[68px] rounded-2xl border px-2.5 py-2 transition-all duration-200 active:scale-95 touch-manipulation text-left"
+                        style={{
+                          background: isSelected
+                            ? `linear-gradient(135deg, ${accentColor}22, ${accentColor}0f)`
+                            : 'rgba(var(--color-card-muted-rgb), 0.28)',
+                          borderColor: isSelected ? `${accentColor}50` : 'rgba(255,255,255,0.07)',
+                          boxShadow: isSelected
+                            ? `0 0 0 2px ${accentColor}40, 0 4px 12px ${accentColor}18`
+                            : undefined,
+                        }}
                       >
-                        {meta.emoji} {acc.name} — {formatCurrency(acc.balance)}
-                      </option>
+                        {/* Top row: emoji + check badge */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm leading-none">{meta.emoji}</span>
+                          {isSelected && (
+                            <span
+                              className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
+                              style={{ background: accentColor }}
+                            >
+                              <svg width="7" height="7" viewBox="0 0 10 8" fill="none">
+                                <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.8"
+                                  strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Bottom: name + balance */}
+                        <div className="min-w-0">
+                          <p
+                            className="text-[10px] font-semibold truncate leading-tight"
+                            style={{ color: isSelected ? 'rgb(var(--color-text-rgb))' : 'rgb(var(--color-text-muted-rgb))' }}
+                          >
+                            {acc.name}
+                          </p>
+                          <p
+                            className="text-[10px] font-bold leading-tight tabular-nums"
+                            style={{ color: isNegative ? '#f87171' : isSelected ? accentColor : 'rgb(var(--color-text-muted-rgb))' }}
+                          >
+                            {formatCurrency(acc.balance)}
+                          </p>
+                        </div>
+                      </button>
                     );
                   })}
-                </select>
+                </div>
+
+                <ErrMsg msg={errors.accountId} />
               </div>
-              <ErrMsg msg={errors.accountId} />
-            </div>
-          )}
+            );
+          })()}
 
           {/* ── Description ── */}
           <div className="atm-in" style={{ animationDelay: '50ms' }}>
