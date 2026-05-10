@@ -9,6 +9,7 @@ import AISwiperCard from './AISwiperCard';
 import Card, { CardHeader, CardTitle, CardContent } from './Card';
 import ReportExportModal from './ReportExportModal';
 import { useTheme } from './ThemeContext';
+import NetWorthTimeline from './NetWorthTimeline';
 
 // Performance optimization: Virtualized list imports (if library available, otherwise we use limit)
 // For this standalone implementation, we'll implement a simple windowing or just limit initial render items
@@ -876,6 +877,11 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, user, categorie
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Net Worth Timeline - Full Width */}
+      <div className="w-full">
+        <NetWorthTimeline user={user} transactions={transactions} />
       </div>
     </div>
   );
