@@ -6,7 +6,6 @@ import {
   SparklesIcon, BellIcon, SettingsIcon, UserIcon,
   ChevronUpIcon, HomeIcon, TrendingUpIcon, BackupIcon, RestoreIcon
 } from './icons';
-import ServiceWorkerDebugPanel from './ServiceWorkerDebugPanel';
 import NotificationSettingsPage from './NotificationSettingsPage';
 import { processImageForBackground, createPatternBackground } from '../utils/imageProcessing';
 import { isWebAuthnSupported, registerWebAuthn } from '../utils/webauthn';
@@ -71,7 +70,6 @@ const SP_CSS = `
     color: #e8eaf0;
     outline: none;
     transition: border-color 0.18s, box-shadow 0.18s;
-    /* override any theme variable that resolves to transparent */
     -webkit-text-fill-color: #e8eaf0;
   }
   /* theme-aware override for light themes */
@@ -169,20 +167,21 @@ const SP_CSS = `
   .sp-btn-primary:active:not(:disabled) { transform: scale(0.98); }
   .sp-btn-primary:disabled { opacity: 0.45; }
 
-  /* Danger button */
+  /* Danger button — solid red */
   .sp-btn-danger {
     width: 100%;
     padding: 11px 20px;
-    background: rgba(var(--color-error-rgb), 0.12);
-    color: rgb(var(--color-error-rgb));
-    border: 1px solid rgba(var(--color-error-rgb), 0.2);
+    background: #dc2626;
+    color: #ffffff;
+    border: none;
     border-radius: 14px;
     font-size: 13px;
     font-weight: 600;
-    transition: all 0.15s;
+    transition: filter 0.15s, transform 0.12s;
     touch-action: manipulation;
   }
-  .sp-btn-danger:hover { background: rgba(var(--color-error-rgb), 0.18); }
+  .sp-btn-danger:hover { filter: brightness(1.1); }
+  .sp-btn-danger:active { transform: scale(0.98); }
 
   /* Tag badge */
   .sp-badge {
@@ -196,23 +195,49 @@ const SP_CSS = `
     color: rgb(var(--color-primary-rgb));
   }
 
-  /* Theme grid */
-  .sp-theme-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 10px;
-  }
-  .sp-theme-card {
+  /* Theme dropdown */
+  .sp-theme-dropdown {
+    width: 100%;
+    padding: 11px 36px 11px 14px;
+    background: rgba(30, 35, 50, 0.7);
+    border: 1.5px solid rgba(120, 140, 180, 0.45);
     border-radius: 14px;
-    overflow: hidden;
+    font-size: 13px;
+    color: #e8eaf0;
+    -webkit-text-fill-color: #e8eaf0;
+    outline: none;
     cursor: pointer;
-    border: 2px solid transparent;
-    transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(160,160,160,0.7)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    transition: border-color 0.18s, box-shadow 0.18s;
   }
-  .sp-theme-card:hover { transform: scale(1.03); }
-  .sp-theme-card.selected {
-    border-color: rgb(var(--color-primary-rgb));
-    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.2);
+  :root[class*="light"] .sp-theme-dropdown,
+  .theme-light .sp-theme-dropdown {
+    background-color: rgba(255,255,255,0.85);
+    border-color: rgba(80, 100, 140, 0.35);
+    color: #1a1d2e;
+    -webkit-text-fill-color: #1a1d2e;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(80,80,80,0.7)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  .sp-theme-dropdown:focus {
+    border-color: rgba(var(--color-primary-rgb, 99, 140, 255), 0.65);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 99, 140, 255), 0.13);
+  }
+
+  /* Theme color swatch next to dropdown label */
+  .sp-theme-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    border: 1px solid rgba(255,255,255,0.15);
   }
 `;
 
@@ -226,7 +251,7 @@ const injectSPCSS = () => {
   spCssInjected = true;
 };
 
-// ─── Theme Preview ─────────────────────────────────────────────────────────────
+// ─── Theme color map (for swatch preview) ────────────────────────────────────
 const THEME_COLORS: Record<string, { bg: string; card: string; primary: string; isLight: boolean }> = {
   'theme-light':          { bg: '#f3f4f6', card: '#ffffff',  primary: '#2563eb', isLight: true },
   'theme-dark-slate':     { bg: '#0f172a', card: '#1e293b',  primary: '#3b82f6', isLight: false },
@@ -240,46 +265,6 @@ const THEME_COLORS: Record<string, { bg: string; card: string; primary: string; 
   'theme-cyberpunk':      { bg: '#0d0d1a', card: '#12121f',  primary: '#f5e642', isLight: false },
 };
 
-const ThemePreview: React.FC<{ themeId: string; selected: boolean; onClick: () => void; name: string }> = ({ themeId, selected, onClick, name }) => {
-  const c = THEME_COLORS[themeId] || THEME_COLORS['theme-light'];
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`sp-theme-card ${selected ? 'selected' : ''}`}
-      aria-pressed={selected}
-    >
-      <div className="w-full" style={{ aspectRatio: '4/3', backgroundColor: c.bg, position: 'relative' }}>
-        {/* mock header */}
-        <div style={{ height: 18, backgroundColor: c.card, borderBottom: '1px solid rgba(0,0,0,0.06)', display:'flex', alignItems:'center', padding:'0 6px', gap: 3 }}>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#f87171' }} />
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#fbbf24' }} />
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#4ade80' }} />
-        </div>
-        {/* mock content */}
-        <div style={{ padding: '5px 6px', display:'flex', flexDirection:'column', gap: 4 }}>
-          <div style={{ width: '60%', height: 7, borderRadius: 4, background: c.primary, opacity: 0.8 }} />
-          <div style={{ width: '100%', height: 14, borderRadius: 5, background: c.card }} />
-          <div style={{ display:'flex', gap: 4 }}>
-            <div style={{ flex: 1, height: 10, borderRadius: 4, background: c.card, opacity: 0.6 }} />
-            <div style={{ flex: 1, height: 10, borderRadius: 4, background: c.primary, opacity: 0.5 }} />
-          </div>
-        </div>
-        {selected && (
-          <div style={{ position:'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: c.primary, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <svg width="9" height="9" viewBox="0 0 10 8" fill="none">
-              <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-        )}
-      </div>
-      <div style={{ backgroundColor: c.card, padding: '5px 8px' }}>
-        <p style={{ fontSize: 10, fontWeight: 600, color: c.isLight ? '#374151' : '#d1d5db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</p>
-      </div>
-    </button>
-  );
-};
-
 // ─── Password Field ───────────────────────────────────────────────────────────
 const PasswordField: React.FC<{ label: string; value: string; onChange: (v: string) => void }> = ({ label, value, onChange }) => {
   const [show, setShow] = useState(false);
@@ -287,7 +272,7 @@ const PasswordField: React.FC<{ label: string; value: string; onChange: (v: stri
     <div className="space-y-1.5">
       <label
         className="text-[11px] font-semibold uppercase tracking-widest block"
-        style={{ color: 'rgba(160, 175, 210, 0.85)' }}
+        style={{ color: 'rgb(var(--color-text-muted-rgb))' }}
       >
         {label}
       </label>
@@ -298,7 +283,6 @@ const PasswordField: React.FC<{ label: string; value: string; onChange: (v: stri
           onChange={e => onChange(e.target.value)}
           className="sp-input pr-11"
           style={{
-            /* Hard-coded fallbacks so the field is ALWAYS legible */
             color: '#e8eaf0',
             WebkitTextFillColor: '#e8eaf0',
             background: 'rgba(20, 25, 45, 0.75)',
@@ -309,17 +293,18 @@ const PasswordField: React.FC<{ label: string; value: string; onChange: (v: stri
           type="button"
           onClick={() => setShow(s => !s)}
           className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 transition-colors"
-          style={{ color: 'rgba(160, 175, 210, 0.75)' }}
+          style={{ color: 'rgb(var(--color-text-muted-rgb))' }}
           aria-label={show ? 'Hide' : 'Show'}
         >
           {show ? (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-4.478 0-8.268-2.943-9.543-7a10.025 10.025 0 014.132-5.411" />
+              <path d="M9.9 4.24A9.12 9.12 0 0112 4c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411M3 3l18 18" />
             </svg>
           ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
             </svg>
           )}
         </button>
@@ -340,8 +325,8 @@ const SettingsRow: React.FC<{
   danger?: boolean;
 }> = ({ icon, iconBg, iconColor, label, sublabel, right, onClick, danger }) => {
   const Wrapper = (onClick ? 'button' : 'div') as any;
-  const baseIconColor = danger ? 'rgb(var(--color-error-rgb))' : (iconColor || 'rgb(var(--color-primary-rgb))');
-  const baseIconBg = danger ? 'rgba(var(--color-error-rgb), 0.12)' : (iconBg || 'rgba(var(--color-primary-rgb), 0.11)');
+  const baseIconColor = danger ? '#ef4444' : (iconColor || 'rgb(var(--color-primary-rgb))');
+  const baseIconBg = danger ? 'rgba(239,68,68,0.12)' : (iconBg || 'rgba(var(--color-primary-rgb), 0.11)');
 
   return (
     <div className="sp-row-wrap">
@@ -358,7 +343,7 @@ const SettingsRow: React.FC<{
         <div className="flex-1 min-w-0">
           <p
             className="text-sm font-medium leading-snug"
-            style={{ color: danger ? 'rgb(var(--color-error-rgb))' : 'rgb(var(--color-text-rgb))' }}
+            style={{ color: danger ? '#ef4444' : 'rgb(var(--color-text-rgb))' }}
           >
             {label}
           </p>
@@ -368,8 +353,8 @@ const SettingsRow: React.FC<{
         </div>
         {right ?? (
           onClick && (
-            <svg className="w-3.5 h-3.5 shrink-0" style={{ color: 'rgba(var(--color-text-muted-rgb),0.5)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            <svg className="w-3.5 h-3.5 shrink-0" style={{ color: 'rgb(var(--color-text-muted-rgb))' }} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M9 5l7 7-7 7" />
             </svg>
           )
         )}
@@ -386,7 +371,6 @@ const SectionCard: React.FC<{
   className?: string;
 }> = ({ icon, title, children, className = '' }) => (
   <div className={`sp-glass overflow-hidden ${className}`}>
-    {/* Header */}
     <div
       className="flex items-center gap-2.5 px-5 py-4"
       style={{ borderBottom: '1px solid rgba(var(--color-border-rgb), 0.3)' }}
@@ -401,7 +385,6 @@ const SectionCard: React.FC<{
       )}
       <h3 className="text-sm font-bold" style={{ color: 'rgb(var(--color-text-rgb))' }}>{title}</h3>
     </div>
-    {/* Body */}
     <div className="px-2 py-2">
       {children}
     </div>
@@ -441,21 +424,24 @@ const ProfileSection: React.FC<{ user: User; onUpdateUser: (u: User) => void }> 
     <SectionCard
       title="Profile"
       icon={
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
         </svg>
       }
     >
       {/* Avatar row */}
       <div className="flex items-center gap-4 px-3 py-3 mb-2">
         <div className="relative shrink-0">
-          {/* Gradient ring */}
           <div className="sp-avatar-ring">
-            <div className="w-16 h-16 rounded-full overflow-hidden" style={{ background: 'rgb(var(--color-card-muted-rgb))' }}>
+            <div className="w-16 h-16 rounded-full overflow-hidden" style={{ background: 'rgba(var(--color-card-muted-rgb),0.8)' }}>
               {user.avatar
                 ? <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center">
-                    <UserIcon className="w-8 h-8" style={{ color: 'rgb(var(--color-text-muted-rgb))' }} />
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
                   </div>
               }
             </div>
@@ -467,10 +453,9 @@ const ProfileSection: React.FC<{ user: User; onUpdateUser: (u: User) => void }> 
             style={{ background: 'rgb(var(--color-primary-rgb))', color: 'white' }}
             aria-label="Change photo"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2}
-                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+              <circle cx="12" cy="13" r="4" />
             </svg>
           </button>
           <input type="file" accept="image/*" ref={fileInputRef} onChange={handleAvatarUpload} className="hidden" />
@@ -485,7 +470,7 @@ const ProfileSection: React.FC<{ user: User; onUpdateUser: (u: User) => void }> 
       <div className="px-3 pb-3">
         <form onSubmit={handleUpdateUsername} className="space-y-3">
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(var(--color-text-muted-rgb), 0.6)' }}>Username</label>
+            <label className="text-[11px] font-semibold uppercase tracking-widest block" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>Username</label>
             <input
               type="text"
               value={username}
@@ -495,7 +480,7 @@ const ProfileSection: React.FC<{ user: User; onUpdateUser: (u: User) => void }> 
             />
           </div>
           {message.text && (
-            <p className="text-xs px-1" style={{ color: message.type === 'success' ? 'rgb(var(--color-success-rgb))' : 'rgb(var(--color-error-rgb))' }}>
+            <p className="text-xs px-1" style={{ color: message.type === 'success' ? 'rgb(var(--color-success-rgb))' : '#ef4444' }}>
               {message.text}
             </p>
           )}
@@ -559,8 +544,9 @@ const SecuritySection: React.FC<{
     <SectionCard
       title="Security"
       icon={
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0110 0v4" />
         </svg>
       }
     >
@@ -570,7 +556,7 @@ const SecuritySection: React.FC<{
           <PasswordField label="New Password"     value={passwords.new}     onChange={pw('new')} />
           <PasswordField label="Confirm Password" value={passwords.confirm} onChange={pw('confirm')} />
           {msg.text && (
-            <p className="text-xs px-1" style={{ color: msg.type === 'success' ? 'rgb(var(--color-success-rgb))' : 'rgb(var(--color-error-rgb))' }}>
+            <p className="text-xs px-1" style={{ color: msg.type === 'success' ? 'rgb(var(--color-success-rgb))' : '#ef4444' }}>
               {msg.text}
             </p>
           )}
@@ -585,8 +571,8 @@ const SecuritySection: React.FC<{
             <div className="sp-rows">
               <SettingsRow
                 icon={
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0-1.1.9-2 2-2s2 .9 2 2v1m-4-1v1m-2 4h8m-9-4a4 4 0 018 0v1H7v-1z" />
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <path d="M12 11c0-1.1.9-2 2-2s2 .9 2 2v1m-4-1v1m-2 4h8m-9-4a4 4 0 018 0v1H7v-1z" />
                   </svg>
                 }
                 label="Biometric Login"
@@ -616,7 +602,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   injectSPCSS();
   const { theme, setTheme, customBackground, setCustomBackground } = useTheme();
   const [activeTab, setActiveTab] = useState<'account' | 'appearance' | 'data' | 'notifications' | 'advanced' | 'categories'>('account');
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backgroundInputRef = useRef<HTMLInputElement>(null);
 
@@ -680,16 +665,18 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       <SectionCard
         title="Financial Accounts"
         icon={
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+            <path d="M1 10h22" />
           </svg>
         }
       >
         <div className="sp-rows">
           <SettingsRow
             icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <path d="M1 10h22" />
               </svg>
             }
             label="Manage Accounts"
@@ -707,16 +694,20 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       <SectionCard
         title="Session"
         icon={
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
         }
       >
         <div className="sp-rows">
           <SettingsRow
             icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
               </svg>
             }
             iconBg="rgba(var(--color-text-muted-rgb), 0.1)"
@@ -730,112 +721,189 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     </div>
   );
 
-  const renderAppearanceTab = () => (
-    <div className="space-y-4 sp-fade-up">
-      {/* Theme picker grid */}
-      <SectionCard
-        title="Theme"
-        icon={
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-          </svg>
-        }
-      >
-        <div className="px-3 py-3">
-          <div className="sp-theme-grid">
-            {THEMES.map(t => (
-              <ThemePreview
-                key={t.id}
-                themeId={t.id}
-                name={t.name}
-                selected={theme === t.id}
-                onClick={() => setTheme(t.id)}
+  const renderAppearanceTab = () => {
+    const currentThemeColors = THEME_COLORS[theme] || THEME_COLORS['theme-dark-slate'];
+    return (
+      <div className="space-y-4 sp-fade-up">
+        {/* Theme Dropdown */}
+        <SectionCard
+          title="Theme"
+          icon={
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+              <path d="M2 12h20" />
+            </svg>
+          }
+        >
+          <div className="px-3 py-3 space-y-3">
+            {/* Preview swatch strip */}
+            <div className="flex items-center gap-2.5 px-1">
+              <div
+                className="w-8 h-8 rounded-xl flex-shrink-0 border"
+                style={{
+                  background: currentThemeColors.bg,
+                  borderColor: 'rgba(255,255,255,0.12)',
+                  boxShadow: `0 0 0 2px ${currentThemeColors.primary}55`,
+                }}
               />
-            ))}
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* Card Background */}
-      <SectionCard
-        title="Card Background"
-        icon={
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        }
-      >
-        <div className="px-3 py-3">
-          {customBackground ? (
-            <div className="relative w-full h-28 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(var(--color-border-rgb),0.4)' }}>
-              <div className="w-full h-full" style={{ backgroundImage: `url('${customBackground}')`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-              <button
-                onClick={() => setCustomBackground(null)}
-                className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
-                style={{ background: 'rgba(0,0,0,0.55)', color: 'white' }}
-                aria-label="Remove"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+                  Current Theme
+                </p>
+                <p className="text-sm font-bold truncate" style={{ color: 'rgb(var(--color-text-rgb))' }}>
+                  {THEMES.find(t => t.id === theme)?.name ?? theme}
+                </p>
+              </div>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => backgroundInputRef.current?.click()}
-              className="w-full py-8 flex flex-col items-center gap-2 rounded-xl transition-colors"
-              style={{
-                border: '1.5px dashed rgba(var(--color-border-rgb), 0.6)',
-                color: 'rgb(var(--color-text-muted-rgb))'
-              }}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className="text-xs font-semibold">Upload Background Image</span>
-            </button>
-          )}
-          <input type="file" accept="image/*" ref={backgroundInputRef} onChange={handleBackgroundUpload} className="hidden" />
-        </div>
-      </SectionCard>
 
-      {/* Currency */}
-      <SectionCard
-        title="Currency"
-        icon={
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        }
-      >
-        <div className="px-3 py-3">
-          <label className="text-[11px] font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(var(--color-text-muted-rgb),0.6)' }}>Select Currency</label>
-          <select
-            value={user.currency || 'USD'}
-            onChange={e => onUpdateUser({ ...user, currency: e.target.value as any })}
-            className="sp-input sp-select"
-          >
-            {CURRENCIES.map(c => (
-              <option key={c.code} value={c.code} style={{ background: 'rgb(var(--color-card-muted-rgb))' }}>
-                {c.symbol} {c.code} — {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </SectionCard>
-    </div>
-  );
+            {/* Dropdown */}
+            <div>
+              <label className="text-[11px] font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+                Select Theme
+              </label>
+              <select
+                value={theme}
+                onChange={e => setTheme(e.target.value)}
+                className="sp-theme-dropdown"
+              >
+                {THEMES.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Color swatches row */}
+            <div className="flex gap-1.5 flex-wrap pt-0.5">
+              {THEMES.map(t => {
+                const tc = THEME_COLORS[t.id];
+                if (!tc) return null;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    title={t.name}
+                    onClick={() => setTheme(t.id)}
+                    aria-label={`Switch to ${t.name}`}
+                    className="transition-transform active:scale-90"
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: '50%',
+                      background: tc.primary,
+                      border: theme === t.id ? `3px solid rgb(var(--color-text-rgb))` : '2px solid transparent',
+                      outline: theme === t.id ? `2px solid ${tc.primary}` : 'none',
+                      outlineOffset: 2,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Card Background */}
+        <SectionCard
+          title="Card Background"
+          icon={
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+          }
+        >
+          <div className="px-3 py-3">
+            {customBackground ? (
+              <div className="relative w-full h-28 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(var(--color-border-rgb),0.4)' }}>
+                <div className="w-full h-full" style={{ backgroundImage: `url('${customBackground}')`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                <button
+                  onClick={() => setCustomBackground(null)}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ background: 'rgba(0,0,0,0.55)', color: 'white' }}
+                  aria-label="Remove"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => backgroundInputRef.current?.click()}
+                className="w-full py-8 flex flex-col items-center gap-2 rounded-xl transition-colors"
+                style={{
+                  border: '1.5px dashed rgba(var(--color-border-rgb), 0.6)',
+                  color: 'rgb(var(--color-text-muted-rgb))'
+                }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <span className="text-xs font-semibold">Upload Background Image</span>
+              </button>
+            )}
+            <input type="file" accept="image/*" ref={backgroundInputRef} onChange={handleBackgroundUpload} className="hidden" />
+          </div>
+        </SectionCard>
+
+        {/* Currency */}
+        <SectionCard
+          title="Currency"
+          icon={
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <line x1="12" y1="1" x2="12" y2="23" />
+              <path d="M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6" />
+            </svg>
+          }
+        >
+          <div className="px-3 py-3">
+            <label className="text-[11px] font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>Select Currency</label>
+            <select
+              value={user.currency || 'USD'}
+              onChange={e => onUpdateUser({ ...user, currency: e.target.value as any })}
+              className="sp-input sp-select"
+            >
+              {CURRENCIES.map(c => (
+                <option key={c.code} value={c.code} style={{ background: 'rgb(var(--color-card-muted-rgb))' }}>
+                  {c.symbol} {c.code} — {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </SectionCard>
+      </div>
+    );
+  };
 
   const renderDataTab = () => (
     <div className="space-y-4 sp-fade-up">
       <SectionCard
         title="Backup & Restore"
-        icon={<BackupIcon className="w-4 h-4" />}
+        icon={
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+        }
       >
         <div className="sp-rows">
           <SettingsRow
-            icon={<BackupIcon className="w-4 h-4" />}
+            icon={
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            }
             iconBg="rgba(var(--color-success-rgb), 0.12)"
             iconColor="rgb(var(--color-success-rgb))"
             label="Export Data"
@@ -843,7 +911,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             onClick={onExportData}
           />
           <SettingsRow
-            icon={<RestoreIcon className="w-4 h-4" />}
+            icon={
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            }
             label="Import Data"
             sublabel="Restore from a backup file"
             onClick={() => fileInputRef.current?.click()}
@@ -855,28 +929,37 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       <SectionCard
         title="Danger Zone"
         icon={
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'rgb(var(--color-error-rgb))' }}>
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <svg className="w-4 h-4" fill="none" stroke="#ef4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
         }
       >
-        <div className="sp-rows">
-          <SettingsRow
-            icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            }
-            danger
-            label="Delete Account"
-            sublabel="Permanently erase all your data"
+        <div className="px-3 py-3">
+          <button
+            type="button"
+            className="sp-btn-danger"
             onClick={() => onOpenConfirmModal(
               'Delete Account',
               'This will permanently erase all your data. This is irreversible!',
               () => { if (onDeleteAccount) onDeleteAccount(); },
               { confirmText: 'Delete Everything', variant: 'danger' }
             )}
-          />
+          >
+            <span className="flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+              </svg>
+              Delete Account
+            </span>
+          </button>
+          <p className="text-xs mt-2 text-center" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+            Permanently erases all your data — irreversible
+          </p>
         </div>
       </SectionCard>
     </div>
@@ -911,7 +994,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         icon={<SparklesIcon className="w-4 h-4" />}
       >
         <div className="px-3 py-3 space-y-2">
-          <label className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(var(--color-text-muted-rgb),0.6)' }}>Gemini API Key</label>
+          <label className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>Gemini API Key</label>
           <input
             type="password"
             placeholder="AIzaSy…"
@@ -929,41 +1012,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       <SectionCard
         title="Developer"
         icon={
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
           </svg>
         }
       >
-        <div className="sp-rows">
-          <SettingsRow
-            icon={
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            }
-            label="Service Worker Debug"
-            sublabel="PWA developer tools"
-            onClick={() => setShowDebugPanel(v => !v)}
-            right={
-              <svg
-                className="w-3.5 h-3.5 transition-transform"
-                style={{
-                  color: 'rgba(var(--color-text-muted-rgb),0.5)',
-                  transform: showDebugPanel ? 'rotate(90deg)' : 'none'
-                }}
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
-            }
-          />
+        <div className="px-3 py-3">
+          <p className="text-xs" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+            Developer tools have been removed from this build.
+          </p>
         </div>
-        {showDebugPanel && (
-          <div className="px-3 pb-3 mt-1">
-            <ServiceWorkerDebugPanel />
-          </div>
-        )}
       </SectionCard>
     </div>
   );
