@@ -142,7 +142,6 @@ const CSS = `
     align-items: center;
     gap: 10px;
     padding: 11px 14px;
-    /* SOLID background — no transparency / backdrop-filter so it never bleeds */
     background: var(--atm-acc-bg);
     border: 1px solid rgba(var(--color-border-rgb), 0.55);
     border-radius: 14px;
@@ -171,9 +170,35 @@ const CSS = `
     width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
   }
 
+  /* ── Account type badge (NEW) ───────────────────────────────────────────── */
+  .atm-acc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+
+  /* ── Balance utilisation bar (NEW — credit card) ────────────────────────── */
+  .atm-acc-util-bar {
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(var(--color-border-rgb), 0.5);
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .atm-acc-util-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.35s ease;
+  }
+
   /* ── Desktop inline dropdown ────────────────────────────────────────────── */
   .atm-acc-desktop-menu {
-    /* Rendered in a portal at document.body so backdrop-filter cannot affect it */
     position: fixed;
     background: var(--atm-acc-menu-bg);
     border: 1px solid rgba(var(--color-border-rgb), 0.55);
@@ -215,7 +240,6 @@ const CSS = `
   .atm-sheet {
     position: fixed;
     left: 0; right: 0; bottom: 0;
-    /* 100% opaque — var resolved at runtime from CSS vars on :root */
     background: var(--atm-acc-menu-bg);
     border-radius: 20px 20px 0 0;
     z-index: 99999;
@@ -297,7 +321,6 @@ const ErrMsg: React.FC<{ msg?: string }> = ({ msg }) => (
 // ─── CSS variable helper — reads current theme color as opaque hex ─────────
 const getThemeColor = (varName: string, fallback: string) => {
   if (typeof window === 'undefined') return fallback;
-  // Try RGB triple first (e.g. --color-card-rgb: 30 30 35)
   const rgb = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
   if (rgb) return `rgb(${rgb})`;
   return fallback;
@@ -338,7 +361,6 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
       top: r.bottom + 6,
       left: r.left,
       width: r.width,
-      // Solid background resolved from CSS variables
       '--atm-acc-menu-bg': getThemeColor('--color-card-rgb', '#1c1b19'),
     } as React.CSSProperties);
   }, []);
@@ -367,11 +389,36 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
     setOpen(false);
   };
 
-  // Resolve solid bg colors for CSS vars at render time
   const cardBg = typeof window !== 'undefined'
     ? getThemeColor('--color-card-rgb', '#1c1b19') : '#1c1b19';
   const cardMutedBg = typeof window !== 'undefined'
     ? getThemeColor('--color-card-muted-rgb', '#22211f') : '#22211f';
+
+  // ── Util bar for credit cards ──────────────────────────────────────────────
+  const UtilBar: React.FC<{ acc: typeof activeAccounts[0]; meta: typeof selectedMeta }> = ({ acc, meta }) => {
+    if (acc.type !== 'credit_card' || !acc.creditLimit) return null;
+    const pct = Math.min((acc.balance / acc.creditLimit) * 100, 100);
+    const color = pct > 80 ? '#f87171' : pct > 50 ? '#fbbf24' : meta?.color ?? '#22c55e';
+    return (
+      <div className="atm-acc-util-bar" style={{ marginTop: 3 }}>
+        <div className="atm-acc-util-fill" style={{ width: `${pct}%`, background: color }} />
+      </div>
+    );
+  };
+
+  // ── Account type badge ─────────────────────────────────────────────────────
+  const TypeBadge: React.FC<{ meta: NonNullable<typeof selectedMeta> }> = ({ meta }) => (
+    <span
+      className="atm-acc-badge"
+      style={{
+        background: `${meta.color}1a`,
+        color: meta.color,
+        border: `1px solid ${meta.color}33`,
+      }}
+    >
+      {meta.label}
+    </span>
+  );
 
   const TriggerContent = (
     <>
@@ -380,16 +427,24 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
           <span className="atm-acc-dot" style={{ background: selectedMeta.color }} />
           <span className="text-base leading-none">{selectedMeta.emoji}</span>
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-sm font-semibold text-[rgb(var(--color-text-rgb))] truncate leading-tight">
-              {selected.name}
-            </p>
-            <p className="text-[11px] font-medium tabular-nums leading-tight"
-              style={{ color: selected.balance < 0 ? '#f87171' : selectedMeta.color }}>
-              {formatCurrency(selected.balance)}
-              <span className="ml-1 font-normal" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
-                · {selectedMeta.label}
-              </span>
-            </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-sm font-semibold text-[rgb(var(--color-text-rgb))] truncate leading-tight">
+                {selected.name}
+              </p>
+              <TypeBadge meta={selectedMeta} />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[11px] font-medium tabular-nums leading-tight"
+                style={{ color: selected.balance < 0 ? '#f87171' : selectedMeta.color }}>
+                {formatCurrency(selected.balance)}
+              </p>
+              {selected.type === 'credit_card' && selected.creditLimit && (
+                <p className="text-[10px] leading-tight" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+                  / {formatCurrency(selected.creditLimit)} limit
+                </p>
+              )}
+            </div>
+            <UtilBar acc={selected} meta={selectedMeta} />
           </div>
         </>
       ) : (
@@ -431,6 +486,11 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
       {activeAccounts.map(acc => {
         const meta = ACCOUNT_TYPE_META[acc.type] ?? ACCOUNT_TYPE_META['other' as keyof typeof ACCOUNT_TYPE_META];
         const isSel = value === acc.id;
+        const utilPct = acc.type === 'credit_card' && acc.creditLimit
+          ? Math.min((acc.balance / acc.creditLimit) * 100, 100) : null;
+        const utilColor = utilPct !== null
+          ? (utilPct > 80 ? '#f87171' : utilPct > 50 ? '#fbbf24' : meta.color)
+          : meta.color;
         return (
           <button
             key={acc.id}
@@ -443,13 +503,37 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
             <span className="atm-acc-dot" style={{ background: meta.color }} />
             <span className="text-sm leading-none">{meta.emoji}</span>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-semibold truncate leading-tight"
-                style={{ color: 'rgb(var(--color-text-rgb))' }}>{acc.name}</p>
-              <p className="text-[11px] font-medium tabular-nums leading-tight"
-                style={{ color: acc.balance < 0 ? '#f87171' : meta.color }}>
-                {formatCurrency(acc.balance)}
-                <span style={{ color: 'rgb(var(--color-text-muted-rgb))', fontWeight: 400 }}> · {meta.label}</span>
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-sm font-semibold truncate leading-tight"
+                  style={{ color: 'rgb(var(--color-text-rgb))' }}>{acc.name}</p>
+                {/* Type badge in list */}
+                <span
+                  className="atm-acc-badge"
+                  style={{ background: `${meta.color}18`, color: meta.color, border: `1px solid ${meta.color}2e` }}
+                >
+                  {meta.label}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <p className="text-[11px] font-medium tabular-nums leading-tight"
+                  style={{ color: acc.balance < 0 ? '#f87171' : meta.color }}>
+                  {formatCurrency(acc.balance)}
+                </p>
+                {acc.type === 'credit_card' && acc.creditLimit && (
+                  <p className="text-[10px] leading-tight" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
+                    / {formatCurrency(acc.creditLimit)}
+                    {utilPct !== null && (
+                      <span style={{ color: utilColor, fontWeight: 700 }}> · {utilPct.toFixed(0)}%</span>
+                    )}
+                  </p>
+                )}
+              </div>
+              {/* Util bar in list for credit cards */}
+              {utilPct !== null && (
+                <div className="atm-acc-util-bar" style={{ marginTop: 4, width: '100%' }}>
+                  <div className="atm-acc-util-fill" style={{ width: `${utilPct}%`, background: utilColor }} />
+                </div>
+              )}
             </div>
             {isSel && (
               <svg width="14" height="14" fill="none" stroke="rgb(var(--color-primary-rgb))" viewBox="0 0 24 24">
