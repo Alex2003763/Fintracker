@@ -13,7 +13,7 @@ const navItems = [
   NAV_ITEMS[0], // Home
   NAV_ITEMS[1], // Transactions
   NAV_ITEMS[2], // Insights
-  NAV_ITEMS[3], // Goals
+  NAV_ITEMS[5], // Accounts
   NAV_ITEMS[4], // Budgets
 ];
 

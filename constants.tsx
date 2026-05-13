@@ -33,6 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: 'Insights',     icon: TrendingUpIcon    },
   { name: 'Goals',        icon: GoalsIcon         },
   { name: 'Budgets',      icon: BudgetIcon        },
+  { name: 'Accounts',     icon: WalletIcon        },
 ];
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
