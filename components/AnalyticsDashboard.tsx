@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction, Budget, User } from '../types';
 import { Category } from '../types/category';
-import { SparklesIcon, TrendingUpIcon, PieChartIcon, DownloadIcon, WalletIcon, ChevronDownIcon, ReportsIcon } from './icons';
+import { SparklesIcon, TrendingUpIcon, DownloadIcon, ChevronDownIcon, ReportsIcon } from './icons';
 import ReportExportModal from './ReportExportModal';
 import { useTheme } from './ThemeContext';
 import { formatCurrency } from '../utils/formatters';
@@ -11,7 +11,7 @@ import SavingsRateWidget from './SavingsRateWidget';
 import CategoryComparisonWidget from './CategoryComparisonWidget';
 import FinancialHealthWidget from './FinancialHealthWidget';
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 
@@ -22,7 +22,7 @@ interface AnalyticsDashboardProps {
   categories: Category[];
 }
 
-type TabId = 'overview' | 'trends' | 'forecasting' | 'net worth';
+type TabId = 'overview' | 'trends' | 'forecasting';
 
 const fmtAxis = (v: number) => {
   if (Math.abs(v) >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
@@ -37,15 +37,6 @@ const AD_CSS = `
     to   { opacity: 1; transform: translateY(0); }
   }
   .ad-fade-up { animation: ad-fade-up 0.3s cubic-bezier(0.4,0,0.2,1) both; }
-
-  .ad-glass {
-    background: rgba(var(--color-card-muted-rgb), 0.55);
-    border: 1px solid rgba(255,255,255,0.07);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-    border-radius: 20px;
-  }
 
   .ad-kpi {
     background: rgba(var(--color-card-muted-rgb), 0.5);
@@ -177,11 +168,10 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   }, []);
 
   const isDark = !theme.includes('light') && !theme.includes('sunset');
-  const chartText  = isDark ? '#9ca3af' : '#6b7280';
-  const gridColor  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const chartText   = isDark ? '#9ca3af' : '#6b7280';
+  const gridColor   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
   const incomeColor  = isDark ? '#4ade80' : '#16a34a';
   const expenseColor = isDark ? '#f87171' : '#dc2626';
-  const netColor     = isDark ? '#60a5fa' : '#2563eb';
 
   const tooltipStyle = {
     background: isDark ? '#1c1b19' : '#fff',
@@ -197,18 +187,19 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     const now = new Date();
     const tm = now.getMonth(), ty = now.getFullYear();
     const lm = tm === 0 ? 11 : tm - 1, ly = tm === 0 ? ty - 1 : ty;
-    const isThis  = (t: Transaction) => { const d = new Date(t.date); return d.getMonth()===tm && d.getFullYear()===ty; };
-    const isLast  = (t: Transaction) => { const d = new Date(t.date); return d.getMonth()===lm && d.getFullYear()===ly; };
+    const isThis = (t: Transaction) => { const d = new Date(t.date); return d.getMonth()===tm && d.getFullYear()===ty; };
+    const isLast = (t: Transaction) => { const d = new Date(t.date); return d.getMonth()===lm && d.getFullYear()===ly; };
     const sum = (txs: Transaction[], type: 'income'|'expense') => txs.filter(t=>t.type===type).reduce((a,t)=>a+t.amount,0);
     const th = transactions.filter(isThis), la = transactions.filter(isLast);
-    const tI = sum(th,'income'), tE = sum(th,'expense'), lI = sum(la,'income'), lE = sum(la,'expense');
+    const tI = sum(th,'income'), tE = sum(th,'expense');
     const sr = tI > 0 ? ((tI-tE)/tI)*100 : 0;
     const catTotals: Record<string,number> = {};
     th.filter(t=>t.type==='expense').forEach(t => { catTotals[t.category||'?'] = (catTotals[t.category||'?']||0)+t.amount; });
     const topId = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0]?.[0];
     const topCat = categories.find(c=>c.id===topId||c.name===topId)?.name || topId || 'None';
     const pct = (c:number,p:number) => p===0 ? null : ((c-p)/p)*100;
-    return { tI, tE, lI, lE, sr, topCat, netThis: tI-tE, expChange: pct(tE,lE), incChange: pct(tI,lI) };
+    const lI = sum(la,'income'), lE = sum(la,'expense');
+    return { tI, tE, sr, topCat, netThis: tI-tE, expChange: pct(tE,lE), incChange: pct(tI,lI) };
   }, [transactions, categories]);
 
   // ── MoM chart ──
@@ -226,31 +217,13 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     });
   }, [transactions]);
 
-  // ── Net worth ──
-  const netWorthData = useMemo(() => {
-    if (!transactions.length) return [];
-    const byMonth: Record<string,number> = {};
-    [...transactions].sort((a,b)=>new Date(a.date).getTime()-new Date(b.date).getTime()).forEach(t=>{
-      const d = new Date(t.date);
-      const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      byMonth[k] = (byMonth[k]||0) + (t.type==='income' ? t.amount : -t.amount);
-    });
-    let cum = 0;
-    return Object.entries(byMonth).sort().map(([k,v])=>{
-      cum += v;
-      const [yr,mo] = k.split('-');
-      return { label: new Date(+yr,+mo-1).toLocaleString('default',{month:'short',year:'2-digit'}), netWorth: cum };
-    });
-  }, [transactions]);
-
   const hasData = transactions.length > 0;
 
   // ── Tabs ──
   const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: 'overview',    label: 'Overview',    icon: <ReportsIcon className="w-4 h-4" /> },
-    { id: 'trends',      label: 'Trends',      icon: <TrendingUpIcon className="w-4 h-4" /> },
-    { id: 'forecasting', label: 'Forecast',    icon: <SparklesIcon className="w-4 h-4" /> },
-    { id: 'net worth',   label: 'Net Worth',   icon: <WalletIcon className="w-4 h-4" /> },
+    { id: 'overview',    label: 'Overview',  icon: <ReportsIcon className="w-4 h-4" /> },
+    { id: 'trends',      label: 'Trends',    icon: <TrendingUpIcon className="w-4 h-4" /> },
+    { id: 'forecasting', label: 'Forecast',  icon: <SparklesIcon className="w-4 h-4" /> },
   ];
   const activeMeta = TABS.find(t=>t.id===activeTab)!;
 
@@ -319,8 +292,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {/* ══ OVERVIEW ══════════════════════════════════════════════════════════ */}
       {activeTab === 'overview' && (
         <div className="flex flex-col gap-5 ad-fade-up">
-
-          {/* KPI row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <KpiCard
               label="Income"
@@ -354,8 +325,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               accent={stats.sr >= 20 ? incomeColor : stats.sr > 0 ? '#f59e0b' : expenseColor}
             />
           </div>
-
-          {/* Health + Savings Rate widgets */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
               <FinancialHealthWidget transactions={transactions} budgets={budgets} user={user} />
@@ -372,7 +341,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         <div className="flex flex-col gap-5 ad-fade-up">
           {!hasData ? <EmptyState label="No transactions yet" /> : (
             <>
-              {/* Income vs Spending bar chart */}
               <div className="ad-chart-card">
                 <SectionTitle sub="Last 6 months">Income vs Spending</SectionTitle>
                 <div style={{ height: 260 }}>
@@ -389,8 +357,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   </ResponsiveContainer>
                 </div>
               </div>
-
-              {/* Category widgets */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <SpendingTrendsWidget transactions={transactions} period="month" />
                 <div className="h-[360px]">
@@ -406,63 +372,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {activeTab === 'forecasting' && (
         <div key={key} className="ad-fade-up">
           <BudgetForecastingWidget transactions={transactions} budgets={budgets} />
-        </div>
-      )}
-
-      {/* ══ NET WORTH ═════════════════════════════════════════════════════════ */}
-      {activeTab === 'net worth' && (
-        <div className="flex flex-col gap-5 ad-fade-up">
-          {netWorthData.length < 2 ? <EmptyState label="Not enough data for net worth trend" /> : (
-            <>
-              {/* Summary chips */}
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: 'Starting',    value: netWorthData[0]?.netWorth ?? 0 },
-                  { label: 'Current',     value: netWorthData[netWorthData.length-1]?.netWorth ?? 0 },
-                  { label: 'Total Growth',value: (netWorthData[netWorthData.length-1]?.netWorth??0)-(netWorthData[0]?.netWorth??0) },
-                ].map(({label,value}) => (
-                  <div key={label} className="ad-kpi">
-                    <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>{label}</span>
-                    <span className="text-xl font-bold" style={{ color: value>=0 ? incomeColor : expenseColor }}>{formatCurrency(value, user.currency)}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Area chart */}
-              <div className="ad-chart-card">
-                <SectionTitle sub="Cumulative income minus spending">Net Worth Over Time</SectionTitle>
-                <div style={{ height: 280 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={netWorthData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
-                      <defs>
-                        <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%"  stopColor={netColor} stopOpacity={0.28} />
-                          <stop offset="95%" stopColor={netColor} stopOpacity={0.01} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
-                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: chartText }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 11, fill: chartText }} axisLine={false} tickLine={false} tickFormatter={fmtAxis} width={48} />
-                      <Tooltip
-                        wrapperStyle={{ zIndex: 9999 }}
-                        contentStyle={tooltipStyle}
-                        formatter={(v: number) => [formatCurrency(v, user.currency), 'Net Worth']}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="netWorth"
-                        stroke={netColor}
-                        strokeWidth={2.5}
-                        fill="url(#nwGrad)"
-                        dot={false}
-                        activeDot={{ r: 5, fill: netColor }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </>
-          )}
         </div>
       )}
 
