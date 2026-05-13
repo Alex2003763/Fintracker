@@ -112,6 +112,39 @@ const CSS = `
     box-shadow: 0 2px 10px rgba(34,197,94,0.32);
   }
 
+  /* Transfer badge replacing toggle */
+  .atm-transfer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 700;
+    background: linear-gradient(135deg, rgba(var(--color-primary-rgb),0.18), rgba(var(--color-primary-rgb),0.08));
+    border: 1px solid rgba(var(--color-primary-rgb),0.28);
+    color: rgb(var(--color-primary-rgb));
+  }
+
+  /* Transfer account row */
+  .atm-transfer-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
+  }
+  .atm-transfer-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(var(--color-primary-rgb), 0.12);
+    color: rgb(var(--color-primary-rgb));
+    flex-shrink: 0;
+  }
+
   /* Chip */
   .atm-chip {
     padding: 3px 10px; border-radius: 999px;
@@ -333,9 +366,10 @@ interface AccountDropdownProps {
   onChange: (id: string) => void;
   isExpense: boolean;
   hasError?: boolean;
+  label?: string;
 }
 
-const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onChange, isExpense, hasError }) => {
+const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onChange, isExpense, hasError, label }) => {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -420,6 +454,8 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
     </span>
   );
 
+  const sheetLabel = label ?? (isExpense ? 'From Account' : 'To Account');
+
   const TriggerContent = (
     <>
       {selected && selectedMeta ? (
@@ -451,7 +487,7 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
         <>
           <span className="atm-acc-dot" style={{ background: 'rgba(var(--color-text-muted-rgb),0.4)' }} />
           <span className="text-base leading-none">🚫</span>
-          <p className="flex-1 text-sm text-left" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>No Account</p>
+          <p className="flex-1 text-sm text-left" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>Select Account</p>
         </>
       )}
       <svg
@@ -560,7 +596,7 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
         } as React.CSSProperties}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={isExpense ? 'From Account' : 'To Account'}
+        aria-label={sheetLabel}
       >
         {TriggerContent}
       </button>
@@ -579,7 +615,7 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
             <div className="atm-sheet-handle" />
             <div className="atm-sheet-header">
               <p className="text-sm font-bold" style={{ color: 'rgb(var(--color-text-rgb))' }}>
-                {isExpense ? 'From Account' : 'To Account'}
+                {sheetLabel}
               </p>
               <button
                 type="button"
@@ -658,6 +694,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     const activeAccounts = user?.financialAccounts?.filter(a => !a.isArchived) || [];
     return activeAccounts.length > 0 ? activeAccounts[0].id : '';
   });
+  const [toAccountId, setToAccountId] = useState<string>('');
   const [category, setCategory]       = useState<string>(() => {
     if (transactionToEdit)     return transactionToEdit.category;
     if (initialData?.category) return initialData.category;
@@ -670,6 +707,9 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isScanning, setIsScanning]         = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Detect transfer mode
+  const isTransfer = category === 'Transfers';
 
   useEffect(() => {
     if (transactionToEdit) {
@@ -689,6 +729,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       const activeAccounts = user?.financialAccounts?.filter(a => !a.isArchived) || [];
       setAccountId(initialData?.accountId || (activeAccounts.length > 0 ? activeAccounts[0].id : ''));
     }
+    setToAccountId('');
     setErrors({});
   }, [transactionToEdit, initialType, initialData, user]);
 
@@ -716,6 +757,11 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     if (!amount.trim())                                  e.amount      = 'Amount is required';
     else if (isNaN(+amount) || parseFloat(amount) <= 0) e.amount      = 'Enter a valid positive amount';
     if (!category)                                       e.category    = 'Category is required';
+    if (isTransfer && !isEditing) {
+      if (!accountId)                                    e.accountId    = 'Select a source account';
+      if (!toAccountId)                                  e.toAccountId  = 'Select a destination account';
+      else if (toAccountId === accountId)                e.toAccountId  = 'Cannot transfer to the same account';
+    }
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -744,14 +790,34 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     if (!validateForm()) return;
     setIsSubmitting(true);
     try {
-      await onSaveTransaction({
-        id: transactionToEdit?.id,
-        description: description.trim(),
-        amount: parseFloat(amount),
-        type, category,
-        accountId: accountId,
-        emoji: suggestedEmoji,
-      });
+      if (isTransfer && !isEditing) {
+        // Save two transactions: expense from source, income to destination
+        await onSaveTransaction({
+          description: description.trim(),
+          amount: parseFloat(amount),
+          type: 'expense',
+          category: 'Transfers',
+          accountId: accountId,
+          emoji: '🔄',
+        });
+        await onSaveTransaction({
+          description: description.trim(),
+          amount: parseFloat(amount),
+          type: 'income',
+          category: 'Transfers',
+          accountId: toAccountId,
+          emoji: '🔄',
+        });
+      } else {
+        await onSaveTransaction({
+          id: transactionToEdit?.id,
+          description: description.trim(),
+          amount: parseFloat(amount),
+          type, category,
+          accountId: accountId,
+          emoji: suggestedEmoji,
+        });
+      }
       onClose();
     } catch (err) {
       console.error('Error saving transaction:', err);
@@ -762,6 +828,24 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const categories = currentCategories[type];
   const isExpense  = type === 'expense';
+
+  // Submit button style
+  const submitBtnStyle = isTransfer
+    ? {
+        background: 'linear-gradient(135deg,rgb(var(--color-primary-rgb)) 0%,rgba(var(--color-primary-rgb),0.75) 100%)',
+        boxShadow: '0 1px 2px rgba(var(--color-primary-rgb),0.20),0 4px 14px rgba(var(--color-primary-rgb),0.30)',
+      }
+    : isExpense
+      ? {
+          background: 'linear-gradient(135deg,#f87171 0%,#ef4444 50%,#dc2626 100%)',
+          boxShadow: '0 1px 2px rgba(239,68,68,0.20),0 4px 14px rgba(239,68,68,0.30)',
+        }
+      : {
+          background: 'linear-gradient(135deg,#4ade80 0%,#22c55e 50%,#16a34a 100%)',
+          boxShadow: '0 1px 2px rgba(34,197,94,0.20),0 4px 14px rgba(34,197,94,0.30)',
+        };
+
+  const submitLabel = isTransfer ? 'Transfer' : isEditing ? 'Save Changes' : `Add ${isExpense ? 'Expense' : 'Income'}`;
 
   const footer = (
     <div className="flex items-center gap-2">
@@ -782,50 +866,57 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         </button>
         <button type="submit" form="atm-form" disabled={isSubmitting}
           className="atm-btn-submit atm-pulse-ring flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold touch-manipulation focus:outline-none focus:ring-2"
-          style={{
-            background: isExpense
-              ? 'linear-gradient(135deg,#f87171 0%,#ef4444 50%,#dc2626 100%)'
-              : 'linear-gradient(135deg,#4ade80 0%,#22c55e 50%,#16a34a 100%)',
-            boxShadow: isExpense
-              ? '0 1px 2px rgba(239,68,68,0.20),0 4px 14px rgba(239,68,68,0.30)'
-              : '0 1px 2px rgba(34,197,94,0.20),0 4px 14px rgba(34,197,94,0.30)',
-          }}
+          style={submitBtnStyle}
         >
           {isSubmitting ? (
             <><svg className="atm-spin" width="13" height="13" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40 20"/></svg>Saving…</>
+          ) : isTransfer ? (
+            <><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4"/></svg>{submitLabel}</>
           ) : isEditing ? (
             <><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>Save Changes</>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>{submitLabel}</>
           ) : (
             <><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4"/></svg>Add {isExpense ? 'Expense' : 'Income'}</>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4"/></svg>{submitLabel}</>
           )}
         </button>
       </div>
     </div>
   );
 
+  const hasAccounts = !!(user?.financialAccounts && user.financialAccounts.filter(a => !a.isArchived).length > 0);
+
   return (
     <>
       <BaseModal isOpen={isOpen} onClose={onClose}
         title={isEditing ? 'Edit Transaction' : 'New Transaction'}
-        subtitle={isEditing ? 'Update the details below' : `Recording a new ${type}`}
+        subtitle={isEditing ? 'Update the details below' : isTransfer ? 'Transfer between accounts' : `Recording a new ${type}`}
         size="md" animation="slide-up" footer={footer}
         aria-label={`${isEditing ? 'Edit' : 'Add'} transaction form`}
       >
         <form id="atm-form" onSubmit={handleSubmit} noValidate className="flex flex-col gap-5 pb-1">
 
-          {/* Row 1: Type + Scan */}
+          {/* Row 1: Type toggle OR Transfer badge + Scan */}
           <div className="atm-in flex items-center gap-3" style={{ animationDelay: '0ms' }}>
-            <div className="atm-toggle flex-1">
-              {(['expense', 'income'] as const).map(t => (
-                <button key={t} type="button" onClick={() => handleTypeChange(t)}
-                  className={`atm-toggle-btn ${type === t ? `is-active ${t}` : ''}`}>
-                  {t === 'expense' ? '↑ Expense' : '↓ Income'}
-                </button>
-              ))}
-            </div>
+            {isTransfer ? (
+              <div className="atm-transfer-badge flex-1">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+                Transfer
+              </div>
+            ) : (
+              <div className="atm-toggle flex-1">
+                {(['expense', 'income'] as const).map(t => (
+                  <button key={t} type="button" onClick={() => handleTypeChange(t)}
+                    className={`atm-toggle-btn ${type === t ? `is-active ${t}` : ''}`}>
+                    {t === 'expense' ? '↑ Expense' : '↓ Income'}
+                  </button>
+                ))}
+              </div>
+            )}
             <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isScanning}
               className="atm-glass flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-[rgb(var(--color-text-muted-rgb))] hover:text-[rgb(var(--color-text-rgb))] active:scale-95 transition-all touch-manipulation flex-shrink-0">
               {isScanning
@@ -843,7 +934,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           {errors.scan && <ErrMsg msg={errors.scan} />}
 
           {/* AI Emoji badge */}
-          {suggestedEmoji && (
+          {suggestedEmoji && !isTransfer && (
             <div className="atm-pop flex items-center gap-3 px-4 py-3 rounded-2xl"
               style={{ background: 'rgba(var(--color-primary-rgb),0.06)', border: '1px solid rgba(var(--color-primary-rgb),0.18)' }}>
               <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
@@ -864,12 +955,55 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             </div>
           )}
 
-          {/* Account Selector */}
-          {user?.financialAccounts && user.financialAccounts.filter(a => !a.isArchived).length > 0 && (
+          {/* Account Selector — Transfer mode: two dropdowns side by side */}
+          {hasAccounts && isTransfer && !isEditing && (
+            <div className="atm-in" style={{ animationDelay: '40ms' }}>
+              <FieldLabel required>Accounts</FieldLabel>
+              <div className="atm-transfer-row">
+                {/* From */}
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>From</span>
+                  <AccountDropdown
+                    accounts={user!.financialAccounts!}
+                    value={accountId}
+                    onChange={(id) => { setAccountId(id); clrErr('accountId'); clrErr('toAccountId'); }}
+                    isExpense={true}
+                    hasError={!!errors.accountId}
+                    label="From Account"
+                  />
+                  <ErrMsg msg={errors.accountId} />
+                </div>
+
+                {/* Arrow */}
+                <div className="atm-transfer-arrow mt-5">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7"/>
+                  </svg>
+                </div>
+
+                {/* To */}
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>To</span>
+                  <AccountDropdown
+                    accounts={user!.financialAccounts!}
+                    value={toAccountId}
+                    onChange={(id) => { setToAccountId(id); clrErr('toAccountId'); }}
+                    isExpense={false}
+                    hasError={!!errors.toAccountId}
+                    label="To Account"
+                  />
+                  <ErrMsg msg={errors.toAccountId} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Account Selector — normal single account */}
+          {hasAccounts && !isTransfer && (
             <div className="atm-in" style={{ animationDelay: '40ms' }}>
               <FieldLabel>{isExpense ? 'From Account' : 'To Account'}</FieldLabel>
               <AccountDropdown
-                accounts={user.financialAccounts}
+                accounts={user!.financialAccounts!}
                 value={accountId}
                 onChange={(id) => { setAccountId(id); clrErr('accountId'); }}
                 isExpense={isExpense}
@@ -885,12 +1019,12 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <div className={`atm-glass px-4 py-3 ${errors.description ? 'has-error' : ''}`}>
               <input id="description" type="text" value={description} autoFocus
                 onChange={e => { setDescription(e.target.value); clrErr('description'); }}
-                placeholder="e.g. Coffee at Starbucks"
+                placeholder={isTransfer ? 'e.g. Monthly savings transfer' : 'e.g. Coffee at Starbucks'}
                 className="w-full bg-transparent text-sm font-medium text-[rgb(var(--color-text-rgb))] placeholder-[rgb(var(--color-text-muted-rgb))]/30 outline-none"
               />
             </div>
             <ErrMsg msg={errors.description} />
-            {aiSuggestions.length > 0 && (
+            {aiSuggestions.length > 0 && !isTransfer && (
               <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
                 <span className="text-[10px] font-semibold text-[rgb(var(--color-text-muted-rgb))]/50 flex items-center gap-0.5">
                   <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -918,6 +1052,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             />
           </div>
 
+          {/* Category — always shown; for transfer it's locked to Transfers */}
           <FormField label="Category" htmlFor="category" required error={errors.category}>
             <Select id="category" value={category}
               onChange={(e) => { setCategory(e.target.value); if (errors.category) setErrors({ ...errors, category: '' }); }}
