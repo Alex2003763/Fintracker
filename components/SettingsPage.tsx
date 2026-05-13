@@ -930,8 +930,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             icon={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
             }
             iconBg="rgba(var(--color-success-rgb), 0.12)"
@@ -944,8 +944,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             icon={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
             }
             label="Import Data"
@@ -1036,22 +1036,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             className="sp-input"
           />
           <p className="text-xs" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>Used for receipt scanning and intelligent transactions.</p>
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        title="Developer"
-        icon={
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-            <polyline points="16 18 22 12 16 6" />
-            <polyline points="8 6 2 12 8 18" />
-          </svg>
-        }
-      >
-        <div className="px-3 py-3">
-          <p className="text-xs" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>
-            Developer tools have been removed from this build.
-          </p>
         </div>
       </SectionCard>
     </div>
