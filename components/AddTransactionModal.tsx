@@ -494,7 +494,6 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
       ) : (
         <>
           <span className="atm-acc-dot" style={{ background: 'rgba(var(--color-text-muted-rgb),0.4)' }} />
-          <span className="text-base leading-none">\uD83D\uDEAB</span>
           <p className="flex-1 text-sm text-left" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>Select Account</p>
         </>
       )}
@@ -514,7 +513,6 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onCh
         onClick={() => handleSelect('')}
       >
         <span className="atm-acc-dot" style={{ background: 'rgba(var(--color-text-muted-rgb),0.35)' }} />
-        <span className="text-sm leading-none">\uD83D\uDEAB</span>
         <p className="flex-1 text-sm" style={{ color: 'rgb(var(--color-text-muted-rgb))' }}>No Account</p>
         {value === '' && (
           <svg width="14" height="14" fill="none" stroke="rgb(var(--color-primary-rgb))" viewBox="0 0 24 24">
