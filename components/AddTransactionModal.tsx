@@ -77,7 +77,7 @@ const CSS = `
     box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.08), 0 0 0 3.5px rgba(239,68,68,0.11);
   }
 
-  /* ── Type toggle (3 tabs: Expense / Income / Transfer) ─────────────────── */
+  /* ── Type toggle (2 tabs: Expense / Income) ─────────────────── */
   .atm-toggle {
     display: flex;
     background: rgba(var(--color-card-muted-rgb), 0.55);
@@ -117,12 +117,19 @@ const CSS = `
     box-shadow: 0 2px 10px rgba(var(--color-primary-rgb),0.35);
   }
 
-  /* Transfer account row */
+  /* Transfer account row — stacked on mobile, side-by-side on wider screens */
   .atm-transfer-row {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: start;
-    gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  @media (min-width: 480px) {
+    .atm-transfer-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: start;
+      gap: 8px;
+    }
   }
   .atm-transfer-arrow {
     display: flex;
@@ -134,7 +141,21 @@ const CSS = `
     background: rgba(var(--color-primary-rgb), 0.12);
     color: rgb(var(--color-primary-rgb));
     flex-shrink: 0;
-    margin-top: 22px;
+    align-self: center;
+    margin-top: 0;
+  }
+  @media (min-width: 480px) {
+    .atm-transfer-arrow {
+      margin-top: 22px;
+      align-self: auto;
+    }
+  }
+  /* Arrow icon direction: down on mobile, right on desktop */
+  .atm-arrow-down  { display: block; }
+  .atm-arrow-right { display: none; }
+  @media (min-width: 480px) {
+    .atm-arrow-down  { display: none; }
+    .atm-arrow-right { display: block; }
   }
 
   /* Chip */
@@ -367,7 +388,7 @@ interface AccountDropdownProps {
   isExpense: boolean;
   hasError?: boolean;
   label?: string;
-  excludeId?: string; // prevent selecting the same account
+  excludeId?: string;
 }
 
 const AccountDropdown: React.FC<AccountDropdownProps> = ({ accounts, value, onChange, isExpense, hasError, label, excludeId }) => {
@@ -707,7 +728,9 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const handleModeChange = (newMode: 'expense' | 'income' | 'transfer') => {
     setTxMode(newMode);
-    if (newMode !== 'transfer') {
+    if (newMode === 'transfer') {
+      setCategory('Transfer');
+    } else {
       const cats = Object.values(currentCategories[newMode]).flat().map((c: SubCategory) => c.name);
       if (!cats.includes(category)) setCategory(getDefaultCategory(newMode));
     }
@@ -755,7 +778,6 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setIsSubmitting(true);
     try {
       if (isTransfer) {
-        // ── SINGLE transfer record — App.tsx handles both account balances atomically
         await onSaveTransaction({
           id: transactionToEdit?.id,
           description: description.trim() || 'Transfer',
@@ -847,16 +869,15 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       >
         <form id="atm-form" onSubmit={handleSubmit} noValidate className="flex flex-col gap-5 pb-1">
 
-          {/* Row 1: Type 3-tab toggle + Scan */}
+          {/* Row 1: Type 2-tab toggle (Expense / Income) + Scan */}
           <div className="atm-in flex items-center gap-3" style={{ animationDelay: '0ms' }}>
             <div className="atm-toggle flex-1">
-              {(['expense', 'income', 'transfer'] as const).map(m => (
+              {(['expense', 'income'] as const).map(m => (
                 <button key={m} type="button"
                   onClick={() => handleModeChange(m)}
-                  className={`atm-toggle-btn ${txMode === m ? `is-active ${m}` : ''}`}
-                  disabled={isEditing && m !== txMode && m === 'transfer'}
+                  className={`atm-toggle-btn ${txMode === m || (txMode === 'transfer' && m === 'expense') ? `is-active ${txMode === 'transfer' ? 'transfer' : m}` : ''}`}
                 >
-                  {m === 'expense' ? '\u2191 Expense' : m === 'income' ? '\u2193 Income' : '\u21C4 Transfer'}
+                  {m === 'expense' ? (isTransfer ? '\u21C4 Transfer' : '\u2191 Expense') : '\u2193 Income'}
                 </button>
               ))}
             </div>
@@ -910,7 +931,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             </div>
           )}
 
-          {/* Transfer: two account pickers side by side */}
+          {/* Transfer: two account pickers */}
           {hasAccounts && isTransfer && (
             <div className="atm-in" style={{ animationDelay: '40ms' }}>
               <FieldLabel required>Accounts</FieldLabel>
@@ -929,7 +950,12 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   <ErrMsg msg={errors.accountId} />
                 </div>
                 <div className="atm-transfer-arrow">
-                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {/* Down arrow on mobile */}
+                  <svg className="atm-arrow-down" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 5v14m0 0l-7-7m7 7l7-7"/>
+                  </svg>
+                  {/* Right arrow on desktop */}
+                  <svg className="atm-arrow-right" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7"/>
                   </svg>
                 </div>
@@ -1004,11 +1030,20 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             />
           </div>
 
-          {/* Category — hidden for transfers */}
+          {/* Category — hidden for transfers; auto-switches to transfer if "Transfer" category selected */}
           {!isTransfer && (
             <FormField label="Category" htmlFor="category" required error={errors.category}>
               <Select id="category" value={category}
-                onChange={(e) => { setCategory(e.target.value); if (errors.category) setErrors({ ...errors, category: '' }); }}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // If user picks a "Transfer" category, auto-switch to transfer mode
+                  if (val.toLowerCase() === 'transfer' || val.toLowerCase() === 'transfers') {
+                    handleModeChange('transfer');
+                    return;
+                  }
+                  setCategory(val);
+                  if (errors.category) setErrors({ ...errors, category: '' });
+                }}
                 error={errors.category}>
                 {Object.entries(categories).map(([group, subcategories]) => (
                   <optgroup label={group} key={group}>
